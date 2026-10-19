@@ -265,7 +265,8 @@
   }
   let locationPath=[];
   let locationSortDirection='desc';
-  const locationRows=document.querySelector('#location-rows'),locationLabels=['State','District','Block','School'];
+  let locationSortKey='completedPercent';
+  const locationRows=document.querySelector('#location-rows'),locationSortBy=document.querySelector('#location-sort-by'),locationLabels=['State','District','Block','School'];
   function renderLocations(){
     const level=locationPath.length,nodes=level===0?locationTree:locationPath[level-1].children;
     document.querySelector('#location-level-heading').textContent=locationLabels[level];
@@ -274,7 +275,11 @@
     const breadcrumb=document.querySelector('#location-breadcrumb');
     const crumbs=[...locationPath.map((node,index)=>({label:locationLabels[index],index})),{label:locationLabels[level],index:level}];
     breadcrumb.innerHTML=crumbs.map((crumb,index)=>`<li><button type="button" class="location-crumb" data-crumb-depth="${crumb.index}" ${index===crumbs.length-1?'aria-current="page"':''}>${crumb.label}</button></li>`).join('');
-    const sortedNodes=nodes.map((node,index)=>{const stats=locationTotals(node);return {node,index,stats,completedPercent:stats.plannedUsers?stats.completedUsers/stats.plannedUsers*100:0}}).sort((a,b)=>locationSortDirection==='asc'?a.completedPercent-b.completedPercent||a.node.name.localeCompare(b.node.name):b.completedPercent-a.completedPercent||a.node.name.localeCompare(b.node.name));
+    const sortedNodes=nodes.map((node,index)=>{
+      const stats=locationTotals(node),completedPercent=stats.plannedUsers?stats.completedUsers/stats.plannedUsers*100:0;
+      const sortValue=locationSortKey==='batchCompletionPercent'?(stats.batches?stats.completedBatches/stats.batches*100:0):locationSortKey==='completedPercent'?completedPercent:stats[locationSortKey];
+      return {node,index,stats,completedPercent,sortValue};
+    }).sort((a,b)=>locationSortDirection==='asc'?a.sortValue-b.sortValue||a.node.name.localeCompare(b.node.name):b.sortValue-a.sortValue||a.node.name.localeCompare(b.node.name));
     locationRows.innerHTML=sortedNodes.map(({node,index,stats,completedPercent})=>{
       const completedBatches=stats.completedBatches;
       const batchCompletionPercent=stats.batches?completedBatches/stats.batches*100:0;
@@ -287,6 +292,7 @@
     document.querySelectorAll('[data-location-sort]').forEach(toggle=>toggle.setAttribute('aria-pressed',String(toggle===button)));
     renderLocations();
   }));
+  locationSortBy.addEventListener('change',()=>{locationSortKey=locationSortBy.value;renderLocations()});
   locationRows.addEventListener('click',event=>{
     const button=event.target.closest('[data-location-index]');if(!button)return;
     const nodes=locationPath.length?locationPath[locationPath.length-1].children:locationTree;
