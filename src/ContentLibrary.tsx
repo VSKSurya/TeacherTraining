@@ -26,7 +26,7 @@ const resources: Resource[] = [
   { id: 'workflow', title: 'Educator onboarding workflow', file: 'educator-onboarding-workflow.json', category: 'Documents', format: 'WORKFLOW', size: '2 KB', language: 'English', tags: ['Workflow', 'Onboarding', 'Process'], url: workflowUrl, text: workflowText },
 ];
 const categories = ['All', 'Presentation', 'Video', 'Documents'] as const;
-const languages = ['All Languages', ...new Set(resources.map(resource => resource.language))];
+const languages = ['All Languages', 'English', 'Hindi'];
 const categoryOf = (resource: Resource) => resource.format === 'PDF' ? 'pdf' : resource.format === 'MP4' ? 'video' : resource.format === 'PPTX' ? 'presentation' : resource.format === 'PNG' || resource.format === 'JPG' ? 'image' : resource.format === 'WORKFLOW' ? 'workflow' : '';
 const labelOf = (resource: Resource) => resource.format === 'PDF' ? 'Manual & PDF' : resource.format === 'PPTX' ? 'Presentation' : resource.format === 'MP4' ? 'Video' : resource.format === 'PNG' || resource.format === 'JPG' ? 'Image' : resource.format === 'WORKFLOW' ? 'Workflow' : 'Document';
 
