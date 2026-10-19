@@ -20,7 +20,45 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     const fileName = label === 'Batch Performance' ? 'Batch_performance.html' : label === 'Training Summary' ? 'Training_Summary.html' : 'Attendance_Report.html';
     html = html.replace(`href="${fileName}"`, `href="${href}"${activePage === label ? ' aria-current="page"' : ''}`);
   }
-  if (activePage in reportLinks) html = html.replace('<details class="side-group">', '<details class="side-group" open>').replace('<summary class="side-link">', '<summary class="side-link active">');
+  if (activePage in reportLinks) html = html.replace('<summary class="side-link">', '<summary class="side-link active">');
+  useEffect(() => {
+    const groups = () => Array.from(document.querySelectorAll<HTMLDetailsElement>('.sidebar .side-group'));
+    const placeSubmenu = (group: HTMLDetailsElement) => {
+      const submenu = group.querySelector<HTMLElement>('.side-submenu');
+      const summary = group.querySelector<HTMLElement>('summary');
+      if (!submenu || !summary || !group.open || !window.matchMedia('(max-width: 620px)').matches) return;
+      const width = Math.min(220, window.innerWidth - 16);
+      const rect = summary.getBoundingClientRect();
+      const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left + rect.width / 2 - width / 2));
+      submenu.style.setProperty('--submenu-left', `${left}px`);
+    };
+    const onToggle = (event: Event) => {
+      const group = event.target;
+      if (group instanceof HTMLDetailsElement && group.matches('.sidebar .side-group')) placeSubmenu(group);
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>('.sidebar .side-submenu a');
+      if (!link) return;
+      const group = link.closest<HTMLDetailsElement>('.side-group');
+      if (group) {
+        group.open = false;
+        group.querySelector<HTMLElement>('.side-submenu')?.style.removeProperty('--submenu-left');
+      }
+    };
+    const onLayoutChange = () => groups().forEach(placeSubmenu);
+    const sidebar = document.querySelector('.sidebar');
+    document.addEventListener('toggle', onToggle, true);
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('resize', onLayoutChange);
+    sidebar?.addEventListener('scroll', onLayoutChange, { passive: true });
+    return () => {
+      document.removeEventListener('toggle', onToggle, true);
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('resize', onLayoutChange);
+      sidebar?.removeEventListener('scroll', onLayoutChange);
+    };
+  }, []);
   return <Markup html={html} />;
 }
 export function Topbar({ title = 'Dashboard' }: { title?: string; description?: string }) {
