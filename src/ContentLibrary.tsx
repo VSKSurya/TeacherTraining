@@ -3,7 +3,7 @@ import { Dialog, IconButton, Snackbar } from '@mui/material';
 import { Sidebar, Topbar, Footer } from './components/DashboardParts';
 
 type Category = 'Presentation' | 'Video' | 'Documents';
-type Resource = { id: string; title: string; file: string; category: Category; format: string; size: string; tags: string[]; url: string; text?: string };
+type Resource = { id: string; title: string; file: string; category: Category; format: string; size: string; language: string; tags: string[]; url: string; text?: string };
 type ContentSample = { filename: string; base64: string };
 declare global { interface Window { CONTENT_SAMPLES?: ContentSample[] } }
 const workflowText = `{
@@ -19,15 +19,14 @@ const workflowText = `{
 const workflowUrl = URL.createObjectURL(new Blob([workflowText], { type: 'application/json' }));
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
 const resources: Resource[] = [
-  { id: 'video', title: 'Digital classroom training', file: 'sample-training-video.mp4', category: 'Video', format: 'MP4', size: '20 KB', tags: ['Training', 'Digital classroom', 'Video'], url: publicAsset('/content-library-assets/sample-training-video.mp4') },
-  { id: 'manual', title: 'Teacher training manual', file: 'sample-training-manual.pdf', category: 'Documents', format: 'PDF', size: '2 KB', tags: ['Manual', 'Reference', 'Training'], url: publicAsset('/content-library-assets/sample-training-manual.pdf') },
-  { id: 'presentation', title: 'Teacher training presentation', file: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', tags: ['Presentation', 'Training', 'Classroom'], url: publicAsset('/content-library-assets/sample-training.pptx') },
-  { id: 'guide', title: 'Teacher training guide', file: 'sample-training-guide.docx', category: 'Documents', format: 'DOCX', size: '36 KB', tags: ['Document', 'Guide', 'Training'], url: publicAsset('/content-library-assets/sample-training-guide.docx') },
-  { id: 'workflow', title: 'Educator onboarding workflow', file: 'educator-onboarding-workflow.json', category: 'Documents', format: 'WORKFLOW', size: '2 KB', tags: ['Workflow', 'Onboarding', 'Process'], url: workflowUrl, text: workflowText },
-  { id: 'image-class', title: 'Classroom reflection image', file: 'sample-png.png', category: 'Documents', format: 'PNG', size: '22 KB', tags: ['Image', 'Classroom', 'Reflection'], url: publicAsset('/content-library-assets/sample-png.png') },
-  { id: 'image-session', title: 'Training session photograph', file: 'sample-jpg.jpg', category: 'Documents', format: 'JPG', size: '26 KB', tags: ['Image', 'Training', 'Session'], url: publicAsset('/content-library-assets/sample-jpg.jpg') },
+  { id: 'video', title: 'Digital classroom training', file: 'sample-training-video.mp4', category: 'Video', format: 'MP4', size: '20 KB', language: 'English', tags: ['Training', 'Digital classroom', 'Video'], url: publicAsset('/content-library-assets/sample-training-video.mp4') },
+  { id: 'manual', title: 'Teacher training manual', file: 'sample-training-manual.pdf', category: 'Documents', format: 'PDF', size: '2 KB', language: 'English', tags: ['Manual', 'Reference', 'Training'], url: publicAsset('/content-library-assets/sample-training-manual.pdf') },
+  { id: 'presentation', title: 'Teacher training presentation', file: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', language: 'English', tags: ['Presentation', 'Training', 'Classroom'], url: publicAsset('/content-library-assets/sample-training.pptx') },
+  { id: 'guide', title: 'Teacher training guide', file: 'sample-training-guide.docx', category: 'Documents', format: 'DOCX', size: '36 KB', language: 'English', tags: ['Document', 'Guide', 'Training'], url: publicAsset('/content-library-assets/sample-training-guide.docx') },
+  { id: 'workflow', title: 'Educator onboarding workflow', file: 'educator-onboarding-workflow.json', category: 'Documents', format: 'WORKFLOW', size: '2 KB', language: 'English', tags: ['Workflow', 'Onboarding', 'Process'], url: workflowUrl, text: workflowText },
 ];
 const categories = ['All', 'Presentation', 'Video', 'Documents'] as const;
+const languages = ['All Languages', ...new Set(resources.map(resource => resource.language))];
 const categoryOf = (resource: Resource) => resource.format === 'PDF' ? 'pdf' : resource.format === 'MP4' ? 'video' : resource.format === 'PPTX' ? 'presentation' : resource.format === 'PNG' || resource.format === 'JPG' ? 'image' : resource.format === 'WORKFLOW' ? 'workflow' : '';
 const labelOf = (resource: Resource) => resource.format === 'PDF' ? 'Manual & PDF' : resource.format === 'PPTX' ? 'Presentation' : resource.format === 'MP4' ? 'Video' : resource.format === 'PNG' || resource.format === 'JPG' ? 'Image' : resource.format === 'WORKFLOW' ? 'Workflow' : 'Document';
 
@@ -67,8 +66,8 @@ async function officePreview(resource: Resource) {
 }
 function ResourceCard({ resource, onPreview }: { resource: Resource; onPreview: (resource: Resource) => void }) {
   return <article className="card">
-    <div className="card-body"><div className={`file-icon-box ${categoryOf(resource)}`} aria-label={`${resource.format} file`} role="img"><FileTypeIcon format={resource.format} /></div><div className="card-meta"><span>{labelOf(resource)}</span><span>{resource.size}</span></div><h3>{resource.title}</h3><p className="filename">{resource.file}</p>
-      <div className="tags" aria-label="Tags">{resource.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}</div><div className="scope">Schoolnet learning resource</div>
+    <div className="card-body"><div className="resource-meta-row"><div className={`file-icon-box ${categoryOf(resource)}`} aria-label={`${resource.format} file`} role="img"><FileTypeIcon format={resource.format} /></div><div className="card-meta"><span>{labelOf(resource)}</span><span>{resource.size}</span><span>{resource.language}</span></div></div><h3>{resource.title}</h3><p className="filename">{resource.file}</p>
+      <div className="tags" aria-label="Tags">{resource.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}</div>
       <div className="actions"><button className="action" type="button" onClick={() => onPreview(resource)}>Preview</button><a className="action download" href={resource.url} download={resource.file}>Download</a></div>
     </div>
   </article>;
@@ -85,13 +84,14 @@ function FileTypeIcon({ format }: { format: string }) {
 
 export default function ContentLibrary() {
   const [category, setCategory] = useState<string>('All');
+  const [language, setLanguage] = useState('All Languages');
   const [query, setQuery] = useState('');
   const [preview, setPreview] = useState<Resource | null>(null);
   const [previewText, setPreviewText] = useState('');
   const [collapsed, setCollapsed] = useState(false);
   const [toast, setToast] = useState('');
-  const filtered = useMemo(() => resources.filter(resource => (category === 'All' || resource.category === category) && (!query.trim() || `${resource.title} ${resource.file} ${resource.tags.join(' ')}`.toLowerCase().includes(query.trim().toLowerCase()))), [category, query]);
-  const counts = useMemo(() => Object.fromEntries(categories.map(item => [item, resources.filter(resource => item === 'All' || resource.category === item).length])), []);
+  const filtered = useMemo(() => resources.filter(resource => (category === 'All' || resource.category === category) && (language === 'All Languages' || resource.language === language) && (!query.trim() || `${resource.title} ${resource.file} ${resource.language} ${resource.tags.join(' ')}`.toLowerCase().includes(query.trim().toLowerCase()))), [category, language, query]);
+  const counts = useMemo(() => Object.fromEntries(categories.map(item => [item, resources.filter(resource => (item === 'All' || resource.category === item) && (language === 'All Languages' || resource.language === language)).length])), [language]);
   const previewResource = useCallback(async (resource: Resource) => {
     setPreview(resource);
     if (resource.format === 'WORKFLOW') setPreviewText(resource.text ?? '');
@@ -119,7 +119,7 @@ export default function ContentLibrary() {
     <Sidebar activePage="Content Library" />
     <main className="main content-main"><Topbar title="Content Library" description="Browse and access learning resources in one place." />
       <section className="browser" aria-labelledby="browse-heading"><div className="browser-head"><div><h2 id="browse-heading">Browse resources</h2><p>Select a category or search by title, file name, or tag.</p></div>
-        <div className="search"><label htmlFor="content-search">Search content</label><input id="content-search" type="search" placeholder="Search content" value={query} onChange={event => setQuery(event.target.value)} /></div>
+        <div className="browser-tools"><div className="language-filter"><label htmlFor="content-language">Language</label><select id="content-language" value={language} onChange={event => setLanguage(event.target.value)}>{languages.map(item => <option key={item} value={item}>{item}</option>)}</select></div><div className="search"><label htmlFor="content-search">Search content</label><input id="content-search" type="search" placeholder="Search content" value={query} onChange={event => setQuery(event.target.value)} /></div></div>
       </div>
       <div className="tabs" role="tablist" aria-label="Content categories">{categories.map(item => <button key={item} className="tab" type="button" role="tab" aria-selected={category === item} onClick={() => setCategory(item)}>{item}<span className="tab-count">{counts[item]}</span></button>)}</div>
       <div className="results"><span role="status" aria-live="polite">{filtered.length} {filtered.length === 1 ? 'file' : 'files'}</span><span>Preview or download any file</span></div>
