@@ -24,7 +24,9 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   return <Markup html={html} />;
 }
 export function Topbar({ title = 'Dashboard' }: { title?: string; description?: string }) {
-  const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light');
+  const themeSwitch = `<div class="theme-switch" role="group" aria-label="Choose color theme"><button class="theme-option${theme === 'light' ? ' active' : ''}" id="theme-light" type="button" aria-pressed="${theme === 'light'}" title="Light theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><span>Light</span></button><button class="theme-option${theme === 'dark' ? ' active' : ''}" id="theme-dark" type="button" aria-pressed="${theme === 'dark'}" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg><span>Dark</span></button></div>`;
+  const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`).replace('<span class="divider" aria-hidden="true"></span>', `${themeSwitch}<span class="divider" aria-hidden="true"></span>`);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -35,16 +37,22 @@ export function Topbar({ title = 'Dashboard' }: { title?: string; description?: 
   });
   useEffect(() => {
     window.localStorage.setItem('teacher-training-last-login', new Date().toISOString());
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('teacher-training-theme', theme);
     const onNotificationClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      const themeButton = target.closest<HTMLElement>('[id^="theme-"]');
       const button = target.closest<HTMLElement>('#notifications');
       const profileButton = target.closest<HTMLElement>('#profile-button');
-      if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); setProfileAnchor(null); }
+      if (themeButton?.id === 'theme-light' || themeButton?.id === 'theme-dark') { event.stopPropagation(); setTheme(themeButton.id === 'theme-dark' ? 'dark' : 'light'); }
+      else if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); setProfileAnchor(null); }
       else if (profileButton) { event.stopPropagation(); setProfileAnchor(current => current ? null : profileButton); setAnchor(null); }
     };
     document.addEventListener('click', onNotificationClick, true);
     return () => document.removeEventListener('click', onNotificationClick, true);
-  }, []);
+  }, [theme]);
   return <><Markup html={html} /><Popover open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
     <Box sx={{ width: { xs: 300, sm: 360 }, p: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 750, color: '#12365c' }}>Notifications</Typography>
