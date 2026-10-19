@@ -63,7 +63,7 @@
     .phase-number{margin-top:9px;padding:3px 11px;border-radius:20px;background:#e2f6ef;color:#145d4a;font-size:12px;font-weight:750;white-space:nowrap}
     .phase-card.current .phase-number{background:#fff1d8;color:#9b5b00}.phase-card.upcoming .phase-number{background:#eef2f6;color:#465c73}
     .phase-card h3{min-height:25px;margin:12px 0 0;color:#173553;font-size:13px;font-weight:750;line-height:1.3}
-    .phase-facts{display:grid;gap:1px;    grid-template-columns: repeat(2, minmax(0, 1fr)); width:min(100%,197px);margin:0 auto 7px;color:#657b91;font-size:10px}
+    .phase-facts{display:grid;gap:1px;grid-template-columns:repeat(2,minmax(0,1fr));width:min(100%,167px);margin:0 auto 1px;color:#657b91;font-size:10px}
     .phase-fact{display:grid;align-items:baseline;gap:0px;text-align:left;white-space:nowrap}.phase-fact strong{color:#49637e;font-weight:700}
     .phase-status{font-weight:750}.phase-card.completed .phase-status{color:#078347}.phase-card.current .phase-status{color:#bd7100}.phase-card.upcoming .phase-status{color:#6d8094}
     @media(max-width:900px){.phase-grid{min-width:900px}}
