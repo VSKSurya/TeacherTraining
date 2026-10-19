@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Box, Popover, Typography } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../store';
 import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
@@ -24,7 +25,30 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
 }
 export function Topbar({ title = 'Dashboard' }: { title?: string; description?: string }) {
   const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`);
-  return <Markup html={html} />;
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const onNotificationClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const button = target.closest<HTMLElement>('#notifications');
+      if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); }
+    };
+    document.addEventListener('click', onNotificationClick, true);
+    return () => document.removeEventListener('click', onNotificationClick, true);
+  }, []);
+  return <><Markup html={html} /><Popover open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+    <Box sx={{ width: { xs: 300, sm: 360 }, p: 2 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 750, color: '#12365c' }}>Notifications</Typography>
+      <Typography variant="body2" sx={{ mt: 0.5, mb: 1.5, color: '#71839a' }}>Updates and shortcuts for your training dashboard</Typography>
+      {[
+        { title: 'Batch status', text: 'Review upcoming, ongoing, and completed training batches.', href: `${import.meta.env.BASE_URL}#batch-status` },
+        { title: 'Attendance report', text: 'Check attendance records and follow up on participation.', href: `${import.meta.env.BASE_URL}reports/attendance-report` },
+        { title: 'Training summary', text: 'Review batch progress, registrations, and completions.', href: `${import.meta.env.BASE_URL}reports/training-summary` },
+      ].map(item => <Box key={item.title} component="a" href={item.href} onClick={() => setAnchor(null)} sx={{ display: 'block', px: 1.25, py: 1, mb: 0.75, borderRadius: 1.5, bgcolor: '#f5f8fb', color: 'inherit', textDecoration: 'none', '&:hover': { bgcolor: '#edf4fa' } }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, color: '#176fba' }}>{item.title}</Typography>
+        <Typography variant="caption" sx={{ color: '#61778e', lineHeight: 1.45 }}>{item.text}</Typography>
+      </Box>)}
+    </Box>
+  </Popover></>;
 }
 export function Footer() { return <footer className="page-footer">© Schoolnet India Limited</footer>; }
 export function DashboardContent() { return <Markup html={dashboardMarkup} />; }
