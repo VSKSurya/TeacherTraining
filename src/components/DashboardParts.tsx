@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Popover, Typography } from '@mui/material';
+import { Box, Dialog, IconButton, Popover, Snackbar, Typography } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../store';
 import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
@@ -26,11 +26,21 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
 export function Topbar({ title = 'Dashboard' }: { title?: string; description?: string }) {
   const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [toast, setToast] = useState('');
+  const [lastLogin] = useState(() => {
+    const stored = window.localStorage.getItem('teacher-training-last-login');
+    return stored ? new Date(stored) : null;
+  });
   useEffect(() => {
+    window.localStorage.setItem('teacher-training-last-login', new Date().toISOString());
     const onNotificationClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       const button = target.closest<HTMLElement>('#notifications');
-      if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); }
+      const profileButton = target.closest<HTMLElement>('#profile-button');
+      if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); setProfileAnchor(null); }
+      else if (profileButton) { event.stopPropagation(); setProfileAnchor(current => current ? null : profileButton); setAnchor(null); }
     };
     document.addEventListener('click', onNotificationClick, true);
     return () => document.removeEventListener('click', onNotificationClick, true);
@@ -48,7 +58,16 @@ export function Topbar({ title = 'Dashboard' }: { title?: string; description?: 
         <Typography variant="caption" sx={{ color: '#61778e', lineHeight: 1.45 }}>{item.text}</Typography>
       </Box>)}
     </Box>
-  </Popover></>;
+  </Popover><Popover open={Boolean(profileAnchor)} anchorEl={profileAnchor} onClose={() => setProfileAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+    <Box sx={{ width: 230, p: 1 }}>
+      <Box sx={{ px: 1.25, py: 1 }}><Typography variant="body2" sx={{ fontWeight: 750, color: '#12365c' }}>Project Sponsor</Typography><Typography variant="caption" sx={{ color: '#71839a' }}>Last login: {lastLogin ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(lastLogin) : 'First visit on this device'}</Typography></Box>
+      <Box component="button" type="button" onClick={() => { setProfileAnchor(null); setProfileOpen(true); }} sx={{ display: 'block', width: '100%', px: 1.25, py: 1, border: 0, borderRadius: 1, bgcolor: 'transparent', color: '#244765', textAlign: 'left', cursor: 'pointer', '&:hover': { bgcolor: '#f2f6fa' } }}>My Profile</Box>
+      <Box component="button" type="button" onClick={() => { setProfileAnchor(null); window.localStorage.removeItem('teacher-training-last-login'); setToast('You have been signed out of this demo session.'); }} sx={{ display: 'block', width: '100%', px: 1.25, py: 1, border: 0, borderRadius: 1, bgcolor: 'transparent', color: '#a33a3a', textAlign: 'left', cursor: 'pointer', '&:hover': { bgcolor: '#fff4f4' } }}>Logout</Box>
+    </Box>
+  </Popover><Dialog open={profileOpen} onClose={() => setProfileOpen(false)} PaperProps={{ sx: { width: 'min(400px, calc(100vw - 32px))', p: 2.5, borderRadius: 2 } }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}><Typography variant="h6" sx={{ fontWeight: 750, color: '#12365c' }}>My Profile</Typography><IconButton aria-label="Close profile" onClick={() => setProfileOpen(false)}>×</IconButton></Box>
+    <Typography variant="body2" sx={{ color: '#244765' }}>Project Sponsor</Typography><Typography variant="body2" sx={{ mt: 1, color: '#71839a' }}>Last login</Typography><Typography variant="body2" sx={{ fontWeight: 650 }}>{lastLogin ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'full', timeStyle: 'short' }).format(lastLogin) : 'First visit on this device'}</Typography>
+  </Dialog><Snackbar open={Boolean(toast)} autoHideDuration={3000} onClose={() => setToast('')} message={toast} /></>;
 }
 export function Footer() { return <footer className="page-footer">© Schoolnet India Limited</footer>; }
 export function DashboardContent() { return <Markup html={dashboardMarkup} />; }
