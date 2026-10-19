@@ -88,12 +88,6 @@
   });
   const selectedPhaseLabel=()=>selectedPhase?`Phase ${selectedPhase}: ${batchPhases[selectedPhase-1]}`:'';
   const dashboardBatches=()=>selectedPhase?batchData.filter(batch=>batch.phaseNumber===selectedPhase):batchData;
-  function phaseNumberLabel(batches=dashboardBatches()){
-    const phaseNumbers=[...new Set(batches.map(batch=>batch.phaseNumber))].sort((a,b)=>a-b);
-    if(phaseNumbers.length===1)return `Phase ${phaseNumbers[0]}`;
-    if(phaseNumbers.length>1)return `Phases ${phaseNumbers[0]}–${phaseNumbers[phaseNumbers.length-1]}`;
-    return 'No phases';
-  }
   const audienceSize=(batch,audience=selectedAudience)=>audience==='Teacher'?batch.teacherParticipants:batch.studentParticipants;
   function audienceMetrics(batch,audience=selectedAudience){
     const planned=audienceSize(batch,audience),registered=batch.status==='upcoming'?Math.round(planned*(audience==='Teacher'?.95:.91)):planned;
@@ -123,7 +117,7 @@
       const batchPercent=batchesInView.length?matchingBatches.length/batchesInView.length*100:0;
       document.querySelector(`[data-status-count="${status}"]`).textContent=`${matchingBatches.length.toLocaleString('en-IN')} (${batchPercent.toFixed(0)}%)`;
       document.querySelector(`[data-participant-total="${status}"]`).textContent=`${participantCount.toLocaleString('en-IN')} participants`;
-      batchStatusSummaries[status]=`${participantCount.toLocaleString('en-IN')} participants · ${phaseNumberLabel(matchingBatches)}`;
+      batchStatusSummaries[status]=`${participantCount.toLocaleString('en-IN')} participants`;
     }
     function updateKpi(label,value,sub){
       const card=[...document.querySelectorAll('.kpi')].find(item=>item.querySelector('.kpi-label')?.textContent.trim()===label);
