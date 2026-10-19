@@ -5,7 +5,8 @@ import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } f
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
 
 function Markup({ html, className }: { html: string; className?: string }) {
-  return <div className={`component-markup ${className ?? ''}`} dangerouslySetInnerHTML={{ __html: html }} />;
+  const baseAwareHtml = html.replace(/\b(src|href)="\/(?!\/)/g, (_match, attribute: string) => `${attribute}="${import.meta.env.BASE_URL}`);
+  return <div className={`component-markup ${className ?? ''}`} dangerouslySetInnerHTML={{ __html: baseAwareHtml }} />;
 }
 export type AppPage = 'Dashboard' | 'Content Library' | 'Batch Performance' | 'Training Summary' | 'Attendance Report';
 export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) {
@@ -33,7 +34,7 @@ export function DashboardBridge() {
   const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = '/legacy-dashboard.js';
+    script.src = `${import.meta.env.BASE_URL}legacy-dashboard.js`;
     script.async = false;
     document.body.appendChild(script);
     const onClick = (event: MouseEvent) => {

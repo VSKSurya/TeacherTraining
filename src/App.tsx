@@ -17,7 +17,9 @@ function DashboardFrame() {
   return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="overview"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
-  const path = window.location.pathname.replace(/\/$/, '');
+  const basePath = import.meta.env.BASE_URL;
+  const pathname = window.location.pathname;
+  const path = (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname).replace(/\/$/, '');
   if (path === '/content-library') return <ContentLibrary />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;
   return <DashboardFrame />;

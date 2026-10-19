@@ -17,14 +17,15 @@ const workflowText = `{
   ]
 }`;
 const workflowUrl = URL.createObjectURL(new Blob([workflowText], { type: 'application/json' }));
+const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
 const resources: Resource[] = [
-  { id: 'video', title: 'Digital classroom training', file: 'sample-training-video.mp4', category: 'Videos', format: 'MP4', size: '20 KB', tags: ['Training', 'Digital classroom', 'Video'], url: '/content-library-assets/sample-training-video.mp4' },
-  { id: 'manual', title: 'Teacher training manual', file: 'sample-training-manual.pdf', category: "Manuals & PDF's", format: 'PDF', size: '2 KB', tags: ['Manual', 'Reference', 'Training'], url: '/content-library-assets/sample-training-manual.pdf' },
-  { id: 'presentation', title: 'Teacher training presentation', file: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', tags: ['Presentation', 'Training', 'Classroom'], url: '/content-library-assets/sample-training.pptx' },
-  { id: 'guide', title: 'Teacher training guide', file: 'sample-training-guide.docx', category: 'Others', format: 'DOCX', size: '36 KB', tags: ['Document', 'Guide', 'Training'], url: '/content-library-assets/sample-training-guide.docx' },
+  { id: 'video', title: 'Digital classroom training', file: 'sample-training-video.mp4', category: 'Videos', format: 'MP4', size: '20 KB', tags: ['Training', 'Digital classroom', 'Video'], url: publicAsset('/content-library-assets/sample-training-video.mp4') },
+  { id: 'manual', title: 'Teacher training manual', file: 'sample-training-manual.pdf', category: "Manuals & PDF's", format: 'PDF', size: '2 KB', tags: ['Manual', 'Reference', 'Training'], url: publicAsset('/content-library-assets/sample-training-manual.pdf') },
+  { id: 'presentation', title: 'Teacher training presentation', file: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', tags: ['Presentation', 'Training', 'Classroom'], url: publicAsset('/content-library-assets/sample-training.pptx') },
+  { id: 'guide', title: 'Teacher training guide', file: 'sample-training-guide.docx', category: 'Others', format: 'DOCX', size: '36 KB', tags: ['Document', 'Guide', 'Training'], url: publicAsset('/content-library-assets/sample-training-guide.docx') },
   { id: 'workflow', title: 'Educator onboarding workflow', file: 'educator-onboarding-workflow.json', category: 'Others', format: 'WORKFLOW', size: '2 KB', tags: ['Workflow', 'Onboarding', 'Process'], url: workflowUrl, text: workflowText },
-  { id: 'image-class', title: 'Classroom reflection image', file: 'sample-png.png', category: 'Images', format: 'PNG', size: '22 KB', tags: ['Image', 'Classroom', 'Reflection'], url: '/content-library-assets/sample-png.png' },
-  { id: 'image-session', title: 'Training session photograph', file: 'sample-jpg.jpg', category: 'Images', format: 'JPG', size: '26 KB', tags: ['Image', 'Training', 'Session'], url: '/content-library-assets/sample-jpg.jpg' },
+  { id: 'image-class', title: 'Classroom reflection image', file: 'sample-png.png', category: 'Images', format: 'PNG', size: '22 KB', tags: ['Image', 'Classroom', 'Reflection'], url: publicAsset('/content-library-assets/sample-png.png') },
+  { id: 'image-session', title: 'Training session photograph', file: 'sample-jpg.jpg', category: 'Images', format: 'JPG', size: '26 KB', tags: ['Image', 'Training', 'Session'], url: publicAsset('/content-library-assets/sample-jpg.jpg') },
 ];
 const categories = ['All', 'Presentation', 'Videos', 'Images', "Manuals & PDF's", 'Others'] as const;
 const categoryOf = (resource: Resource) => resource.category === "Manuals & PDF's" ? 'pdf' : resource.category === 'Videos' ? 'video' : resource.category === 'Presentation' ? 'presentation' : resource.category === 'Images' ? 'image' : resource.format === 'WORKFLOW' ? 'workflow' : '';
@@ -35,7 +36,7 @@ function loadContentSamples(): Promise<ContentSample[]> {
   if (window.CONTENT_SAMPLES) return Promise.resolve(window.CONTENT_SAMPLES);
   if (!sampleScriptPromise) sampleScriptPromise = new Promise(resolve => {
     const script = document.createElement('script');
-    script.src = '/content-samples.js';
+    script.src = publicAsset('/content-samples.js');
     script.onload = () => resolve(window.CONTENT_SAMPLES ?? []);
     script.onerror = () => resolve([]);
     document.head.appendChild(script);
