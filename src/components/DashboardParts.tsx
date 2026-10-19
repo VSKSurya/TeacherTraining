@@ -26,7 +26,7 @@ export function Topbar({ title = 'Dashboard' }: { title?: string; description?: 
   const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`);
   return <Markup html={html} />;
 }
-export function Footer() { return <footer className="page-footer">Copyright ? Schoolnet India Limited</footer>; }
+export function Footer() { return <footer className="page-footer">© Schoolnet India Limited</footer>; }
 export function DashboardContent() { return <Markup html={dashboardMarkup} />; }
 export function DashboardModals() { return <Markup html={modalMarkup} />; }
 
