@@ -285,7 +285,7 @@
       const completedBatches=stats.completedBatches;
       const batchCompletionPercent=stats.batches?completedBatches/stats.batches*100:0;
       const name=level<3?`<button type="button" class="location-name-button" data-location-index="${index}" aria-label="Show ${locationLabels[level+1]} locations for ${node.name}">${node.name}</button>`:node.name;
-      return `<tr><td>${name}${level<3?`<span class="location-level-chip">View ${locationLabels[level+1]}</span>`:''}</td><td>${stats.scheduled}</td><td>${stats.ongoing}</td><td>${batchCompletionPercent.toFixed(1)}%</td><td>${stats.notStarted}</td><td>${stats.plannedUsers.toLocaleString('en-IN')}</td><td>${stats.registeredUsers.toLocaleString('en-IN')}</td><td>${stats.completedUsers.toLocaleString('en-IN')}</td><td>${completedPercent.toFixed(1)}%</td></tr>`;
+      return `<tr><td>${name}${level>0&&level<3?`<span class="location-level-chip">View ${locationLabels[level+1]}</span>`:''}</td><td>${stats.scheduled}</td><td>${stats.ongoing}</td><td>${batchCompletionPercent.toFixed(1)}%</td><td>${stats.notStarted}</td><td>${stats.plannedUsers.toLocaleString('en-IN')}</td><td>${stats.registeredUsers.toLocaleString('en-IN')}</td><td>${stats.completedUsers.toLocaleString('en-IN')}</td><td>${completedPercent.toFixed(1)}%</td></tr>`;
     }).join('');
   }
   document.querySelectorAll('[data-location-sort]').forEach(button=>button.addEventListener('click',()=>{
