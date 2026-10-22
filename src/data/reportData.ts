@@ -1,4 +1,6 @@
-﻿export const locations = [
+import { formatDate } from '../dateFormat';
+
+export const locations = [
   { name: 'Andhra Pradesh', districts: ['Visakhapatnam', 'Guntur'] }, { name: 'Assam', districts: ['Kamrup Metropolitan', 'Dibrugarh'] },
   { name: 'Bihar', districts: ['Patna', 'Gaya'] }, { name: 'Chhattisgarh', districts: ['Raipur', 'Bilaspur'] },
   { name: 'Gujarat', districts: ['Ahmedabad', 'Surat'] }, { name: 'Haryana', districts: ['Gurugram', 'Hisar'] },
@@ -29,7 +31,7 @@ export const batchRecords: BatchRecord[] = Array.from({ length: 750 }, (_, index
   const day = index % 24 + 1;
   const month = status === 'Scheduled' ? 10 : status === 'Ongoing' ? 9 : 8;
   const startDate = new Date(2026, month, day);
-  const dateText = startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const dateText = formatDate(startDate);
   const phase = index % phaseNames.length;
   const registered = 110;
   return {

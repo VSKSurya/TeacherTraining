@@ -75,7 +75,8 @@
     const attendance=status==='upcoming'?0:status==='ongoing'?65+(index*13%34):83+(index*11%18);
     const completion=status==='upcoming'?0:status==='ongoing'?15+(index*17%76):100;
     const day=(index%24)+1;
-      const date=status==='upcoming'?`${day} Nov 2026`:status==='ongoing'?`${day} Oct 2026`:`${day} Sep 2026`;
+      const month=status==='upcoming'?'Nov':status==='ongoing'?'Oct':'Sep';
+      const date=`${String(day).padStart(2,'0')}-${month}-2026`;
       return {index,id:`B-${String(1001+index).padStart(4,'0')}`,status,phaseNumber:index%batchPhases.length+1,phase:batchPhases[index%batchPhases.length],stateIndex,districtIndex,blockIndex,schoolIndex,district,state,block,school,location:`${district}, ${state}`,trainer:batchTrainers[index%batchTrainers.length],teacherParticipants,studentParticipants,participants,attendance,completion,attendedParticipants:Math.round(participants*attendance/100),completedParticipants:Math.round(participants*completion/100),date};
   });
   let selectedAudience='Teacher';

@@ -6,6 +6,8 @@ The app uses the shared sidebar, topbar, and footer. MIS report pages share the 
 
 ## Routes
 
+- `/login` — ERNet sign-in screen
+- `/holiday-master` — Holiday calendar and access administration (Demo1 administrator)
 - `/` — Phasewise dashboard
 - `/content-library` — Content Library
 - `/reports/batch-performance` — Batch Performance
