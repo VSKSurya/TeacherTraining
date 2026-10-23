@@ -13,11 +13,11 @@
 :root[data-theme="dark"] .tabs{border-color:#31475c}
 :root[data-theme="dark"] .tab{color:#a6b7c9}
 :root[data-theme="dark"] .tab-count{background:#263c50;color:#c5d4e2}
-:root[data-theme="dark"] .tag,:root[data-theme="dark"] .dialog-item,:root[data-theme="dark"] .report-app .dialog-item{border-color:#344b61;background:#1d3247;color:#c9d8e7}
+:root[data-theme="dark"] .tag,:root[data-theme="dark"] .dialog-item,:root[data-theme="dark"] .MuiDialog-paper.attendance-dialog .dialog-item{border-color:#344b61;background:#1d3247;color:#c9d8e7}
 :root[data-theme="dark"] .action,:root[data-theme="dark"] .report-app .action-button,:root[data-theme="dark"] .report-app .pagination button,:root[data-theme="dark"] .report-app .filter-actions button{border-color:#40566c;background:#1d3247;color:#dce8f3}
 :root[data-theme="dark"] .action.download,:root[data-theme="dark"] .report-app .filter-actions .apply{border-color:#176fba;background:#176fba;color:#fff}
 :root[data-theme="dark"] .report-app .panel-heading,:root[data-theme="dark"] .report-app .pagination,:root[data-theme="dark"] .modal-header,:root[data-theme="dark"] .modal-toolbar,:root[data-theme="dark"] .modal-footer{border-color:#31475c;background:#14263a}
-:root[data-theme="dark"] .report-app .panel-heading p,:root[data-theme="dark"] .report-app .record-count,:root[data-theme="dark"] .report-app .pagination,:root[data-theme="dark"] .report-app .dialog-item span{color:#a6b7c9}
+:root[data-theme="dark"] .report-app .panel-heading p,:root[data-theme="dark"] .report-app .record-count,:root[data-theme="dark"] .report-app .pagination,:root[data-theme="dark"] .MuiDialog-paper.attendance-dialog .dialog-item span{color:#a6b7c9}
 :root[data-theme="dark"] .report-app .report-table th{border-color:#354b60;background:#21364a;color:#dce8f3}
 :root[data-theme="dark"] .report-app .report-table td{border-color:#2c4257;background:#17283a;color:#c9d8e7}
 :root[data-theme="dark"] .report-app .report-table tbody tr:hover td{background:#20374e}
@@ -25,10 +25,10 @@
 :root[data-theme="dark"] .location-table td{border-color:#2c4257;background:#17283a;color:#c9d8e7}
 :root[data-theme="dark"] .location-table tbody tr:hover td{background:#20374e}
 :root[data-theme="dark"] .progress-track{background:#293e52}
-:root[data-theme="dark"] .modal-card,:root[data-theme="dark"] .report-app .attendance-dialog,:root[data-theme="dark"] .library-preview-paper{border-color:#354b60;background:#17283a;color:#e5edf5}
-:root[data-theme="dark"] .modal-close,:root[data-theme="dark"] .modal-page-button,:root[data-theme="dark"] .modal-back,:root[data-theme="dark"] .report-app .dialog-close{border-color:#40566c;background:#1d3247;color:#dce8f3}
+:root[data-theme="dark"] .modal-card,:root[data-theme="dark"] .MuiDialog-paper.attendance-dialog,:root[data-theme="dark"] .library-preview-paper{border-color:#354b60;background:#17283a;color:#e5edf5}
+:root[data-theme="dark"] .modal-close,:root[data-theme="dark"] .modal-page-button,:root[data-theme="dark"] .modal-back,:root[data-theme="dark"] .MuiDialog-paper.attendance-dialog .dialog-close{border-color:#40566c;background:#1d3247;color:#dce8f3}
 :root[data-theme="dark"] .modal-batch-item{border-color:#354b60;background:#1a2e42;color:#e5edf5}
-:root[data-theme="dark"] .modal-batch-name,:root[data-theme="dark"] .participant-name,:root[data-theme="dark"] .report-app .dialog-item strong{color:#dce8f3}
+:root[data-theme="dark"] .modal-batch-name,:root[data-theme="dark"] .participant-name,:root[data-theme="dark"] .MuiDialog-paper.attendance-dialog .dialog-item strong{color:#dce8f3}
 :root[data-theme="dark"] .modal-batch-location,:root[data-theme="dark"] .modal-batch-stats span,:root[data-theme="dark"] .participant-school,:root[data-theme="dark"] .participant-id,:root[data-theme="dark"] .participant-contact{color:#a6b7c9}
 :root[data-theme="dark"] .modal-batch-stats strong{color:#e5edf5}
 :root[data-theme="dark"] .participant-row{border-color:#31475c}
