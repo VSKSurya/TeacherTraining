@@ -126,18 +126,22 @@ const studentModules = [
 ];
 
 function getDashboardMarkup(audience: 'Teacher' | 'Student') {
-  if (audience !== 'Student') return dashboardMarkup;
+  let markup = dashboardMarkup;
+  if (audience === 'Student') {
+    const studentOverview = `<section class="phase-overview student-overview" aria-labelledby="phase-overview-title">
+      <div class="phase-overview-header"><h2 class="phase-overview-title" id="phase-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
+      <div class="student-module-grid">${studentModules.map((module, index) => `<article class="phase-card student-module-card">
+        <div class="phase-node student-module-node" aria-hidden="true">${index + 1}</div>
+        <span class="phase-number">Module ${index + 1}</span><h3>${module}</h3>
+        <div class="phase-facts"><div class="phase-fact"><strong>Duration</strong><span>5 hrs</span></div></div>
+      </article>`).join('')}</div>
+    </section>`;
+    markup = markup.replace(/<section class="phase-overview"[\s\S]*?<\/section>/, studentOverview);
+  }
 
-  const studentOverview = `<section class="phase-overview student-overview" aria-labelledby="phase-overview-title">
-    <div class="phase-overview-header"><h2 class="phase-overview-title" id="phase-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
-    <div class="student-module-grid">${studentModules.map((module, index) => `<article class="phase-card student-module-card">
-      <div class="phase-node student-module-node" aria-hidden="true">${index + 1}</div>
-      <span class="phase-number">Module ${index + 1}</span><h3>${module}</h3>
-      <div class="phase-facts"><div class="phase-fact"><strong>Duration</strong><span>5 hrs</span></div></div>
-    </article>`).join('')}</div>
-  </section>`;
-
-  return dashboardMarkup.replace(/<section class="phase-overview"[\s\S]*?<\/section>/, studentOverview);
+  return markup
+    .replace(/data-audience="Teacher" aria-pressed="(?:true|false)"/, `data-audience="Teacher" aria-pressed="${audience === 'Teacher'}"`)
+    .replace(/data-audience="Student" aria-pressed="(?:true|false)"/, `data-audience="Student" aria-pressed="${audience === 'Student'}"`);
 }
 
 export function DashboardContent() {
