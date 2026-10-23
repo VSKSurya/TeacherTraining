@@ -6,7 +6,7 @@ import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } f
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
 import { locations } from '../data/locations';
 import { kgbvSchools } from '../data/kgbvSchools';
-import { canAccessMenu, getSession, signOut, type MenuKey } from '../auth';
+import { canAccessMenu, getSession, ROLE_LABELS, signOut, type MenuKey } from '../auth';
 import { formatDateTime } from '../dateFormat';
 
 declare global {
@@ -85,8 +85,13 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
 }
 export function Topbar({ title = 'Dashboard' }: { title?: string; description?: string }) {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light');
+  const session = getSession();
+  const roleLabel = session ? ROLE_LABELS[session.role] : 'Guest';
+  const initials = roleLabel.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
   const themeSwitch = `<div class="theme-switch" role="group" aria-label="Choose color theme"><button class="theme-option${theme === 'light' ? ' active' : ''}" id="theme-light" type="button" aria-pressed="${theme === 'light'}" title="Light theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><span>Light</span></button><button class="theme-option${theme === 'dark' ? ' active' : ''}" id="theme-dark" type="button" aria-pressed="${theme === 'dark'}" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg><span>Dark</span></button></div>`;
-  const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`).replace('<span class="divider" aria-hidden="true"></span>', `${themeSwitch}<span class="divider" aria-hidden="true"></span>`);
+  const html = topbarMarkup.replace('<h1>Dashboard</h1>', `<h1>${title}</h1>`).replace('<span class="divider" aria-hidden="true"></span>', `${themeSwitch}<span class="divider" aria-hidden="true"></span>`)
+    .replace('aria-label="Project Sponsor account"', `aria-label="${roleLabel} account"`)
+    .replace('<span class="avatar">PS</span><span>Project Sponsor</span>', `<span class="avatar">${initials}</span><span>${roleLabel}</span>`);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -128,13 +133,17 @@ export function Topbar({ title = 'Dashboard' }: { title?: string; description?: 
     </Box>
   </Popover><Popover open={Boolean(profileAnchor)} anchorEl={profileAnchor} onClose={() => setProfileAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
     <Box sx={{ width: 230, p: 1 }}>
-      <Box sx={{ px: 1.25, py: 1 }}><Typography variant="body2" sx={{ fontWeight: 750, color: '#12365c' }}>Project Sponsor</Typography><Typography variant="caption" sx={{ color: '#71839a' }}>Last login: {lastLogin ? formatDateTime(lastLogin) : 'First visit on this device'}</Typography></Box>
+      <Box sx={{ px: 1.25, py: 1 }}><Typography variant="body2" sx={{ fontWeight: 750, color: '#12365c' }}>{roleLabel}</Typography><Typography variant="caption" sx={{ display: 'block', color: '#71839a' }}>User ID: {session?.userId ?? 'Not signed in'}</Typography><Typography variant="caption" sx={{ color: '#71839a' }}>Last login: {lastLogin ? formatDateTime(lastLogin) : 'First visit on this device'}</Typography></Box>
       <Box component="button" type="button" onClick={() => { setProfileAnchor(null); setProfileOpen(true); }} sx={{ display: 'block', width: '100%', px: 1.25, py: 1, border: 0, borderRadius: 1, bgcolor: 'transparent', color: '#244765', textAlign: 'left', cursor: 'pointer', '&:hover': { bgcolor: '#f2f6fa' } }}>My Profile</Box>
       <Box component="button" type="button" onClick={() => { setProfileAnchor(null); signOut(); window.localStorage.removeItem('teacher-training-last-login'); window.location.assign(`${import.meta.env.BASE_URL}login`); }} sx={{ display: 'block', width: '100%', px: 1.25, py: 1, border: 0, borderRadius: 1, bgcolor: 'transparent', color: '#a33a3a', textAlign: 'left', cursor: 'pointer', '&:hover': { bgcolor: '#fff4f4' } }}>Logout</Box>
     </Box>
   </Popover><Dialog open={profileOpen} onClose={() => setProfileOpen(false)} PaperProps={{ sx: { width: 'min(400px, calc(100vw - 32px))', p: 2.5, borderRadius: 2 } }}>
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}><Typography variant="h6" sx={{ fontWeight: 750, color: '#12365c' }}>My Profile</Typography><IconButton aria-label="Close profile" onClick={() => setProfileOpen(false)}>×</IconButton></Box>
-    <Typography variant="body2" sx={{ color: '#244765' }}>Project Sponsor</Typography><Typography variant="body2" sx={{ mt: 1, color: '#71839a' }}>Last login</Typography><Typography variant="body2" sx={{ fontWeight: 650 }}>{lastLogin ? formatDateTime(lastLogin) : 'First visit on this device'}</Typography>
+    <Box sx={{ display: 'grid', gap: 1.25, mt: 1 }}>
+      <Box><Typography variant="caption" sx={{ color: '#71839a' }}>User ID</Typography><Typography variant="body2" sx={{ fontWeight: 650, color: '#244765' }}>{session?.userId ?? 'Not signed in'}</Typography></Box>
+      <Box><Typography variant="caption" sx={{ color: '#71839a' }}>Role</Typography><Typography variant="body2" sx={{ fontWeight: 650, color: '#244765' }}>{roleLabel}</Typography></Box>
+      <Box><Typography variant="caption" sx={{ color: '#71839a' }}>Last login</Typography><Typography variant="body2" sx={{ fontWeight: 650 }}>{lastLogin ? formatDateTime(lastLogin) : 'First visit on this device'}</Typography></Box>
+    </Box>
   </Dialog><Snackbar open={Boolean(toast)} autoHideDuration={3000} onClose={() => setToast('')} message={toast} /></>;
 }
 export function Footer() { return <footer className="page-footer">© Schoolnet India Limited</footer>; }
