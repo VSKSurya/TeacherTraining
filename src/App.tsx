@@ -7,6 +7,7 @@ import ContentLibrary from './ContentLibrary';
 import { Reports } from './reports/Reports';
 import Login from './Login';
 import HolidayMaster from './HolidayMaster';
+import Projects from './Projects';
 import { canAccessRoute, getSession } from './auth';
 
 const theme = createTheme({
@@ -27,6 +28,7 @@ function AppContent() {
   const session = getSession();
   if (!session) return <Login />;
   if (!canAccessRoute(session.role, path)) return <DashboardFrame />;
+  if (path === '/projects') return <Projects />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;

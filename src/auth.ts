@@ -41,11 +41,11 @@ const ROLE_MENUS: Record<UserRole, readonly MenuKey[]> = {
   'sponsor-admin': ['dashboard', 'projects', 'mis-reports'],
   'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'certificates', 'mis-reports', 'holiday-master'],
   'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'certificates', 'mis-reports'],
-  'state-admin': ['dashboard', 'training-plans', 'batches', 'attendance', 'mis-reports'],
-  'school-admin': ['dashboard', 'training-plans', 'batches', 'attendance', 'content-library'],
-  trainer: ['dashboard', 'batches', 'attendance', 'content-library'],
-  trainee: ['dashboard', 'training-plans', 'content-library', 'assessments', 'certificates'],
-  'reporting-audit-user': ['dashboard', 'mis-reports'],
+  'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'mis-reports'],
+  'school-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library'],
+  trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library'],
+  trainee: ['dashboard', 'projects', 'training-plans', 'content-library', 'assessments', 'certificates'],
+  'reporting-audit-user': ['dashboard', 'projects', 'mis-reports'],
 };
 
 export function canAccessMenu(role: UserRole, menu: MenuKey) {
@@ -56,6 +56,7 @@ export function canAccessRoute(role: UserRole, path: string) {
   if (!path || path === '/') return canAccessMenu(role, 'dashboard');
   if (path === '/holiday-master') return canAccessMenu(role, 'holiday-master');
   if (path === '/content-library') return canAccessMenu(role, 'content-library');
+  if (path === '/projects') return canAccessMenu(role, 'projects');
   if (path.startsWith('/reports/')) return canAccessMenu(role, 'mis-reports');
   return canAccessMenu(role, 'dashboard');
 }
