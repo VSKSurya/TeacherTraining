@@ -76,7 +76,7 @@
     .info-popup strong{display:block;margin-bottom:4px;color:#173c64;font-size:13px}
     @media(max-width:1250px){.kpis{grid-template-columns:repeat(5,minmax(0,1fr))}}
     @media(max-width:620px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    .phase-overview{margin:8px 0 14px;overflow-x:auto;padding:15px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow)}
+    .phase-overview{margin:8px 0 8px;overflow-x:auto;padding:15px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow)}
     .phase-overview-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
     .phase-overview-title{margin:0;color:#173553;font-size:18px;font-weight:750;letter-spacing:-.25px}
     .phase-grid{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;min-width:850px}
