@@ -79,6 +79,13 @@
     .phase-overview-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
     .phase-overview-title{margin:0;color:#173553;font-size:18px;font-weight:750;letter-spacing:-.25px}
     .phase-grid{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;min-width:850px}
+    .student-module-grid{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .student-module-grid::before{position:absolute;top:27px;right:16.66%;left:16.66%;height:2px;background:linear-gradient(to right,#08a653,#2e8de0);content:""}
+    .student-overview .student-module-card{min-height:180px;cursor:default}
+    .student-overview .student-module-card h3{max-width:260px}
+    .student-overview .student-module-node{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border:2px solid #d8e8f5;border-radius:50%;background:#eaf4fd;color:#1769ad;font-size:15px;font-weight:800}
+    .student-overview .student-module-card .phase-facts{grid-template-columns:1fr;width:min(100%,120px)}
+    @media(max-width:700px){.student-module-grid{grid-template-columns:1fr;gap:5px}.student-module-grid::before{top:20px;bottom:20px;left:27px;width:2px;height:auto;background:linear-gradient(to bottom,#08a653,#2e8de0)}.student-overview .student-module-card{min-height:120px;align-items:flex-start;padding:10px 10px 10px 62px;text-align:left}.student-overview .student-module-node{position:absolute;top:9px;left:5px}.student-overview .student-module-card .phase-number{margin-top:0}.student-overview .student-module-card h3{min-height:0;margin-top:8px}.student-overview .student-module-card .phase-facts{margin:10px 0 1px}}
     .phase-grid::before{position:absolute;top:27px;right:10%;left:10%;height:2px;background:linear-gradient(to right,#08a653 0 50%,#ff9b18 50% 75%,#aab8c7 75% 100%);content:""}
     .phase-card{position:relative;display:flex;min-width:0;min-height:180px;flex-direction:column;align-items:center;padding:4px 6px 9px;border:1px solid transparent;border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:center;cursor:pointer;transition:border-color .16s,background .16s,box-shadow .16s}
     .phase-card:hover{background:#f8fbff}

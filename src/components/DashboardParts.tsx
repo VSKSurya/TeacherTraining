@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Dialog, IconButton, Popover, Snackbar, Typography } from '@mui/material';
-import { useDispatch } from 'react-redux';
-import type { AppDispatch } from '../store';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../store';
 import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
 import { signOut } from '../auth';
@@ -119,7 +119,31 @@ export function Topbar({ title = 'Dashboard' }: { title?: string; description?: 
   </Dialog><Snackbar open={Boolean(toast)} autoHideDuration={3000} onClose={() => setToast('')} message={toast} /></>;
 }
 export function Footer() { return <footer className="page-footer">© Schoolnet India Limited</footer>; }
-export function DashboardContent() { return <Markup html={dashboardMarkup} />; }
+const studentModules = [
+  'Cyber Safety and Digital Responsibility',
+  'Digital Creativity',
+  'AI Awareness',
+];
+
+function getDashboardMarkup(audience: 'Teacher' | 'Student') {
+  if (audience !== 'Student') return dashboardMarkup;
+
+  const studentOverview = `<section class="phase-overview student-overview" aria-labelledby="phase-overview-title">
+    <div class="phase-overview-header"><h2 class="phase-overview-title" id="phase-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
+    <div class="student-module-grid">${studentModules.map((module, index) => `<article class="phase-card student-module-card">
+      <div class="phase-node student-module-node" aria-hidden="true">${index + 1}</div>
+      <span class="phase-number">Module ${index + 1}</span><h3>${module}</h3>
+      <div class="phase-facts"><div class="phase-fact"><strong>Duration</strong><span>5 hrs</span></div></div>
+    </article>`).join('')}</div>
+  </section>`;
+
+  return dashboardMarkup.replace(/<section class="phase-overview"[\s\S]*?<\/section>/, studentOverview);
+}
+
+export function DashboardContent() {
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  return <Markup html={getDashboardMarkup(audience)} />;
+}
 export function DashboardModals() { return <Markup html={modalMarkup} />; }
 
 export function DashboardBridge() {
@@ -133,7 +157,7 @@ export function DashboardBridge() {
       const target = event.target as HTMLElement;
       const audience = target.closest<HTMLElement>('[data-audience]')?.dataset.audience;
       if (audience === 'Teacher' || audience === 'Student') dispatch(setAudience(audience));
-      const phaseCard = target.closest<HTMLElement>('.phase-card');
+      const phaseCard = target.closest<HTMLElement>('.phase-card:not(.student-module-card)');
       if (phaseCard) {
         const phase = Number(phaseCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
         if (phase) window.setTimeout(() => dispatch(setPhase(phaseCard.classList.contains('selected') ? phase : null)), 0);
