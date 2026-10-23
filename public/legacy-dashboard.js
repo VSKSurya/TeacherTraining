@@ -1,5 +1,9 @@
 
   const infoPopup=document.querySelector('#info-popup');
+  document.querySelectorAll('.kpi').forEach(card=>{
+    const label=card.querySelector('.kpi-label')?.textContent.trim();
+    if(['Upcoming Batches','Active Batches','Completed Batches'].includes(label))card.classList.add('kpi-hidden');
+  });
   let activeInfoButton=null;
   function showInfo(button){
     activeInfoButton=button;
@@ -125,9 +129,7 @@
     updateKpi('Participants Registered',totals.registered.toLocaleString('en-IN'),'Registered participants');
     updateKpi('Participants Trained',trainedText,`${completionPercent.toFixed(1)}% of target`);
     updateKpi('Attendance Rate',`${attendancePercent.toFixed(1)}%`,'Attendance');
-    updateKpi('Active Batches',batchesInView.filter(batch=>batch.status==='ongoing').length.toLocaleString('en-IN'),batchStatusSummaries.ongoing);
-    updateKpi('Completed Batches',batchesInView.filter(batch=>batch.status==='completed').length.toLocaleString('en-IN'),batchStatusSummaries.completed);
-    updateKpi('Upcoming Batches',batchesInView.filter(batch=>batch.status==='upcoming').length.toLocaleString('en-IN'),batchStatusSummaries.upcoming);
+    // Batch counts are shown in the Batch Status panel instead of the KPI row.
     const progressValues={planned:totals.planned,registered:totals.registered,approved:totals.approved,attended:totals.attended,completed:totals.completed,certified:totals.certified};
     document.querySelectorAll('#training-progress .progress-row').forEach(row=>{
       const stage=row.firstElementChild.textContent.trim().toLowerCase(),value=progressValues[stage],percent=totalParticipants?value/totalParticipants*100:0;
