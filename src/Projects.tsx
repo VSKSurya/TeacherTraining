@@ -86,7 +86,7 @@ export default function Projects() {
     setEditing(project => project ? { ...project, phases: project.phases.map((phase, i) => i === index ? { ...phase, [key]: value } : phase) } : project);
   }
 
-  return <ThemeProvider theme={createTheme({ palette: { primary: { main: '#176fba' } }, typography: { fontFamily: 'Poppins, "Segoe UI", Arial, sans-serif' } })}>
+  return <ThemeProvider theme={createTheme({ palette: { primary: { main: '#176fba' }, background: { default: '#f4f7fb', paper: '#ffffff' }, text: { primary: '#173553', secondary: '#71839a' } }, typography: { fontFamily: 'Poppins, "Segoe UI", Arial, sans-serif' } })}>
     <CssBaseline />
     <div className="app project-app"><Sidebar activePage="Projects" /><main className="main"><Topbar title="Projects" /><div className="project-content">
       <section className="project-intro"><div><span className="project-eyebrow">PROJECT ADMINISTRATION</span><h2>Projects</h2><p>Configure project scope, administrators, training plans, and delivery phases.</p></div><div className="project-summary"><strong>{authorizedProjects.length}</strong><span>Authorized projects</span></div></section>
