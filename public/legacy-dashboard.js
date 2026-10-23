@@ -53,30 +53,20 @@
     const badge=document.querySelector('#filter-count');badge.textContent='0';badge.classList.remove('visible');showToast('Filters cleared.');
   });
   const batchStatusLabels={upcoming:'Upcoming',ongoing:'Ongoing',completed:'Completed'};
-  const batchLocations=[
-    {name:'Andhra Pradesh',districts:['Visakhapatnam','Guntur']},{name:'Arunachal Pradesh',districts:['Papum Pare','Tawang']},
-    {name:'Assam',districts:['Kamrup Metropolitan','Dibrugarh']},{name:'Chhattisgarh',districts:['Raipur','Bilaspur']},
-    {name:'Gujarat',districts:['Ahmedabad','Surat']},{name:'Haryana',districts:['Gurugram','Hisar']},
-    {name:'Jharkhand',districts:['Ranchi','Dhanbad']},{name:'Karnataka',districts:['Bengaluru Urban','Mysuru']},
-    {name:'Manipur',districts:['Imphal West','Imphal East']},{name:'Rajasthan',districts:['Jaipur','Jodhpur']},
-    {name:'Sikkim',districts:['Gangtok','Namchi']},{name:'Telangana',districts:['Hyderabad','Warangal']},
-    {name:'Uttar Pradesh',districts:['Lucknow','Varanasi']}
-  ];
+  const kgbvSchools=Array.isArray(window.KGBV_SCHOOLS)?window.KGBV_SCHOOLS:[];
   const batchPhases=['Solution Orientation','Pedagogical Training','Digital and AI Literacy','Refresher Training','Refresher Training'];
   const batchTrainers=['Asha Reddy','Ravi Kumar','Meera Nair','Suresh Rao','Kavitha Devi','Arun Das','Neha Sharma','Vikram Singh','Farah Khan','Joseph Mathew','Pooja Iyer','Mohan Das'];
-  const batchData=Array.from({length:750},(_,index)=>{
+  const batchData=Array.from({length:kgbvSchools.length},(_,index)=>{
     const status=index<180?'upcoming':index<400?'ongoing':'completed';
-    const stateIndex=index%batchLocations.length,stateConfig=batchLocations[stateIndex];
-    const districtIndex=Math.floor(index/batchLocations.length)%stateConfig.districts.length,district=stateConfig.districts[districtIndex];
-    const blockIndex=Math.floor(index/(batchLocations.length*2))%2,schoolIndex=Math.floor(index/(batchLocations.length*4))%2;
-    const state=stateConfig.name,block=`${district} ${blockIndex===0?'North':'South'}`,school=`${block} Government School ${schoolIndex+1}`;
-    const teacherParticipants=10,studentParticipants=100,participants=teacherParticipants+studentParticipants;
+    const sourceSchool=kgbvSchools[index];
+    const {state,district,block,school,udise,enrollment}=sourceSchool;
+    const teacherParticipants=10,studentParticipants=enrollment,participants=teacherParticipants+studentParticipants;
     const attendance=status==='upcoming'?0:status==='ongoing'?65+(index*13%34):83+(index*11%18);
     const completion=status==='upcoming'?0:status==='ongoing'?15+(index*17%76):100;
     const day=(index%24)+1;
       const month=status==='upcoming'?'Nov':status==='ongoing'?'Oct':'Sep';
       const date=`${String(day).padStart(2,'0')}-${month}-2026`;
-      return {index,id:`B-${String(1001+index).padStart(4,'0')}`,status,phaseNumber:index%batchPhases.length+1,phase:batchPhases[index%batchPhases.length],stateIndex,districtIndex,blockIndex,schoolIndex,district,state,block,school,location:`${district}, ${state}`,trainer:batchTrainers[index%batchTrainers.length],teacherParticipants,studentParticipants,participants,attendance,completion,attendedParticipants:Math.round(participants*attendance/100),completedParticipants:Math.round(participants*completion/100),date};
+      return {index,id:`B-${String(1001+index).padStart(4,'0')}`,status,phaseNumber:index%batchPhases.length+1,phase:batchPhases[index%batchPhases.length],district,state,block,school,udise,location:`${district}, ${state}`,trainer:batchTrainers[index%batchTrainers.length],teacherParticipants,studentParticipants,participants,attendance,completion,attendedParticipants:Math.round(participants*attendance/100),completedParticipants:Math.round(participants*completion/100),date};
   });
   let selectedAudience='Teacher';
   const currentPhaseCard=document.querySelector('.phase-card.current');
@@ -252,9 +242,21 @@
   },true);
   renderBatchStatusTotals();
 
-  const locationTree=batchLocations.map(state=>({name:state.name,children:state.districts.map((district,districtIndex)=>({name:district,children:[0,1].map(blockIndex=>{const block=`${district} ${blockIndex===0?'North':'South'}`;return {name:block,children:[0,1].map(schoolIndex=>({name:`${block} Government School ${schoolIndex+1}`,children:[],assignedBatches:[]}))}})}))}));
-  document.querySelector('#locations .info-button').dataset.info='Illustrative sample data for 13 states and 750 batches. Click State, District, or Block rows to drill down to schools.';
-  batchData.forEach(batch=>locationTree[batch.stateIndex].children[batch.districtIndex].children[batch.blockIndex].children[batch.schoolIndex].assignedBatches.push(batch));
+  const makeLocationNode=name=>({name,children:[],assignedBatches:[]});
+  const getOrCreateLocationNode=(parent,name)=>{
+    let node=parent.find(item=>item.name===name);
+    if(!node){node=makeLocationNode(name);parent.push(node)}
+    return node;
+  };
+  const locationTree=[],locationSchoolNodes=[];
+  kgbvSchools.forEach(sourceSchool=>{
+    const stateNode=getOrCreateLocationNode(locationTree,sourceSchool.state);
+    const districtNode=getOrCreateLocationNode(stateNode.children,sourceSchool.district);
+    const blockNode=getOrCreateLocationNode(districtNode.children,sourceSchool.block);
+    locationSchoolNodes.push(getOrCreateLocationNode(blockNode.children,sourceSchool.school));
+  });
+  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV sample school list, Table 1. Click State, District, or Block rows to drill down to schools.';
+  batchData.forEach((batch,index)=>locationSchoolNodes[index]?.assignedBatches.push(batch));
   function locationTotals(node){
     if(!node.children.length){
       const batches=node.assignedBatches.filter(batch=>!selectedPhase||batch.phaseNumber===selectedPhase),completedBatches=batches.filter(batch=>batch.status==='completed').length;

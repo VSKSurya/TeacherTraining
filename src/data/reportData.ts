@@ -1,5 +1,5 @@
 import { formatDate } from '../dateFormat';
-import { locations } from './locations';
+import { kgbvSchools } from './kgbvSchools';
 
 export { locations } from './locations';
 
@@ -13,12 +13,8 @@ export type BatchRecord = {
 };
 export const batchRecords: BatchRecord[] = Array.from({ length: 750 }, (_, index) => {
   const status: ReportStatus = index < 180 ? 'Scheduled' : index < 400 ? 'Ongoing' : 'Completed';
-  const place = locations[index % locations.length];
-  const district = place.districts[Math.floor(index / locations.length) % place.districts.length];
-  const blockIndex = Math.floor(index / (locations.length * 2)) % 2;
-  const schoolIndex = Math.floor(index / (locations.length * 4)) % 2;
-  const block = `${district} ${blockIndex === 0 ? 'North' : 'South'}`;
-  const school = `${block} Government School ${schoolIndex + 1}`;
+  const school = kgbvSchools[index % kgbvSchools.length];
+  const district = school.district;
   const attendance = status === 'Scheduled' ? 0 : status === 'Ongoing' ? 65 + index * 13 % 34 : 83 + index * 11 % 18;
   const completion = status === 'Scheduled' ? 0 : status === 'Ongoing' ? 15 + index * 17 % 76 : 100;
   const day = index % 24 + 1;
@@ -28,7 +24,7 @@ export const batchRecords: BatchRecord[] = Array.from({ length: 750 }, (_, index
   const phase = index % phaseNames.length;
   const registered = 110;
   return {
-    index, batch: `B-${String(1001 + index).padStart(4, '0')}`, udise: '—', school, state: place.name, district,
+    index, batch: `B-${String(1001 + index).padStart(4, '0')}`, udise: school.udise, school: school.school, state: school.state, district,
     plan: `Phase ${phase + 1} · ${phaseNames[phase]}`, trainer: trainers[index % trainers.length], startDate, endDate: null, dateText,
     capacity: 110, registered, attended: Math.round(110 * attendance / 100), completed: Math.round(110 * completion / 100), attendance, status,
   };

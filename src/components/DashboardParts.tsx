@@ -5,8 +5,13 @@ import type { AppDispatch, RootState } from '../store';
 import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
 import { locations } from '../data/locations';
+import { kgbvSchools } from '../data/kgbvSchools';
 import { canAccessMenu, getSession, signOut, type MenuKey } from '../auth';
 import { formatDateTime } from '../dateFormat';
+
+declare global {
+  interface Window { KGBV_SCHOOLS?: typeof kgbvSchools }
+}
 
 const Markup = memo(function Markup({ html, className }: { html: string; className?: string }) {
   const baseAwareHtml = html.replace(/\b(src|href)="\/(?!\/)/g, (_match, attribute: string) => `${attribute}="${import.meta.env.BASE_URL}`);
@@ -181,6 +186,7 @@ export function DashboardModals() { return <Markup html={modalMarkup} />; }
 export function DashboardBridge() {
   const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
+    window.KGBV_SCHOOLS = kgbvSchools;
     const script = document.createElement('script');
     script.src = `${import.meta.env.BASE_URL}legacy-dashboard.js`;
     script.async = false;
@@ -207,6 +213,7 @@ export function DashboardBridge() {
       document.removeEventListener('click', onClick, true);
       document.removeEventListener('change', onChange, true);
       script.remove();
+      delete window.KGBV_SCHOOLS;
     };
   }, [dispatch]);
   return null;
