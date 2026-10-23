@@ -54,7 +54,7 @@
   });
   const batchStatusLabels={upcoming:'Upcoming',ongoing:'Ongoing',completed:'Completed'};
   const kgbvSchools=Array.isArray(window.KGBV_SCHOOLS)?window.KGBV_SCHOOLS:[];
-  const batchPhases=['Solution Orientation','Pedagogical Training','Digital and AI Literacy','Refresher Training','Refresher Training'];
+  const batchPhases=['Orientation','Device & Content Use','Digital Skills','Refresher I','Refresher II'];
   const batchTrainers=['Asha Reddy','Ravi Kumar','Meera Nair','Suresh Rao','Kavitha Devi','Arun Das','Neha Sharma','Vikram Singh','Farah Khan','Joseph Mathew','Pooja Iyer','Mohan Das'];
   const batchData=Array.from({length:kgbvSchools.length},(_,index)=>{
     const status=index<180?'upcoming':index<400?'ongoing':'completed';
@@ -68,15 +68,16 @@
       const date=`${String(day).padStart(2,'0')}-${month}-2026`;
       return {index,id:`B-${String(1001+index).padStart(4,'0')}`,status,phaseNumber:index%batchPhases.length+1,phase:batchPhases[index%batchPhases.length],district,state,block,school,udise,location:`${district}, ${state}`,trainer:batchTrainers[index%batchTrainers.length],teacherParticipants,studentParticipants,participants,attendance,completion,attendedParticipants:Math.round(participants*attendance/100),completedParticipants:Math.round(participants*completion/100),date};
   });
-  let selectedAudience='Teacher';
+  let selectedAudience=document.querySelector('.audience-button[aria-pressed="true"]')?.dataset.audience||'Student';
   const currentPhaseCard=document.querySelector('.phase-card.current');
-  let selectedPhase=currentPhaseCard?Number(currentPhaseCard.querySelector('.phase-number').textContent.match(/\d+/)?.[0])||null:null;
-  document.querySelectorAll('.phase-card').forEach(card=>{
-    const isCurrent=card===currentPhaseCard;
+  let selectedPhase=selectedAudience==='Teacher'&&currentPhaseCard?Number(currentPhaseCard.querySelector('.phase-number').textContent.match(/\d+/)?.[0])||null:null;
+  document.querySelectorAll('.phase-card, .student-module-card').forEach(card=>{
+    const isCurrent=selectedAudience==='Teacher'&&card===currentPhaseCard;
     card.classList.toggle('selected',isCurrent);
     card.setAttribute('aria-pressed',String(isCurrent));
   });
-  const selectedPhaseLabel=()=>selectedPhase?`Phase ${selectedPhase}: ${batchPhases[selectedPhase-1]}`:'';
+  const studentModuleNames=['Cyber Safety and Digital Responsibility','Digital Creativity','AI Awareness'];
+  const selectedPhaseLabel=()=>selectedPhase?(selectedAudience==='Student'?studentModuleNames[selectedPhase-1]:`Phase ${selectedPhase}: ${batchPhases[selectedPhase-1]}`):'';
   const dashboardBatches=()=>selectedPhase?batchData.filter(batch=>batch.phaseNumber===selectedPhase):batchData;
   const audienceSize=(batch,audience=selectedAudience)=>audience==='Teacher'?batch.teacherParticipants:batch.studentParticipants;
   function audienceMetrics(batch,audience=selectedAudience){
@@ -115,10 +116,12 @@
       card.querySelector('.kpi-value').textContent=value;
       if(sub!==null){const element=card.querySelector('.kpi-sub');if(element){element.textContent=sub;element.classList.toggle('target-breakdown',label==='Target Participants');element.classList.toggle('batch-breakdown',['Active Batches','Completed Batches','Upcoming Batches'].includes(label))}}
     }
-    const formattedParticipants=totalParticipants.toLocaleString('en-IN'),trainedText=totalCompleted.toLocaleString('en-IN');
+    const trainedText=totalCompleted.toLocaleString('en-IN');
+    const targetParticipants=selectedAudience==='Teacher'?7500:75000;
+    const formattedTarget=targetParticipants.toLocaleString('en-IN');
     updateKpi('Training Progress',`${completionPercent.toFixed(1)}%`,null);
     document.querySelector('.kpi-sub .meter span').style.width=`${completionPercent}%`;
-    updateKpi('Target Participants',formattedParticipants,`Target across 13 states${phaseContext}`);
+    updateKpi('Target Participants',formattedTarget,`${selectedAudience} target`);
     updateKpi('Participants Registered',totals.registered.toLocaleString('en-IN'),'Registered participants');
     updateKpi('Participants Trained',trainedText,`${completionPercent.toFixed(1)}% of target`);
     updateKpi('Attendance Rate',`${attendancePercent.toFixed(1)}%`,'Attendance');
@@ -132,14 +135,14 @@
       row.querySelector('.progress-value').innerHTML=`${value.toLocaleString('en-IN')} <span>(${percent.toFixed(1)}%)</span>`;
     });
     const targetChart=document.querySelector('#target-trained .v-chart');
-    const chartValues=targetChart.querySelectorAll('.chart-value'),trainedRatio=totalParticipants?totalCompleted/totalParticipants:0;
-    chartValues[0].textContent=formattedParticipants;chartValues[1].textContent=trainedText;
-    targetChart.setAttribute('aria-label',`Bar chart comparing ${formattedParticipants} planned participants with ${trainedText} participants trained`);
+    const chartValues=targetChart.querySelectorAll('.chart-value'),trainedRatio=targetParticipants?Math.min(1,totalCompleted/targetParticipants):0;
+    chartValues[0].textContent=formattedTarget;chartValues[1].textContent=trainedText;
+    targetChart.setAttribute('aria-label',`Bar chart comparing the target of ${formattedTarget} ${selectedAudience.toLowerCase()} with ${trainedText} participants trained`);
     const bars=targetChart.querySelectorAll('rect'),trainedHeight=140*trainedRatio;
     bars[0].setAttribute('y','24');bars[0].setAttribute('height','140');bars[1].setAttribute('y',String(164-trainedHeight));bars[1].setAttribute('height',String(trainedHeight));
     chartValues[0].setAttribute('y','17');chartValues[1].setAttribute('y',String(157-trainedHeight));
     const tickLabels=targetChart.querySelectorAll('g.chart-label')[0]?.querySelectorAll('text')??[];
-    tickLabels.forEach((tick,index)=>tick.textContent=(totalParticipants*index/5).toLocaleString('en-IN'));
+    tickLabels.forEach((tick,index)=>tick.textContent=(targetParticipants*index/5).toLocaleString('en-IN'));
     const achievement=targetChart.closest('.target-layout').querySelector('.donut-center');
     achievement.textContent=`${completionPercent.toFixed(1)}%`;
     const donutCircles=targetChart.closest('.target-layout').querySelectorAll('.donut circle');
@@ -307,6 +310,15 @@
   document.querySelectorAll('.audience-button').forEach(button=>button.addEventListener('click',()=>{
     if(selectedAudience===button.dataset.audience)return;
     selectedAudience=button.dataset.audience;
+    selectedPhase=selectedAudience==='Teacher'
+      ?Number(currentPhaseCard?.querySelector('.phase-number')?.textContent.match(/\d+/)?.[0])||3
+      :1;
+    document.querySelectorAll('.phase-card, .student-module-card').forEach(card=>{
+      const cardPhase=Number(card.querySelector('.phase-number')?.textContent.match(/\d+/)?.[0]);
+      const selected=selectedPhase!==null&&cardPhase===selectedPhase;
+      card.classList.toggle('selected',selected);
+      card.setAttribute('aria-pressed',String(selected));
+    });
     document.querySelectorAll('.audience-button').forEach(toggle=>toggle.setAttribute('aria-pressed',String(toggle===button)));
     renderBatchStatusTotals();renderLocations();
     if(!batchModalLayer.hidden)renderBatchModal();
@@ -337,7 +349,7 @@
   function selectPhase(phase){
     const phaseNumber=Number(phase.querySelector('.phase-number').textContent.match(/\d+/)?.[0]);
     selectedPhase=selectedPhase===phaseNumber?null:phaseNumber;
-    document.querySelectorAll('.phase-card').forEach(card=>{
+    document.querySelectorAll('.phase-card, .student-module-card').forEach(card=>{
       const cardPhaseNumber=Number(card.querySelector('.phase-number').textContent.match(/\d+/)?.[0]);
       const selected=selectedPhase!==null&&cardPhaseNumber===selectedPhase;
       card.classList.toggle('selected',selected);
@@ -348,7 +360,7 @@
     if(!batchModalLayer.hidden)renderBatchModal();
     if(!participantModalLayer.hidden&&selectedBatch)openParticipantModal(selectedBatch,activeBatchTrigger);
   }
-  document.querySelectorAll('.phase-card').forEach(phase=>{
+  document.querySelectorAll('.phase-card, .student-module-card').forEach(phase=>{
     phase.addEventListener('click',()=>selectPhase(phase));
     phase.addEventListener('keydown',event=>{
       if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPhase(phase)}

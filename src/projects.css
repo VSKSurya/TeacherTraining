@@ -5,3 +5,16 @@
 
 .project-table{table-layout:fixed}.project-table th,.project-table td{white-space:normal;overflow-wrap:anywhere;word-break:normal}.project-table th{vertical-align:top}.project-table td{max-width:none}
 .scope-options input[type=checkbox]{width:14px;height:14px;min-width:14px;min-height:14px;flex:0 0 14px;margin:0;padding:0;border:0;accent-color:#176fba;appearance:auto}
+.project-content{font-size:14px;line-height:1.45}
+.project-content .project-panel-heading h3{font-size:16px}
+.project-content .project-panel-heading p{font-size:13px;line-height:1.45}
+.project-content .project-field,.project-content .project-field>span,.project-content .project-field legend{font-size:12px}
+.project-content .project-field input,.project-content .project-field select,.project-content .project-field textarea,.project-content .project-list-filters input,.project-content .project-list-filters select{font-size:13px}
+.project-content .project-field small{font-size:11px}
+.project-content .project-table{font-size:12px}
+.project-content .project-table th{font-size:11px}
+.project-content .project-table td{font-size:12px;line-height:1.45}
+.project-content .project-name-cell{font-size:13px}
+.project-content .project-subline{font-size:11px}
+.project-content .project-tag,.project-content .source-badge{font-size:11px}
+.project-content .project-summary span{font-size:11px}

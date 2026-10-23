@@ -159,14 +159,20 @@ const teacherDashboardMarkup = dashboardMarkup.replace(
 ).replace(
   /<select id="state">[\s\S]*?<\/select>/,
   `<select id="state"><option>All States</option>${locations.map(location => `<option>${location.name}</option>`).join('')}</select>`,
+).replace(
+  '<section class="dashboard-grid" aria-label="Training charts">',
+  '<div class="dashboard-insight-row"><section class="dashboard-grid" aria-label="Training charts">',
+).replace(
+  '</section>\n\n    <section class="bottom-grid"',
+  '</section></div>\n\n    <section class="bottom-grid"',
 );
 
 const studentOverviewMarkup = `<section class="phase-overview student-overview" aria-labelledby="student-overview-title" hidden aria-hidden="true">
-  <div class="phase-overview-header"><h2 class="phase-overview-title" id="student-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
-  <div class="student-module-grid">${studentModules.map((module, index) => `<article class="student-module-card">
+  <div class="phase-overview-header"><h2 class="phase-overview-title" id="student-overview-title">Student Capacity Building Framework (15 hours)</h2><button class="info-button" type="button" aria-label="Show student capacity building information" data-info-title="Student Capacity Building Framework" data-info="Three student modules: Cyber Safety and Digital Responsibility, Digital Creativity, and AI Awareness. Each module is 5 hours, for 15 hours total.">i</button></div>
+  <div class="student-module-grid">${studentModules.map((module, index) => `<article class="student-module-card" role="button" tabindex="0" aria-pressed="false" data-student-module="${index + 1}">
     <div class="phase-node student-module-node" aria-hidden="true">${index + 1}</div>
     <span class="phase-number">Module ${index + 1}</span><h3>${module}</h3>
-    <div class="phase-facts"><div class="phase-fact"><strong>Duration</strong><span>5 hrs</span></div></div>
+    <div class="phase-facts"><div class="phase-fact"><span>5 hrs</span></div></div>
   </article>`).join('')}</div>
 </section>`;
 
@@ -204,11 +210,14 @@ export function DashboardBridge() {
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       const audience = target.closest<HTMLElement>('[data-audience]')?.dataset.audience;
-      if (audience === 'Teacher' || audience === 'Student') dispatch(setAudience(audience));
-      const phaseCard = target.closest<HTMLElement>('.phase-card:not(.student-module-card)');
-      if (phaseCard) {
-        const phase = Number(phaseCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
-        if (phase) window.setTimeout(() => dispatch(setPhase(phaseCard.classList.contains('selected') ? phase : null)), 0);
+      if (audience === 'Teacher' || audience === 'Student') {
+        dispatch(setAudience(audience));
+        dispatch(setPhase(audience === 'Teacher' ? 3 : 1));
+      }
+      const selectableCard = target.closest<HTMLElement>('.phase-card, .student-module-card');
+      if (selectableCard) {
+        const phase = Number(selectableCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
+        if (phase) window.setTimeout(() => dispatch(setPhase(selectableCard.classList.contains('selected') ? phase : null)), 0);
       }
       if (target.closest('#clear-filters')) dispatch(clearFilters());
       if (target.closest('.collapse')) window.setTimeout(() => dispatch(setSidebarCollapsed(document.querySelector('.app')?.classList.contains('is-collapsed') ?? false)), 0);
@@ -217,11 +226,20 @@ export function DashboardBridge() {
       const select = event.target as HTMLSelectElement;
       if (select.matches('.filter select')) dispatch(setFilter({ key: select.id, value: select.selectedIndex ? select.value : '' }));
     };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const selectableCard = (event.target as HTMLElement).closest<HTMLElement>('.phase-card, .student-module-card');
+      if (!selectableCard) return;
+      const phase = Number(selectableCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
+      if (phase) window.setTimeout(() => dispatch(setPhase(selectableCard.classList.contains('selected') ? phase : null)), 0);
+    };
     document.addEventListener('click', onClick, true);
     document.addEventListener('change', onChange, true);
+    document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('click', onClick, true);
       document.removeEventListener('change', onChange, true);
+      document.removeEventListener('keydown', onKeyDown, true);
       script.remove();
       delete window.KGBV_SCHOOLS;
     };
