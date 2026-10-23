@@ -1,0 +1,15 @@
+export const locations = [
+  { name: 'Andhra Pradesh', districts: ['Visakhapatnam', 'Guntur'] },
+  { name: 'Arunachal Pradesh', districts: ['Papum Pare', 'Tawang'] },
+  { name: 'Assam', districts: ['Kamrup Metropolitan', 'Dibrugarh'] },
+  { name: 'Chhattisgarh', districts: ['Raipur', 'Bilaspur'] },
+  { name: 'Gujarat', districts: ['Ahmedabad', 'Surat'] },
+  { name: 'Haryana', districts: ['Gurugram', 'Hisar'] },
+  { name: 'Jharkhand', districts: ['Ranchi', 'Dhanbad'] },
+  { name: 'Karnataka', districts: ['Bengaluru Urban', 'Mysuru'] },
+  { name: 'Manipur', districts: ['Imphal West', 'Imphal East'] },
+  { name: 'Rajasthan', districts: ['Jaipur', 'Jodhpur'] },
+  { name: 'Sikkim', districts: ['Gangtok', 'Namchi'] },
+  { name: 'Telangana', districts: ['Hyderabad', 'Warangal'] },
+  { name: 'Uttar Pradesh', districts: ['Lucknow', 'Varanasi'] },
+] as const;

@@ -1,15 +1,8 @@
 import { formatDate } from '../dateFormat';
+import { locations } from './locations';
 
-export const locations = [
-  { name: 'Andhra Pradesh', districts: ['Visakhapatnam', 'Guntur'] }, { name: 'Assam', districts: ['Kamrup Metropolitan', 'Dibrugarh'] },
-  { name: 'Bihar', districts: ['Patna', 'Gaya'] }, { name: 'Chhattisgarh', districts: ['Raipur', 'Bilaspur'] },
-  { name: 'Gujarat', districts: ['Ahmedabad', 'Surat'] }, { name: 'Haryana', districts: ['Gurugram', 'Hisar'] },
-  { name: 'Karnataka', districts: ['Bengaluru Urban', 'Mysuru'] }, { name: 'Kerala', districts: ['Ernakulam', 'Kozhikode'] },
-  { name: 'Madhya Pradesh', districts: ['Bhopal', 'Indore'] }, { name: 'Maharashtra', districts: ['Pune', 'Nagpur'] },
-  { name: 'Odisha', districts: ['Khordha', 'Cuttack'] }, { name: 'Punjab', districts: ['Ludhiana', 'Amritsar'] },
-  { name: 'Rajasthan', districts: ['Jaipur', 'Jodhpur'] }, { name: 'Tamil Nadu', districts: ['Chennai', 'Coimbatore'] },
-  { name: 'Telangana', districts: ['Hyderabad', 'Warangal'] }, { name: 'Uttar Pradesh', districts: ['Lucknow', 'Varanasi'] },
-] as const;
+export { locations } from './locations';
+
 export const phaseNames = ['Solution Orientation', 'Pedagogical Training', 'Digital and AI Literacy', 'Refresher Training', 'Refresher Training'] as const;
 export const trainers = ['Asha Reddy', 'Ravi Kumar', 'Meera Nair', 'Suresh Rao', 'Kavitha Devi', 'Arun Das', 'Neha Sharma', 'Vikram Singh', 'Farah Khan', 'Joseph Mathew', 'Pooja Iyer', 'Mohan Das'] as const;
 export type ReportStatus = 'Scheduled' | 'Ongoing' | 'Completed';

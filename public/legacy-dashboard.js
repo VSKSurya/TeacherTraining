@@ -54,14 +54,13 @@
   });
   const batchStatusLabels={upcoming:'Upcoming',ongoing:'Ongoing',completed:'Completed'};
   const batchLocations=[
-    {name:'Andhra Pradesh',districts:['Visakhapatnam','Guntur']},{name:'Assam',districts:['Kamrup Metropolitan','Dibrugarh']},
-    {name:'Bihar',districts:['Patna','Gaya']},{name:'Chhattisgarh',districts:['Raipur','Bilaspur']},
+    {name:'Andhra Pradesh',districts:['Visakhapatnam','Guntur']},{name:'Arunachal Pradesh',districts:['Papum Pare','Tawang']},
+    {name:'Assam',districts:['Kamrup Metropolitan','Dibrugarh']},{name:'Chhattisgarh',districts:['Raipur','Bilaspur']},
     {name:'Gujarat',districts:['Ahmedabad','Surat']},{name:'Haryana',districts:['Gurugram','Hisar']},
-    {name:'Karnataka',districts:['Bengaluru Urban','Mysuru']},{name:'Kerala',districts:['Ernakulam','Kozhikode']},
-    {name:'Madhya Pradesh',districts:['Bhopal','Indore']},{name:'Maharashtra',districts:['Pune','Nagpur']},
-    {name:'Odisha',districts:['Khordha','Cuttack']},{name:'Punjab',districts:['Ludhiana','Amritsar']},
-    {name:'Rajasthan',districts:['Jaipur','Jodhpur']},{name:'Tamil Nadu',districts:['Chennai','Coimbatore']},
-    {name:'Telangana',districts:['Hyderabad','Warangal']},{name:'Uttar Pradesh',districts:['Lucknow','Varanasi']}
+    {name:'Jharkhand',districts:['Ranchi','Dhanbad']},{name:'Karnataka',districts:['Bengaluru Urban','Mysuru']},
+    {name:'Manipur',districts:['Imphal West','Imphal East']},{name:'Rajasthan',districts:['Jaipur','Jodhpur']},
+    {name:'Sikkim',districts:['Gangtok','Namchi']},{name:'Telangana',districts:['Hyderabad','Warangal']},
+    {name:'Uttar Pradesh',districts:['Lucknow','Varanasi']}
   ];
   const batchPhases=['Solution Orientation','Pedagogical Training','Digital and AI Literacy','Refresher Training','Refresher Training'];
   const batchTrainers=['Asha Reddy','Ravi Kumar','Meera Nair','Suresh Rao','Kavitha Devi','Arun Das','Neha Sharma','Vikram Singh','Farah Khan','Joseph Mathew','Pooja Iyer','Mohan Das'];
@@ -129,7 +128,7 @@
     const formattedParticipants=totalParticipants.toLocaleString('en-IN'),trainedText=totalCompleted.toLocaleString('en-IN');
     updateKpi('Training Progress',`${completionPercent.toFixed(1)}%`,null);
     document.querySelector('.kpi-sub .meter span').style.width=`${completionPercent}%`;
-    updateKpi('Target Participants',formattedParticipants,`Target across 16 states${phaseContext}`);
+    updateKpi('Target Participants',formattedParticipants,`Target across 13 states${phaseContext}`);
     updateKpi('Participants Registered',totals.registered.toLocaleString('en-IN'),'Registered participants');
     updateKpi('Participants Trained',trainedText,`${completionPercent.toFixed(1)}% of target`);
     updateKpi('Attendance Rate',`${attendancePercent.toFixed(1)}%`,'Attendance');
@@ -254,7 +253,7 @@
   renderBatchStatusTotals();
 
   const locationTree=batchLocations.map(state=>({name:state.name,children:state.districts.map((district,districtIndex)=>({name:district,children:[0,1].map(blockIndex=>{const block=`${district} ${blockIndex===0?'North':'South'}`;return {name:block,children:[0,1].map(schoolIndex=>({name:`${block} Government School ${schoolIndex+1}`,children:[],assignedBatches:[]}))}})}))}));
-  document.querySelector('#locations .info-button').dataset.info='Illustrative sample data for 16 states and 750 batches. Click State, District, or Block rows to drill down to schools.';
+  document.querySelector('#locations .info-button').dataset.info='Illustrative sample data for 13 states and 750 batches. Click State, District, or Block rows to drill down to schools.';
   batchData.forEach(batch=>locationTree[batch.stateIndex].children[batch.districtIndex].children[batch.blockIndex].children[batch.schoolIndex].assignedBatches.push(batch));
   function locationTotals(node){
     if(!node.children.length){
@@ -272,7 +271,7 @@
     const level=locationPath.length,nodes=level===0?locationTree:locationPath[level-1].children;
     document.querySelector('#location-level-heading').textContent=locationLabels[level];
     const phaseContext=selectedPhase?` · ${selectedPhaseLabel()}`:'';
-    document.querySelector('#location-context').textContent=locationPath.length?`${locationPath.map(node=>node.name).join(' · ')} · selected group${phaseContext}`:`All 16 states · ${dashboardBatches().length.toLocaleString('en-IN')} batches · ${dashboardBatches().reduce((sum,batch)=>sum+audienceSize(batch),0).toLocaleString('en-IN')} participants${phaseContext}`;
+    document.querySelector('#location-context').textContent=locationPath.length?`${locationPath.map(node=>node.name).join(' · ')} · selected group${phaseContext}`:`All 13 states · ${dashboardBatches().length.toLocaleString('en-IN')} batches · ${dashboardBatches().reduce((sum,batch)=>sum+audienceSize(batch),0).toLocaleString('en-IN')} participants${phaseContext}`;
     const breadcrumb=document.querySelector('#location-breadcrumb');
     const crumbs=[...locationPath.map((node,index)=>({label:locationLabels[index],index})),{label:locationLabels[level],index:level}];
     breadcrumb.innerHTML=crumbs.map((crumb,index)=>`<li><button type="button" class="location-crumb" data-crumb-depth="${crumb.index}" ${index===crumbs.length-1?'aria-current="page"':''}>${crumb.label}</button></li>`).join('');

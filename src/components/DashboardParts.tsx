@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../store';
 import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
+import { locations } from '../data/locations';
 import { canAccessMenu, getSession, signOut, type MenuKey } from '../auth';
 import { formatDateTime } from '../dateFormat';
 
@@ -140,6 +141,9 @@ const studentModules = [
 const teacherDashboardMarkup = dashboardMarkup.replace(
   'id="phase-overview-title">Phase wise Training</h2>',
   'id="phase-overview-title">Phases of Teacher Capacity Building (25 hours)</h2>',
+).replace(
+  /<select id="state">[\s\S]*?<\/select>/,
+  `<select id="state"><option>All States</option>${locations.map(location => `<option>${location.name}</option>`).join('')}</select>`,
 );
 
 const studentOverviewMarkup = `<section class="phase-overview student-overview" aria-labelledby="student-overview-title" hidden aria-hidden="true">
