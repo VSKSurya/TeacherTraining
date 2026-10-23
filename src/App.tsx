@@ -7,7 +7,7 @@ import ContentLibrary from './ContentLibrary';
 import { Reports } from './reports/Reports';
 import Login from './Login';
 import HolidayMaster from './HolidayMaster';
-import { getSession } from './auth';
+import { canAccessRoute, getSession } from './auth';
 
 const theme = createTheme({
   palette: { primary: { main: '#176fba' }, background: { default: '#f4f7fb', paper: '#ffffff' }, text: { primary: '#173553', secondary: '#71839a' } },
@@ -24,7 +24,9 @@ function AppContent() {
   const pathname = window.location.pathname;
   const path = (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname).replace(/\/$/, '');
   if (path === '/login') return <Login />;
-  if (!getSession()) return <Login />;
+  const session = getSession();
+  if (!session) return <Login />;
+  if (!canAccessRoute(session.role, path)) return <DashboardFrame />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;

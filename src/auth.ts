@@ -1,20 +1,110 @@
-export type UserRole = 'admin' | 'planner' | 'viewer';
+export type UserRole =
+  | 'sponsor-admin'
+  | 'schoolnet-super-admin'
+  | 'schoolnet-project-admin'
+  | 'state-admin'
+  | 'school-admin'
+  | 'trainer'
+  | 'trainee'
+  | 'reporting-audit-user';
+
+export type MenuKey =
+  | 'dashboard'
+  | 'projects'
+  | 'training-plans'
+  | 'batches'
+  | 'attendance'
+  | 'content-library'
+  | 'assessments'
+  | 'certificates'
+  | 'mis-reports'
+  | 'holiday-master';
+
 export type UserRecord = { userId: string; role: UserRole; active: boolean };
 export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
 
+export const DEMO_PASSWORD = 'demo1@123';
+export const ROLE_LABELS: Record<UserRole, string> = {
+  'sponsor-admin': 'Sponsor Admin',
+  'schoolnet-super-admin': 'Schoolnet Super Admin',
+  'schoolnet-project-admin': 'Schoolnet Project Admin',
+  'state-admin': 'State Admin',
+  'school-admin': 'School Admin',
+  trainer: 'Trainer',
+  trainee: 'Trainee',
+  'reporting-audit-user': 'Reporting/Audit User',
+};
+
+export const ROLES = Object.keys(ROLE_LABELS) as UserRole[];
+
+const ROLE_MENUS: Record<UserRole, readonly MenuKey[]> = {
+  'sponsor-admin': ['dashboard', 'projects', 'mis-reports'],
+  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'certificates', 'mis-reports', 'holiday-master'],
+  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'certificates', 'mis-reports'],
+  'state-admin': ['dashboard', 'training-plans', 'batches', 'attendance', 'mis-reports'],
+  'school-admin': ['dashboard', 'training-plans', 'batches', 'attendance', 'content-library'],
+  trainer: ['dashboard', 'batches', 'attendance', 'content-library'],
+  trainee: ['dashboard', 'training-plans', 'content-library', 'assessments', 'certificates'],
+  'reporting-audit-user': ['dashboard', 'mis-reports'],
+};
+
+export function canAccessMenu(role: UserRole, menu: MenuKey) {
+  return ROLE_MENUS[role].includes(menu);
+}
+
+export function canAccessRoute(role: UserRole, path: string) {
+  if (!path || path === '/') return canAccessMenu(role, 'dashboard');
+  if (path === '/holiday-master') return canAccessMenu(role, 'holiday-master');
+  if (path === '/content-library') return canAccessMenu(role, 'content-library');
+  if (path.startsWith('/reports/')) return canAccessMenu(role, 'mis-reports');
+  return canAccessMenu(role, 'dashboard');
+}
+
 const USERS_KEY = 'teacher-training-users';
 const SESSION_KEY = 'teacher-training-session';
-const DEFAULT_USERS: UserRecord[] = [{ userId: 'Demo1', role: 'admin', active: true }];
+const DEFAULT_USERS: UserRecord[] = [
+  { userId: 'Demo1', role: 'sponsor-admin', active: true },
+  { userId: 'Demo2', role: 'schoolnet-super-admin', active: true },
+  { userId: 'Demo3', role: 'schoolnet-project-admin', active: true },
+  { userId: 'Demo4', role: 'state-admin', active: true },
+  { userId: 'Demo5', role: 'school-admin', active: true },
+  { userId: 'Demo6', role: 'trainer', active: true },
+  { userId: 'Demo7', role: 'trainee', active: true },
+  { userId: 'Demo8', role: 'reporting-audit-user', active: true },
+];
+const roleValues = new Set<UserRole>(ROLES);
+const legacyRoleMap: Record<string, UserRole> = {
+  admin: 'schoolnet-super-admin',
+  planner: 'schoolnet-project-admin',
+  viewer: 'reporting-audit-user',
+};
+
+function normalizedRole(value: unknown, userId: string): UserRole {
+  if (typeof value === 'string' && roleValues.has(value as UserRole)) return value as UserRole;
+  const demo = DEFAULT_USERS.find(user => user.userId.toLowerCase() === userId.toLowerCase());
+  return demo?.role ?? (typeof value === 'string' ? legacyRoleMap[value] : undefined) ?? 'reporting-audit-user';
+}
 
 export function getUsers(): UserRecord[] {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(USERS_KEY) ?? 'null');
-    if (Array.isArray(parsed)) return parsed as UserRecord[];
-  } catch { /* recover with the demo administrator */ }
-  localStorage.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
-  return DEFAULT_USERS;
+  let saved: unknown;
+  try { saved = JSON.parse(localStorage.getItem(USERS_KEY) ?? 'null'); } catch { saved = null; }
+
+  const users: UserRecord[] = Array.isArray(saved)
+    ? saved.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && typeof (item as Record<string, unknown>).userId === 'string'))
+      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false }))
+    : [];
+
+  for (const demoUser of DEFAULT_USERS) {
+    const existing = users.find(user => user.userId.toLowerCase() === demoUser.userId.toLowerCase());
+    if (!existing) users.push(demoUser);
+  }
+
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  return users;
 }
+
 export function saveUsers(users: UserRecord[]) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+
 export function getSession(): SessionUser | null {
   try {
     const session = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null') as SessionUser | null;
@@ -24,11 +114,13 @@ export function getSession(): SessionUser | null {
     return { userId: user.userId, role: user.role };
   } catch { return null; }
 }
+
 export function signIn(userId: string, password: string): SessionUser | null {
   const user = getUsers().find(item => item.userId.toLowerCase() === userId.trim().toLowerCase() && item.active);
-  if (!user || password !== 'demo1@123') return null;
+  if (!user || password !== DEMO_PASSWORD) return null;
   const session = { userId: user.userId, role: user.role };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
 }
+
 export function signOut() { localStorage.removeItem(SESSION_KEY); }

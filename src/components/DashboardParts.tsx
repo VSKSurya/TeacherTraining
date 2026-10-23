@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../store';
 import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
-import { signOut } from '../auth';
+import { canAccessMenu, getSession, signOut, type MenuKey } from '../auth';
 import { formatDateTime } from '../dateFormat';
 
 const Markup = memo(function Markup({ html, className }: { html: string; className?: string }) {
@@ -14,6 +14,7 @@ const Markup = memo(function Markup({ html, className }: { html: string; classNa
 export type AppPage = 'Dashboard' | 'Content Library' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Holiday Master';
 export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) {
   const dashboard = activePage === 'Dashboard';
+  const role = getSession()?.role ?? 'sponsor-admin';
   let html = sidebarMarkup
     .replace('class="side-link active" href="#overview" aria-current="page"', `class="side-link${dashboard ? ' active' : ''}" href="/"${dashboard ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
@@ -24,6 +25,18 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     html = html.replace(`href="${fileName}"`, `href="${href}"${activePage === label ? ' aria-current="page"' : ''}`);
   }
   if (activePage in reportLinks) html = html.replace('<summary class="side-link">', '<summary class="side-link active">');
+  const menuByLabel: Record<string, MenuKey> = {
+    Dashboard: 'dashboard', Projects: 'projects', 'Training Plans': 'training-plans', Batches: 'batches',
+    Attendance: 'attendance', 'Content Library': 'content-library', Assessments: 'assessments',
+    Certificates: 'certificates', 'MIS Reports': 'mis-reports', 'Holiday Master': 'holiday-master',
+  };
+  const sidebarDocument = new DOMParser().parseFromString(html, 'text/html');
+  sidebarDocument.querySelectorAll<HTMLElement>('.side-nav > .side-link, .side-nav > .side-group').forEach(item => {
+    const label = item.querySelector('span')?.textContent?.trim() ?? item.querySelector('summary')?.textContent?.trim() ?? '';
+    const menu = menuByLabel[label];
+    if (menu && !canAccessMenu(role, menu)) item.remove();
+  });
+  html = sidebarDocument.body.innerHTML;
   useEffect(() => {
     const groups = () => Array.from(document.querySelectorAll<HTMLDetailsElement>('.sidebar .side-group'));
     const placeSubmenu = (group: HTMLDetailsElement) => {
