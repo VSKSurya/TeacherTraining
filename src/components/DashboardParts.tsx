@@ -124,6 +124,10 @@ const studentModules = [
   'Digital Creativity',
   'AI Awareness',
 ];
+const teacherDashboardMarkup = dashboardMarkup.replace(
+  'id="phase-overview-title">Phase wise Training</h2>',
+  'id="phase-overview-title">Phases of Teacher Capacity Building (25 hours)</h2>',
+);
 
 const studentOverviewMarkup = `<section class="phase-overview student-overview" aria-labelledby="student-overview-title" hidden aria-hidden="true">
   <div class="phase-overview-header"><h2 class="phase-overview-title" id="student-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
@@ -134,7 +138,7 @@ const studentOverviewMarkup = `<section class="phase-overview student-overview" 
   </article>`).join('')}</div>
 </section>`;
 
-const dashboardWithStudentOverview = dashboardMarkup.replace(
+const dashboardWithStudentOverview = teacherDashboardMarkup.replace(
   /<section class="phase-overview"[\s\S]*?<\/section>/,
   teacherOverview => `${teacherOverview}${studentOverviewMarkup}`,
 );
