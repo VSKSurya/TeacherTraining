@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Box, Dialog, IconButton, Popover, Snackbar, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../store';
@@ -7,10 +7,10 @@ import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../so
 import { signOut } from '../auth';
 import { formatDateTime } from '../dateFormat';
 
-function Markup({ html, className }: { html: string; className?: string }) {
+const Markup = memo(function Markup({ html, className }: { html: string; className?: string }) {
   const baseAwareHtml = html.replace(/\b(src|href)="\/(?!\/)/g, (_match, attribute: string) => `${attribute}="${import.meta.env.BASE_URL}`);
   return <div className={`component-markup ${className ?? ''}`} dangerouslySetInnerHTML={{ __html: baseAwareHtml }} />;
-}
+});
 export type AppPage = 'Dashboard' | 'Content Library' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Holiday Master';
 export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) {
   const dashboard = activePage === 'Dashboard';
@@ -125,28 +125,35 @@ const studentModules = [
   'AI Awareness',
 ];
 
-function getDashboardMarkup(audience: 'Teacher' | 'Student') {
-  let markup = dashboardMarkup;
-  if (audience === 'Student') {
-    const studentOverview = `<section class="phase-overview student-overview" aria-labelledby="phase-overview-title">
-      <div class="phase-overview-header"><h2 class="phase-overview-title" id="phase-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
-      <div class="student-module-grid">${studentModules.map((module, index) => `<article class="phase-card student-module-card">
-        <div class="phase-node student-module-node" aria-hidden="true">${index + 1}</div>
-        <span class="phase-number">Module ${index + 1}</span><h3>${module}</h3>
-        <div class="phase-facts"><div class="phase-fact"><strong>Duration</strong><span>5 hrs</span></div></div>
-      </article>`).join('')}</div>
-    </section>`;
-    markup = markup.replace(/<section class="phase-overview"[\s\S]*?<\/section>/, studentOverview);
-  }
+const studentOverviewMarkup = `<section class="phase-overview student-overview" aria-labelledby="student-overview-title" hidden aria-hidden="true">
+  <div class="phase-overview-header"><h2 class="phase-overview-title" id="student-overview-title">Student Capacity Building Framework (15 hours)</h2></div>
+  <div class="student-module-grid">${studentModules.map((module, index) => `<article class="student-module-card">
+    <div class="phase-node student-module-node" aria-hidden="true">${index + 1}</div>
+    <span class="phase-number">Module ${index + 1}</span><h3>${module}</h3>
+    <div class="phase-facts"><div class="phase-fact"><strong>Duration</strong><span>5 hrs</span></div></div>
+  </article>`).join('')}</div>
+</section>`;
 
-  return markup
-    .replace(/data-audience="Teacher" aria-pressed="(?:true|false)"/, `data-audience="Teacher" aria-pressed="${audience === 'Teacher'}"`)
-    .replace(/data-audience="Student" aria-pressed="(?:true|false)"/, `data-audience="Student" aria-pressed="${audience === 'Student'}"`);
-}
+const dashboardWithStudentOverview = dashboardMarkup.replace(
+  /<section class="phase-overview"[\s\S]*?<\/section>/,
+  teacherOverview => `${teacherOverview}${studentOverviewMarkup}`,
+);
 
 export function DashboardContent() {
   const audience = useSelector((state: RootState) => state.dashboard.audience);
-  return <Markup html={getDashboardMarkup(audience)} />;
+  useEffect(() => {
+    const teacherOverview = document.querySelector<HTMLElement>('.main .phase-overview:not(.student-overview)');
+    const studentOverview = document.querySelector<HTMLElement>('.main .student-overview');
+    if (teacherOverview) teacherOverview.hidden = audience === 'Student';
+    if (studentOverview) {
+      studentOverview.hidden = audience === 'Teacher';
+      studentOverview.setAttribute('aria-hidden', String(audience === 'Teacher'));
+    }
+    document.querySelectorAll<HTMLButtonElement>('.dashboard-controls .audience-button').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.audience === audience));
+    });
+  }, [audience]);
+  return <Markup html={dashboardWithStudentOverview} />;
 }
 export function DashboardModals() { return <Markup html={modalMarkup} />; }
 
