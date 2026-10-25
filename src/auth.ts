@@ -57,6 +57,8 @@ export function canAccessRoute(role: UserRole, path: string) {
   if (path === '/holiday-master') return canAccessMenu(role, 'holiday-master');
   if (path === '/content-library') return canAccessMenu(role, 'content-library');
   if (path === '/projects') return canAccessMenu(role, 'projects');
+  if (path === '/training-plans') return canAccessMenu(role, 'training-plans');
+  if (path === '/batches') return canAccessMenu(role, 'batches');
   if (path.startsWith('/reports/')) return canAccessMenu(role, 'mis-reports');
   return canAccessMenu(role, 'dashboard');
 }
