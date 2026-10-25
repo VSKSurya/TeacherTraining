@@ -14,7 +14,7 @@ type BatchPlanUse = { id: string; batchId: string; projectPlanAssociationId: str
 type Project = {
   id: string; odooId: string; odooReference: string; name: string; code: string; sponsor: string;
   startDate: string; endDate: string; description: string; states: string[]; assignedUsers: string[];
-  status: ProjectStatus; phases: Phase[]; trainingPlans: string[]; selectedTrainingPlanIds?: string[];
+  status: ProjectStatus; phases: Phase[]; trainingPlans: string[]; selectedTrainingPlanIds?: string[]; batchImportPolicy?: 'valid-rows' | 'all-or-nothing';
 };
 const PROJECTS_KEY = 'teacher-training-projects';
 const CATALOG_KEY = 'teacher-training-odoo-project-catalog';
@@ -28,7 +28,7 @@ const sampleCatalog: OdooProject[] = [
 ];
 const emptyProject = (source: OdooProject): Project => ({
   id: crypto.randomUUID(), odooId: source.id, odooReference: source.reference, name: source.name, code: '', sponsor: source.sponsor,
-  startDate: '', endDate: '', description: '', states: [], assignedUsers: [], status: 'Planning', phases: [], trainingPlans: [],
+  startDate: '', endDate: '', description: '', states: [], assignedUsers: [], status: 'Planning', phases: [], trainingPlans: [], batchImportPolicy: 'valid-rows',
 });
 const statusOptions: PhaseStatus[] = ['Not Started', 'In Progress', 'Completed', 'On Hold'];
 function readJson<T>(key: string, fallback: T): T {
@@ -145,6 +145,7 @@ export default function Projects() {
             <label className="project-field"><span>Start date</span><input type="date" value={editing.startDate} onChange={event => updateProject('startDate', event.target.value)} required /></label>
             <label className="project-field"><span>End date</span><input type="date" min={editing.startDate || undefined} value={editing.endDate} onChange={event => updateProject('endDate', event.target.value)} required /></label>
             <label className="project-field"><span>Project status</span><select value={editing.status} onChange={event => updateProject('status', event.target.value as ProjectStatus)}>{(['Planning', 'Active', 'On Hold', 'Completed'] as ProjectStatus[]).map(status => <option key={status}>{status}</option>)}</select></label>
+            <label className="project-field"><span>Batch import policy</span><select value={editing.batchImportPolicy ?? 'valid-rows'} onChange={event => updateProject('batchImportPolicy', event.target.value as Project['batchImportPolicy'])}><option value="valid-rows">Import valid rows only</option><option value="all-or-nothing">All or nothing for this project</option></select><small>Invalid rows are excluded. All-or-nothing holds every row for this project if one row fails validation.</small></label>
             <label className="project-field project-field-wide"><span>Description (optional)</span><textarea rows={2} value={editing.description} onChange={event => updateProject('description', event.target.value)} placeholder="Add a short project description" /></label>
             <fieldset className="project-field project-field-wide project-state-field"><legend>Applicable states and scope</legend><div className="scope-options"><label className="scope-all-option"><input type="checkbox" checked={editing.states.length === locations.length} onChange={event => updateProject('states', event.target.checked ? locations.map(location => location.name) : [])} />All States</label>{locations.map(location => <label key={location.name}><input type="checkbox" checked={editing.states.includes(location.name)} onChange={event => updateProject('states', event.target.checked ? [...editing.states, location.name] : editing.states.filter(state => state !== location.name))} />{location.name}</label>)}</div></fieldset>
             <label className="project-field project-field-wide"><span>Assigned project administrators / authorized users</span><select multiple value={editing.assignedUsers} onChange={event => updateProject('assignedUsers', Array.from(event.target.selectedOptions, option => option.value))}>{users.map(user => <option key={user} value={user}>{user}{session?.userId === user ? ' (you)' : ''}</option>)}</select><small>Hold Ctrl (Windows) or Command (Mac) to select more than one user.</small></label>
