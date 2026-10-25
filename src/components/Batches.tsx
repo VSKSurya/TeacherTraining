@@ -3,6 +3,7 @@ import { Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogConten
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession, getUsers } from '../auth';
 import { kgbvSchools } from '../data/kgbvSchools';
+import { locations } from '../data/locations';
 
 type Project = { id: string; name: string; code: string; assignedUsers: string[]; startDate: string; endDate: string; phases?: { id: string; name: string; sequence: number }[]; batchImportPolicy?: 'valid-rows' | 'all-or-nothing' };
 type Plan = { id: string; code: string; name: string; type: 'Classroom' | 'Online' | 'Hybrid'; status: 'Draft' | 'Active' | 'Inactive' };
@@ -46,11 +47,15 @@ async function makeTemplate() {
   const JSZip = (await import('jszip')).default;
   const zip = new JSZip();
   const cells = headers.map((header, index) => cellXml(`${excelColumn(index)}1`, header)).join('');
-  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
+  const locationHeaders = ['State', 'District', 'School', 'School_UDISE_Venue', 'Block'];
+  const locationRows = [locationHeaders, ...kgbvSchools.map(school => [school.state, school.district, school.school, school.udise, school.block])];
+  const locationXml = locationRows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => cellXml(`${excelColumn(columnIndex)}${rowIndex + 1}`, value)).join('')}</row>`).join('');
+  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
   zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
-  zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Batches" sheetId="1" r:id="rId1"/></sheets></workbook>');
-  zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>');
+  zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Batches" sheetId="1" r:id="rId1"/><sheet name="Location Master" sheetId="2" r:id="rId2"/></sheets></workbook>');
+  zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>');
   zip.file('xl/worksheets/sheet1.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">${cells}</row></sheetData></worksheet>`);
+  zip.file('xl/worksheets/sheet2.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${locationXml}</sheetData></worksheet>`);
   return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 function excelDate(value: string): string | null {
@@ -307,6 +312,8 @@ export default function Batches() {
   const validCount = validation.filter(row => !row.errors.length && !row.warnings.length).length;
   const invalidProjectIds = new Set(validation.filter(row => row.errors.length).map(row => projects.find(project => project.code.toLowerCase() === row.values.Project_Code.trim().toLowerCase() && project.batchImportPolicy === 'all-or-nothing')?.id).filter((id): id is string => Boolean(id)));
   const rowsForImport = validation.filter(row => row.batch && !invalidProjectIds.has(row.batch.projectId));
+  const districtOptions = filter.state ? [...new Set(kgbvSchools.filter(school => school.state === filter.state).map(school => school.district))].sort((a, b) => a.localeCompare(b)) : [];
+  const schoolOptions = filter.state && filter.district ? kgbvSchools.filter(school => school.state === filter.state && school.district === filter.district) : [];
   const visibleBatches = batches.filter(batch => authorizedProjects.some(project => project.id === batch.projectId)).map(batch => {
     const project = projects.find(item => item.id === batch.projectId); const association = associations.find(item => item.id === batch.projectPlanAssociationId); const plan = plans.find(item => item.id === association?.trainingPlanId);
     return { ...batch, projectName: project?.name ?? 'Unavailable project', planName: plan?.name ?? 'Unavailable plan', hasDependents: readDependentRecords(batch) };
@@ -343,9 +350,9 @@ export default function Batches() {
           <TextField size="small" label="Search batch" value={filter.query} onChange={event => setFilterValue('query', event.target.value)} />
           <TextField select size="small" label="Project" value={filter.project} onChange={event => setFilterValue('project', event.target.value)}><MenuItem value="">All projects</MenuItem>{authorizedProjects.map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}</TextField>
           <TextField select size="small" label="Phase" value={filter.phase} onChange={event => setFilterValue('phase', event.target.value)}><MenuItem value="">All phases</MenuItem>{authorizedProjects.flatMap(project => (project.phases ?? []).map(phase => <MenuItem key={phase.id} value={phase.id}>{project.name}: {phase.name}</MenuItem>))}</TextField>
-          <TextField size="small" label="State" value={filter.state} onChange={event => setFilterValue('state', event.target.value)} />
-          <TextField size="small" label="District" value={filter.district} onChange={event => setFilterValue('district', event.target.value)} />
-          <TextField size="small" label="School / venue" value={filter.school} onChange={event => setFilterValue('school', event.target.value)} />
+          <TextField select size="small" label="State (13 UDISE states)" value={filter.state} onChange={event => setFilter(current => ({ ...current, state: event.target.value, district: '', school: '' }))}><MenuItem value="">All states</MenuItem>{locations.map(item => <MenuItem key={item.name} value={item.name}>{item.name}</MenuItem>)}</TextField>
+          <TextField select size="small" label="District" value={filter.district} disabled={!filter.state} onChange={event => setFilter(current => ({ ...current, district: event.target.value, school: '' }))}><MenuItem value="">All districts</MenuItem>{districtOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField>
+          <TextField select size="small" label="School / UDISE" value={filter.school} disabled={!filter.state || !filter.district} onChange={event => setFilterValue('school', event.target.value)}><MenuItem value="">All schools</MenuItem>{schoolOptions.map(item => <MenuItem key={item.udise} value={item.udise}>{item.school} · {item.udise}</MenuItem>)}</TextField>
           <TextField select size="small" label="Training plan" value={filter.plan} onChange={event => setFilterValue('plan', event.target.value)}><MenuItem value="">All plans</MenuItem>{plans.map(item => <MenuItem key={item.id} value={item.code}>{item.name}</MenuItem>)}</TextField>
           <TextField select size="small" label="Trainer" value={filter.trainer} onChange={event => setFilterValue('trainer', event.target.value)}><MenuItem value="">All trainers</MenuItem>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{item.userId}</MenuItem>)}</TextField>
           <TextField size="small" type="date" label="Start from" InputLabelProps={{ shrink: true }} value={filter.from} onChange={event => setFilterValue('from', event.target.value)} />
