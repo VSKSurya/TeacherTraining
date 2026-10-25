@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Chip, FormControl, LinearProgress, MenuItem, Paper, Select, Stack, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession, getUsers } from '../auth';
@@ -24,7 +24,7 @@ function pctText(value: number | null) { return value === null ? '—' : `${valu
 function metricValue(value: number | null | undefined) { return value === null || value === undefined ? '—' : value.toLocaleString(); }
 
 function MetricCard({ label, value, detail, color = '#176fba' }: { label: string; value: string; detail: string; color?: string }) {
-  return <Paper elevation={0} sx={{ minHeight: 112, p: 2, border: '1px solid #e3ebf3', borderRadius: 2.5 }}><Typography variant="caption" sx={{ color: '#71839a', fontWeight: 700 }}>{label}</Typography><Typography variant="h4" sx={{ mt: .6, color, fontWeight: 780, letterSpacing: '-.5px' }}>{value}</Typography><Typography variant="caption" sx={{ color: '#71839a' }}>{detail}</Typography></Paper>;
+  return <Box component="article" className="kpi schoolnet-kpi" sx={{ '& .kpi-value': { color } }}><div className="kpi-top"><span className="kpi-label">{label}</span><span className="kpi-icon" style={{ color }} aria-hidden="true">●</span></div><div className="kpi-value">{value}</div><div className="kpi-sub" title={detail}>{detail}</div></Box>;
 }
 function Bar({ label, value, total, color = '#1675c7' }: { label: string; value: number; total: number; color?: string }) {
   const progress = total ? Math.max(0, Math.min(100, value / total * 100)) : 0;
@@ -74,6 +74,21 @@ export default function SchoolnetDashboard() {
   const assessmentPassRate = assessmentCompleted ? percent(assessmentPasses, assessmentCompleted) : null;
   const ratings = feedback.map(row => numeric(row.satisfactionRating, row.rating, row.satisfaction)).filter(value => value > 0);
   const averageRating = ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null;
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  useEffect(() => {
+    const app = document.querySelector<HTMLElement>('.schoolnet-dashboard');
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest('.collapse')) return;
+      setSidebarCollapsed(current => !current);
+    };
+    app?.addEventListener('click', onClick);
+    return () => app?.removeEventListener('click', onClick);
+  }, []);
+  useEffect(() => {
+    const app = document.querySelector<HTMLElement>('.schoolnet-dashboard');
+    const button = app?.querySelector<HTMLButtonElement>('.collapse');
+    button?.setAttribute('aria-expanded', String(!sidebarCollapsed));
+  }, [sidebarCollapsed]);
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = activeBatches.filter(batch => dayValue(batch.trainingStartDate) >= today).sort((a, b) => dayValue(a.trainingStartDate).localeCompare(dayValue(b.trainingStartDate))).slice(0, 6);
   const delayed = activeBatches.filter(batch => text(batch.status).toLowerCase() !== 'completed' && dayValue(batch.trainingEndAuto) && dayValue(batch.trainingEndAuto) < today);
@@ -89,14 +104,14 @@ export default function SchoolnetDashboard() {
   const analyticsPresent = allAttendance.length > 0 || allAssessments.length > 0 || allFeedback.length > 0;
   const dateFmt = (value: unknown) => value ? new Date(`${dayValue(value)}T12:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date pending';
 
-  return <div className="app"><Sidebar /><main className="main"><Topbar title="Schoolnet Dashboard" description="Cross-project training delivery and operational monitoring." />
+  return <div className={`app schoolnet-dashboard ${sidebarCollapsed ? 'is-collapsed' : 'is-expanded'}`}><Sidebar /><main className="main"><Topbar title="Schoolnet Dashboard" description="Cross-project training delivery and operational monitoring." />
     <Box sx={{ width: '100%', maxWidth: 1600, mx: 'auto', pb: 3 }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2 }}>
-        <Box><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 780 }}>Schoolnet monitoring</Typography><Typography variant="body2" color="text.secondary">{superAdmin ? 'All projects' : `Authorized projects for ${session?.userId ?? ''}`}</Typography></Box>
+        <Box><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 780, fontSize: 'clamp(22px,2.25vw,29px)', lineHeight: 1.2, letterSpacing: '-.7px' }}>Schoolnet monitoring</Typography><Typography variant="body2" color="text.secondary" sx={{ fontSize: 14 }}>{superAdmin ? 'All projects' : `Authorized projects for ${session?.userId ?? ''}`}</Typography></Box>
         <FormControl size="small" sx={{ minWidth: 240 }}><Select displayEmpty value={selectedProject} onChange={event => setSelectedProject(event.target.value)} inputProps={{ 'aria-label': 'Filter dashboard by project' }}><MenuItem value="">All authorized projects</MenuItem>{authorizedProjects.map(project => <MenuItem key={project.id} value={project.id}>{project.name}</MenuItem>)}</Select></FormControl>
       </Stack>
       {!batchDataPresent && <Alert severity="info" sx={{ mb: 2 }}>No batch records are available yet. Delivery metrics will populate as batches and training records are added.</Alert>}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', lg: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
+      <Box className="kpis schoolnet-kpis">
         <MetricCard label="Projects" value={metricValue(projects.length)} detail={`${projects.filter(p => text(p.status).toLowerCase() === 'active').length} active · ${projects.filter(p => text(p.status).toLowerCase() === 'planning').length} planning`} />
         <MetricCard label="Active plans linked" value={metricValue(scheduledPlanCount)} detail={`${plans.filter(plan => plan.status === 'Active').length} reusable active definitions`} color="#078347" />
         <MetricCard label="Total batches" value={metricValue(batches.length)} detail={`${statusCounts.Scheduled} scheduled · ${statusCounts.Ongoing} ongoing · ${statusCounts.Completed} completed`} color="#7858a6" />
@@ -112,25 +127,25 @@ export default function SchoolnetDashboard() {
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.2fr .8fr' }, gap: 1.5, mt: 1.5 }}>
-        <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2.5 }}>
-          <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 750 }}>Project and delivery status</Typography>
+        <Paper className="panel schoolnet-panel" elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5, fontSize: 12, '& .MuiTypography-body2': { fontSize: 12 }, '& .MuiTypography-caption': { fontSize: 10 }, '& .MuiChip-label': { fontSize: 10 }, '& .MuiAlert-message': { fontSize: 11 } }}>
+          <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 750, fontSize: 15, letterSpacing: '-.15px' }}>Project and delivery status</Typography>
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>{['Planning', 'Active', 'On Hold', 'Completed'].map(status => <Chip key={status} label={`${status}: ${projects.filter(project => text(project.status).toLowerCase() === status.toLowerCase()).length}`} size="small" variant="outlined" />)}</Stack>
-          <Typography variant="subtitle2" sx={{ mb: 1, color: '#365772' }}>Batches by status</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#365772', fontSize: 12, fontWeight: 700 }}>Batches by status</Typography>
           {statusNames.map((status, index) => <Bar key={status} label={status} value={statusCounts[status]} total={batches.length} color={['#176fba', '#cf7800', '#078347', '#9aa9b7'][index]} />)}
           <Typography variant="caption" color="text.secondary">Training planned: {scheduledPlanCount} active project-plan associations · Batches scheduled: {statusCounts.Scheduled + statusCounts.Ongoing + statusCounts.Completed}</Typography>
         </Paper>
-        <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 750 }}>Scheduling watch</Typography>
+        <Paper className="panel schoolnet-panel" elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5, fontSize: 12, '& .MuiTypography-body2': { fontSize: 12 }, '& .MuiTypography-caption': { fontSize: 10 }, '& .MuiChip-label': { fontSize: 10 }, '& .MuiAlert-message': { fontSize: 11 } }}>
+          <Typography variant="h6" sx={{ fontWeight: 750, fontSize: 15, letterSpacing: '-.15px' }}>Scheduling watch</Typography>
           <Stack direction="row" spacing={1} sx={{ my: 1.3 }}><Chip color={conflicts.length ? 'error' : 'success'} size="small" label={`${conflicts.length} trainer conflicts`} /><Chip color={delayed.length ? 'warning' : 'success'} size="small" label={`${delayed.length} delayed batches`} /></Stack>
           {conflicts.length > 0 && <Alert severity="error" sx={{ mb: 1 }}>Trainer overlaps detected: {conflicts.slice(0, 3).map(([a, b]) => `${a.batchCode ?? a.id} / ${b.batchCode ?? b.id}`).join(', ')}.</Alert>}
           {delayed.length > 0 && <Alert severity="warning" sx={{ mb: 1 }}>{delayed.length} active batch(es) have a planned end date in the past.</Alert>}
-          <Typography variant="subtitle2" sx={{ mb: 1, color: '#365772' }}>Upcoming batches</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#365772', fontSize: 12, fontWeight: 700 }}>Upcoming batches</Typography>
           {upcoming.length ? upcoming.map(batch => <Box key={batch.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, py: .85, borderTop: '1px solid #edf1f5' }}><Box><Typography variant="body2" sx={{ fontWeight: 700 }}>{text(batch.batchCode) || text(batch.name) || 'Batch'}</Typography><Typography variant="caption" color="text.secondary">{projects.find(project => project.id === batch.projectId)?.name ?? 'Project'} · {batch.trainerCode || 'Trainer pending'}</Typography></Box><Typography variant="caption" sx={{ color: '#536e85', whiteSpace: 'nowrap' }}>{dateFmt(batch.trainingStartDate)}</Typography></Box>) : <Typography variant="body2" color="text.secondary">No upcoming batches are scheduled.</Typography>}
         </Paper>
       </Box>
-      <Paper elevation={0} sx={{ mt: 1.5, p: 2, border: '1px solid #e3ebf3', borderRadius: 2.5 }}>
-        <Typography variant="h6" sx={{ mb: 1.3, fontWeight: 750 }}>Project health</Typography>
-        {projects.length ? <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', minWidth: 820, borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 12 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', fontSize: 12 } }}><thead><tr><th>Project</th><th>Status</th><th>Linked plans</th><th>Batches</th><th>Completion</th><th>Risk</th></tr></thead><tbody>{projects.map(project => {
+      <Paper className="panel schoolnet-panel" elevation={0} sx={{ mt: 1.5, p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5, '& .MuiTypography-caption': { fontSize: 10 }, '& .MuiChip-label': { fontSize: 10 } }}>
+        <Typography variant="h6" sx={{ mb: 1.3, fontWeight: 750, fontSize: 15, letterSpacing: '-.15px' }}>Project health</Typography>
+        {projects.length ? <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', minWidth: 820, borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 11 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', fontSize: 11 } }}><thead><tr><th>Project</th><th>Status</th><th>Linked plans</th><th>Batches</th><th>Completion</th><th>Risk</th></tr></thead><tbody>{projects.map(project => {
           const projectAssociations = associations.filter(item => item.projectId === project.id && item.status === 'Active');
           const projectBatches = batches.filter(batch => batch.projectId === project.id); const projectActive = projectBatches.filter(batch => !['Cancelled', 'Archived'].includes(text(batch.status)));
           const completedBatches = projectBatches.filter(batch => text(batch.status).toLowerCase() === 'completed').length;

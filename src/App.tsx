@@ -11,6 +11,7 @@ import Projects from './Projects';
 import TrainingPlanPage from './components/TrainingPlan';
 import Batches from './components/Batches';
 import SchoolnetDashboard from './components/SchoolnetDashboard';
+import StateAdminDashboard from './components/StateAdminDashboard';
 import { canAccessRoute, getSession } from './auth';
 
 const theme = createTheme({
@@ -23,6 +24,7 @@ function DashboardFrame() {
   const session = getSession();
   useEffect(() => { document.body.classList.add('react-dashboard'); return () => document.body.classList.remove('react-dashboard'); }, []);
   if (session?.role === 'schoolnet-super-admin' || session?.role === 'schoolnet-project-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolnetDashboard /></ThemeProvider>;
+  if (session?.role === 'state-admin') return <ThemeProvider theme={theme}><CssBaseline /><StateAdminDashboard /></ThemeProvider>;
   return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="overview"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
