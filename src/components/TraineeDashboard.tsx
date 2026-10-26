@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Box, Button, Chip, LinearProgress, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
+import { formatDate } from '../dateFormat';
 
 type Row = Record<string, unknown>;
 type Batch = Row & { id: string; batchCode?: string; name?: string; projectId?: string; projectPlanAssociationId?: string; trainingPlanCode?: string; trainingDates?: string[]; trainingStartDate?: string; trainingEndAuto?: string; trainingStartTime?: string; trainingEndTime?: string; status?: string; venue?: string; schoolUdiseVenue?: string; meetingUrl?: string; meetingLink?: string; meetingDetails?: string; trainingPlanName?: string; resources?: string[]; assignedResources?: unknown[] };
@@ -20,7 +21,7 @@ function rowIds(row: Row) { return [row.userId, row.traineeId, row.participantId
 function approved(row: Row) { return row.approved === true || ['approved', 'confirmed', 'enrolled'].includes(text(row.status).toLowerCase()); }
 function completed(row: Row) { return row.completed === true || ['completed', 'complete', 'submitted', 'graded', 'passed'].includes(text(row.status).toLowerCase()); }
 function present(row: Row) { return row.present === true || row.attended === true || ['present', 'attended'].includes(text(row.status).toLowerCase()); }
-function fmtDate(value: string) { if (!value) return 'Date pending'; return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+function fmtDate(value: string) { return value ? formatDate(value) : 'Date pending'; }
 function batchIds(batch: Batch) { return new Set([batch.id, batch.batchCode ?? '', text(batch.uniqueId)].filter(Boolean)); }
 function Metric({ label, value, detail, color = '#153f68' }: { label: string; value: string | number; detail: string; color?: string }) { return <Paper elevation={0} sx={{ p: 1.75, border: '1px solid #e3ebf3', borderRadius: 2, minHeight: 108 }}><Typography variant="caption" sx={{ fontWeight: 700, color: '#60788e' }}>{label}</Typography><Typography variant="h4" sx={{ mt: .5, fontWeight: 800, color, fontSize: 'clamp(22px,2vw,29px)' }}>{value}</Typography><Typography variant="caption" color="text.secondary">{detail}</Typography></Paper>; }
 

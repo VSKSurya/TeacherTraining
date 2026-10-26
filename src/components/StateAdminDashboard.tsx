@@ -4,6 +4,7 @@ import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
 import { kgbvSchools, type KgbvSchool } from '../data/kgbvSchools';
 import { locations } from '../data/locations';
+import { formatDate } from '../dateFormat';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; states?: string[]; assignedUsers?: string[] };
@@ -143,7 +144,7 @@ export default function StateAdminDashboard() {
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 1.5, mb: 1.5 }}>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750, fontSize: 15, letterSpacing: '-.15px', mb: 1 }}>Assessment outcomes</Typography><Stack direction="row" spacing={1} useFlexGap flexWrap="wrap"><Chip label={`Completed: ${assessmentsInScope.filter(completed).length}`} color="primary" variant="outlined" /><Chip label={`Passed: ${assessmentsInScope.filter(passed).length}`} color="success" variant="outlined" /><Chip label={`Pass rate: ${pctLabel(assessmentDone ? pct(assessmentPass, assessmentDone) : null)}`} /></Stack>{!assessmentsInScope.length && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>Assessment records are not available for this scope.</Typography>}</Paper>
-        <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750, fontSize: 15, letterSpacing: '-.15px', mb: 1 }}>Upcoming training</Typography>{upcoming.length ? upcoming.map(batch => <Box key={batch.id} sx={{ display: 'flex', justifyContent: 'space-between', py: .65, borderTop: '1px solid #edf1f5', gap: 1 }}><Typography variant="body2" sx={{ fontWeight: 700 }}>{str(batch.batchCode) || 'Batch'} · {str(batch.state)}</Typography><Typography variant="caption" color="text.secondary">{date(batch.trainingStartDate)}</Typography></Box>) : <Typography variant="body2" color="text.secondary">No upcoming batches are scheduled.</Typography>}</Paper>
+        <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750, fontSize: 15, letterSpacing: '-.15px', mb: 1 }}>Upcoming training</Typography>{upcoming.length ? upcoming.map(batch => <Box key={batch.id} sx={{ display: 'flex', justifyContent: 'space-between', py: .65, borderTop: '1px solid #edf1f5', gap: 1 }}><Typography variant="body2" sx={{ fontWeight: 700 }}>{str(batch.batchCode) || 'Batch'} · {str(batch.state)}</Typography><Typography variant="caption" color="text.secondary">{formatDate(batch.trainingStartDate)}</Typography></Box>) : <Typography variant="body2" color="text.secondary">No upcoming batches are scheduled.</Typography>}</Paper>
       </Box>
       <Paper elevation={0} sx={{ p: { xs: 1.5, md: 2 }, border: '1px solid #e3ebf3', borderRadius: 1.5 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1} sx={{ mb: 1.25 }}>

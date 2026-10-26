@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Chip, FormControl, LinearProgress, MenuItem, Paper, Select, Stack, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession, getUsers } from '../auth';
+import { formatDate } from '../dateFormat';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; status?: string; assignedUsers?: string[]; endDate?: string };
@@ -102,7 +103,7 @@ export default function SchoolnetDashboard() {
   const batchDataPresent = allBatches.length > 0;
   const participantDataPresent = allRegistrations.length > 0 || batches.some(batch => batch.plannedParticipants !== undefined || batch.plannedUsers !== undefined);
   const analyticsPresent = allAttendance.length > 0 || allAssessments.length > 0 || allFeedback.length > 0;
-  const dateFmt = (value: unknown) => value ? new Date(`${dayValue(value)}T12:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date pending';
+  const dateFmt = (value: unknown) => value ? formatDate(dayValue(value)) : 'Date pending';
 
   return <div className={`app schoolnet-dashboard ${sidebarCollapsed ? 'is-collapsed' : 'is-expanded'}`}><Sidebar /><main className="main"><Topbar title="Schoolnet Dashboard" description="Cross-project training delivery and operational monitoring." />
     <Box sx={{ width: '100%', maxWidth: 1600, mx: 'auto', pb: 3 }}>

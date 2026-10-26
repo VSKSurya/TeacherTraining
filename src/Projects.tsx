@@ -3,6 +3,7 @@ import { Box, Checkbox, CssBaseline, FormControlLabel, ThemeProvider, createThem
 import { Footer, Sidebar, Topbar } from './components/DashboardParts';
 import { getSession } from './auth';
 import { locations } from './data/locations';
+import { formatDate } from './dateFormat';
 
 type PhaseStatus = 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
@@ -170,7 +171,7 @@ export default function Projects() {
             const batches = batchPlanUses.filter(item => item.projectPlanAssociationId === association.id).length;
             return plan ? `${plan.name}${batches ? ` · ${batches} batch${batches === 1 ? '' : 'es'}` : ''}` : '';
           }).filter(Boolean);
-          return <tr key={project.id}><td><strong className="project-name-cell">{project.name}</strong><small className="project-subline">{project.sponsor} · Odoo {project.odooId}</small><small className="project-subline">Plans: {planNames.join(', ') || 'None linked'}</small></td><td><strong>{project.code}</strong><small className="project-subline">{project.odooReference}</small></td><td>{project.states.length ? project.states.join(', ') : 'Not specified'}</td><td>{project.startDate} – {project.endDate}</td><td>{activePhase ? <><strong>{activePhase.sequence}. {activePhase.name}</strong><small className="project-subline">In Progress</small></> : 'No current phase'}</td><td><span className={`project-tag ${project.status.toLowerCase().replaceAll(' ', '-')}`}>{project.status}</span><div className="project-progress"><i style={{ width: `${progress}%` }} /></div><small>{progress}% phases completed</small></td>{canConfigure && <td><button type="button" className="project-edit-button" onClick={() => beginEdit(project)}>Configure</button></td>}</tr>;
+          return <tr key={project.id}><td><strong className="project-name-cell">{project.name}</strong><small className="project-subline">{project.sponsor} · Odoo {project.odooId}</small><small className="project-subline">Plans: {planNames.join(', ') || 'None linked'}</small></td><td><strong>{project.code}</strong><small className="project-subline">{project.odooReference}</small></td><td>{project.states.length ? project.states.join(', ') : 'Not specified'}</td><td>{formatDate(project.startDate)} – {formatDate(project.endDate)}</td><td>{activePhase ? <><strong>{activePhase.sequence}. {activePhase.name}</strong><small className="project-subline">In Progress</small></> : 'No current phase'}</td><td><span className={`project-tag ${project.status.toLowerCase().replaceAll(' ', '-')}`}>{project.status}</span><div className="project-progress"><i style={{ width: `${progress}%` }} /></div><small>{progress}% phases completed</small></td>{canConfigure && <td><button type="button" className="project-edit-button" onClick={() => beginEdit(project)}>Configure</button></td>}</tr>;
         })}{filteredProjects.length === 0 && <tr><td colSpan={canConfigure ? 7 : 6} className="project-empty">{authorizedProjects.length ? 'No projects match your search or phase filter.' : 'No projects are assigned to this account yet.'}</td></tr>}</tbody></table></div>
       </section>
     </div><Footer /></main></div>

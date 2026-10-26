@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Alert, Box, Button, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
+import { formatDateTime } from '../dateFormat';
 
 type Row = Record<string, unknown>;
 type Question = { id: string; prompt: string; options: string[]; correctIndex?: number; points: number; required: boolean };
@@ -165,5 +166,5 @@ export default function AssessmentFeedback() {
 }
 
 function SubmissionTable({ rows }: { rows: Submission[] }) {
-  return rows.length ? <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Form</TableCell><TableCell>Trainee</TableCell><TableCell>Batch</TableCell><TableCell>Plan / day</TableCell><TableCell>Submitted</TableCell><TableCell>Result</TableCell></TableRow></TableHead><TableBody>{rows.map(row => <TableRow key={row.id}><TableCell>{row.formTitle}<br /><Typography variant="caption" color="text.secondary">{row.kind} · {row.stage}</Typography></TableCell><TableCell>{row.traineeId}</TableCell><TableCell>{row.batchCode || row.batchId}</TableCell><TableCell>{row.planCode} · Day {row.day}</TableCell><TableCell>{new Date(row.submittedAt).toLocaleString()}</TableCell><TableCell>{row.score !== undefined ? `${row.score}/${row.maxMarks} · ${row.passed ? 'Pass' : 'Not passed'}` : <Chip size="small" variant="outlined" label="Submitted · non-graded" />}</TableCell></TableRow>)}</TableBody></Table></TableContainer> : <Typography variant="body2" color="text.secondary">No submissions recorded yet.</Typography>;
+  return rows.length ? <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Form</TableCell><TableCell>Trainee</TableCell><TableCell>Batch</TableCell><TableCell>Plan / day</TableCell><TableCell>Submitted</TableCell><TableCell>Result</TableCell></TableRow></TableHead><TableBody>{rows.map(row => <TableRow key={row.id}><TableCell>{row.formTitle}<br /><Typography variant="caption" color="text.secondary">{row.kind} · {row.stage}</Typography></TableCell><TableCell>{row.traineeId}</TableCell><TableCell>{row.batchCode || row.batchId}</TableCell><TableCell>{row.planCode} · Day {row.day}</TableCell><TableCell>{formatDateTime(row.submittedAt)}</TableCell><TableCell>{row.score !== undefined ? `${row.score}/${row.maxMarks} · ${row.passed ? 'Pass' : 'Not passed'}` : <Chip size="small" variant="outlined" label="Submitted · non-graded" />}</TableCell></TableRow>)}</TableBody></Table></TableContainer> : <Typography variant="body2" color="text.secondary">No submissions recorded yet.</Typography>;
 }

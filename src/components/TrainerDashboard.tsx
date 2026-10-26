@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
+import { formatDate } from '../dateFormat';
 
 type Row = Record<string, unknown>;
 type Batch = Row & { id: string; batchCode?: string; name?: string; trainerCode?: string; trainerName?: string; projectId?: string; projectName?: string; projectPlanAssociationId?: string; trainingPlanCode?: string; trainingDates?: string[]; trainingStartDate?: string; trainingEndAuto?: string; trainingDuration?: number; trainingStartTime?: string; trainingEndTime?: string; status?: string; schoolUdiseVenue?: string; state?: string; district?: string };
@@ -27,7 +28,7 @@ function personRef(row: Row) { return text(row.traineeId ?? row.participantId ??
 function isApproved(row: Row) { return row.approved === true || ['approved', 'confirmed', 'enrolled'].includes(text(row.status).toLowerCase()); }
 function isPendingApproval(row: Row) { return row.approved === false || ['pending', 'submitted', 'awaiting approval', 'requested'].includes(text(row.status).toLowerCase()); }
 function isDone(row: Row) { return row.completed === true || ['completed', 'complete', 'submitted', 'graded', 'passed'].includes(text(row.status).toLowerCase()); }
-function fmtDate(value: string) { return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+function fmtDate(value: string) { return formatDate(value); }
 function dayKey(dateValue: Date) { return `${dateValue.getFullYear()}-${String(dateValue.getMonth() + 1).padStart(2, '0')}-${String(dateValue.getDate()).padStart(2, '0')}`; }
 function Card({ title, value, detail, color = '#153f68' }: { title: string; value: string | number; detail: string; color?: string }) { return <Paper elevation={0} sx={{ p: 1.75, border: '1px solid #e3ebf3', borderRadius: 2, minHeight: 112 }}><Typography variant="caption" sx={{ color: '#60788e', fontWeight: 700 }}>{title}</Typography><Typography variant="h4" sx={{ mt: .6, color, fontWeight: 800, fontSize: 'clamp(23px,2vw,30px)', letterSpacing: '-.6px' }}>{value}</Typography><Typography variant="caption" color="text.secondary">{detail}</Typography></Paper>; }
 
