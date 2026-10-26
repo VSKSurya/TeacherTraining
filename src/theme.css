@@ -47,3 +47,26 @@
 :root[data-theme="dark"] .theme-option.active{background:#29445e;color:#a9d7ff;box-shadow:none}
 @media(max-width:760px){.theme-option{min-height:29px;padding-inline:7px;font-size:10px}}
 @media(max-width:560px){.theme-switch{gap:0;padding:2px}.theme-option{gap:0;padding-inline:6px}.theme-option span{display:none}.theme-option svg{width:16px;height:16px}}
+
+/* Keep the shared navigation shell readable in dark mode on every route. */
+:root[data-theme="dark"] .app{background:#0e1b29}
+:root[data-theme="dark"] .sidebar{border-color:#2b4054;background:linear-gradient(180deg,#172b40,#102033)!important;color:#c9d8e7}
+:root[data-theme="dark"] .sidebar .brand{color:#e5edf5}
+:root[data-theme="dark"] .sidebar .nav-label,:root[data-theme="dark"] .sidebar .side-bottom{color:#9fb3c7}
+:root[data-theme="dark"] .sidebar .side-link{background:transparent;color:#c9d8e7}
+:root[data-theme="dark"] .sidebar .side-link:hover,:root[data-theme="dark"] .sidebar .side-submenu a:hover{background:#223a51;color:#fff}
+:root[data-theme="dark"] .sidebar .side-link.active,:root[data-theme="dark"] .sidebar .side-submenu a.active,:root[data-theme="dark"] .sidebar .side-submenu a[aria-current="page"]{background:#1769ad;color:#fff}
+:root[data-theme="dark"] .sidebar .side-submenu{border-color:#3a5065}
+:root[data-theme="dark"] .sidebar .side-submenu a{color:#c9d8e7}
+:root[data-theme="dark"] .sidebar .side-group[open] .side-submenu{border-color:#354b60;background:#17283a;box-shadow:0 8px 20px #0008}
+:root[data-theme="dark"] .sidebar .collapse{border-color:#40566c;background:#1d3247;color:#c9d8e7}
+:root[data-theme="dark"] .sidebar .collapse:hover{background:#29445e}
+:root[data-theme="dark"] .topbar{border-color:#2b4054;background:#0e1b29!important;color:#e5edf5}
+:root[data-theme="dark"] .topbar .page-title h1,:root[data-theme="dark"] .topbar .profile{color:#e5edf5}
+:root[data-theme="dark"] .topbar .page-title p{color:#a6b7c9}
+:root[data-theme="dark"] .topbar .icon-button,:root[data-theme="dark"] .topbar .profile-chevron{color:#d3e0ec}
+:root[data-theme="dark"] .topbar .icon-button:hover{background:#20364b}
+:root[data-theme="dark"] .topbar .divider{border-color:#344b61}
+:root[data-theme="dark"] .topbar .avatar{color:#fff}
+:root[data-theme="dark"] .sidebar :focus-visible,:root[data-theme="dark"] .topbar :focus-visible{outline-color:#74b8ef}
+@media(max-width:620px){:root[data-theme="dark"] .sidebar{border-color:#31475c}}

@@ -142,9 +142,11 @@ export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; descr
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem('teacher-training-theme', theme);
+  }, [theme]);
+  useEffect(() => {
     const onNotificationClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      const themeButton = target.closest<HTMLElement>('[id^="theme-"]');
+      const themeButton = target.closest<HTMLButtonElement>('#theme-light, #theme-dark');
       const button = target.closest<HTMLElement>('#notifications');
       const profileButton = target.closest<HTMLElement>('#profile-button');
       if (themeButton?.id === 'theme-light' || themeButton?.id === 'theme-dark') { event.stopPropagation(); setTheme(themeButton.id === 'theme-dark' ? 'dark' : 'light'); }
@@ -153,7 +155,7 @@ export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; descr
     };
     document.addEventListener('click', onNotificationClick, true);
     return () => document.removeEventListener('click', onNotificationClick, true);
-  }, [theme]);
+  }, []);
   return <><Markup html={html} /><Popover open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
     <Box sx={{ width: { xs: 300, sm: 360 }, p: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 750, color: '#12365c' }}>Notifications</Typography>

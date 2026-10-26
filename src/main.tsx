@@ -9,5 +9,6 @@ import { createRoot } from 'react-dom/client';
 import DashboardApp from './App';
 import { seedDemoSampleData } from './demoSampleData';
 
+try { document.documentElement.dataset.theme = window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light'; } catch { document.documentElement.dataset.theme = 'light'; }
 seedDemoSampleData();
 createRoot(document.getElementById('root')!).render(<DashboardApp />);
