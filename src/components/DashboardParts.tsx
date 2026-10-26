@@ -198,8 +198,8 @@ const teacherDashboardMarkup = dashboardMarkup.replace(
   '<section class="dashboard-grid" aria-label="Training charts">',
   '<div class="dashboard-insight-row"><section class="dashboard-grid" aria-label="Training charts">',
 ).replace(
-  '</section>\n\n    <section class="bottom-grid"',
-  '</section></div>\n\n    <section class="bottom-grid"',
+  '</section>\n\n    <div class="location-performance-layout"',
+  '</section></div>\n\n    <div class="location-performance-layout"',
 );
 
 const studentOverviewMarkup = `<section class="phase-overview student-overview" aria-labelledby="student-overview-title" hidden aria-hidden="true">

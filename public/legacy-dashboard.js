@@ -277,21 +277,19 @@
   function renderLocations(){
     const level=locationPath.length,nodes=level===0?locationTree:locationPath[level-1].children;
     document.querySelector('#location-level-heading').textContent=locationLabels[level];
-    const phaseContext=selectedPhase?` · ${selectedPhaseLabel()}`:'';
-    document.querySelector('#location-context').textContent=locationPath.length?`${locationPath.map(node=>node.name).join(' · ')} · selected group${phaseContext}`:`All 13 states · ${dashboardBatches().length.toLocaleString('en-IN')} batches · ${dashboardBatches().reduce((sum,batch)=>sum+audienceSize(batch),0).toLocaleString('en-IN')} participants${phaseContext}`;
+    document.querySelector('#location-note').textContent=`${selectedAudience==='Teacher'?'Teachers':'Students'}, ${selectedPhaseLabel()||'all phases'}`;
     const breadcrumb=document.querySelector('#location-breadcrumb');
-    const crumbs=[...locationPath.map((node,index)=>({label:locationLabels[index],index})),{label:locationLabels[level],index:level}];
+    const crumbs=[{label:'All states',index:0},...locationPath.map((node,index)=>({label:node.name,index:index+1}))];
     breadcrumb.innerHTML=crumbs.map((crumb,index)=>`<li><button type="button" class="location-crumb" data-crumb-depth="${crumb.index}" ${index===crumbs.length-1?'aria-current="page"':''}>${crumb.label}</button></li>`).join('');
+    const meter=(percent,tone='')=>`<span class="cell-meter"><span class="meter ${tone}"><span style="width:${percent.toFixed(1)}%"></span></span><b>${percent.toFixed(1)}%</b></span>`;
     const sortedNodes=nodes.map((node,index)=>{
-      const stats=locationTotals(node),completedPercent=stats.plannedUsers?stats.completedUsers/stats.plannedUsers*100:0;
-      const sortValue=locationSortKey==='batchCompletionPercent'?(stats.batches?stats.completedBatches/stats.batches*100:0):locationSortKey==='completedPercent'?completedPercent:stats[locationSortKey];
-      return {node,index,stats,completedPercent,sortValue};
+      const stats=locationTotals(node),batchCompletionPercent=stats.batches?stats.completedBatches/stats.batches*100:0,completedPercent=stats.plannedUsers?stats.completedUsers/stats.plannedUsers*100:0;
+      const sortValue=locationSortKey==='batchCompletionPercent'?batchCompletionPercent:locationSortKey==='completedPercent'?completedPercent:stats[locationSortKey];
+      return {node,index,stats,batchCompletionPercent,completedPercent,sortValue};
     }).sort((a,b)=>locationSortDirection==='asc'?a.sortValue-b.sortValue||a.node.name.localeCompare(b.node.name):b.sortValue-a.sortValue||a.node.name.localeCompare(b.node.name));
-    locationRows.innerHTML=sortedNodes.map(({node,index,stats,completedPercent})=>{
-      const completedBatches=stats.completedBatches;
-      const batchCompletionPercent=stats.batches?completedBatches/stats.batches*100:0;
+    locationRows.innerHTML=sortedNodes.map(({node,index,stats,batchCompletionPercent,completedPercent})=>{
       const name=level<3?`<button type="button" class="location-name-button" data-location-index="${index}" aria-label="Show ${locationLabels[level+1]} locations for ${node.name}">${node.name}</button>`:node.name;
-      return `<tr><td>${name}</td><td>${stats.scheduled}</td><td>${stats.ongoing}</td><td>${batchCompletionPercent.toFixed(1)}%</td><td>${stats.notStarted}</td><td>${stats.plannedUsers.toLocaleString('en-IN')}</td><td>${stats.registeredUsers.toLocaleString('en-IN')}</td><td>${stats.completedUsers.toLocaleString('en-IN')}</td><td>${completedPercent.toFixed(1)}%</td></tr>`;
+      return `<tr><td>${name}</td><td>${stats.scheduled.toLocaleString('en-IN')}</td><td>${stats.ongoing.toLocaleString('en-IN')}</td><td>${stats.notStarted.toLocaleString('en-IN')}</td><td>${meter(batchCompletionPercent)}</td><td>${stats.plannedUsers.toLocaleString('en-IN')}</td><td>${stats.registeredUsers.toLocaleString('en-IN')}</td><td>${stats.completedUsers.toLocaleString('en-IN')}</td><td>${meter(completedPercent,'orange')}</td></tr>`;
     }).join('');
   }
   document.querySelectorAll('[data-location-sort]').forEach(button=>button.addEventListener('click',()=>{
