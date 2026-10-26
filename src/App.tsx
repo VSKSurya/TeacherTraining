@@ -19,6 +19,7 @@ import TraineeDashboard from './components/TraineeDashboard';
 import OpenRegistration from './components/OpenRegistration';
 import RegistrationRequests from './components/RegistrationRequests';
 import RecoverTraineeId from './components/RecoverTraineeId';
+import TrainerRepository from './components/TrainerRepository';
 import { canAccessRoute, getSession } from './auth';
 
 const theme = createTheme({
@@ -51,6 +52,7 @@ function AppContent() {
   if (path === '/training-plans') return <TrainingPlanPage />;
   if (path === '/batches') return <Batches />;
   if (path === '/registration-requests') return <RegistrationRequests />;
+  if (path === '/trainers') return <TrainerRepository />;
   if (path === '/attendance') return <Attendance />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;

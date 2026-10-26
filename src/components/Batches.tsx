@@ -4,6 +4,7 @@ import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession, getUsers } from '../auth';
 import { kgbvSchools } from '../data/kgbvSchools';
 import { locations } from '../data/locations';
+import { trainerAvailability, trainerAvailabilityConflict, trainerProfiles } from '../trainerStore';
 
 type Project = { id: string; name: string; code: string; assignedUsers: string[]; startDate: string; endDate: string; phases?: { id: string; name: string; sequence: number }[]; batchImportPolicy?: 'valid-rows' | 'all-or-nothing' };
 type Plan = { id: string; code: string; name: string; type: 'Classroom' | 'Online' | 'Hybrid'; status: 'Draft' | 'Active' | 'Inactive' };
@@ -13,7 +14,7 @@ type Batch = {
   id: string; batchCode: string; uniqueId?: string; projectId: string; projectPlanAssociationId: string; name: string;
   phaseId?: string; trainingCycle?: string; deliveryMode?: string; schoolUdiseVenue?: string; state?: string; district?: string; location?: string;
   trainingPlanCode?: string; trainingStartDate?: string; trainingDuration?: number; trainingEndAuto?: string; trainingDates?: string[];
-  trainingStartTime?: string; trainingEndTime?: string; trainerCode?: string; trainerName?: string; openRegistration?: boolean; registrationCapacity?: number; registrationWindowBeforeDays?: number; registrationWindowAfterDays?: number;
+  trainingStartTime?: string; trainingEndTime?: string; trainerCode?: string; trainerProfileCode?: string; trainerName?: string; openRegistration?: boolean; registrationCapacity?: number; registrationWindowBeforeDays?: number; registrationWindowAfterDays?: number;
   createdAt: string; createdBy: string; status?: BatchStatus; warnings?: string[]; registrationCount?: number; attendanceCount?: number; assessmentCount?: number; dependentRecordCount?: number;
 };
 type DraftRow = { Batch_UniqueID: string; Project_Code: string; Project_Phase: string; Training_Cycle: string; Delivery_Mode: string; School_UDISE_Venue: string; State: string; District: string; Location: string; Training_Plan_Code: string; Training_Start_Date: string; Training_Duration: string; Training_End_Auto: string; Training_Start_Time: string; Training_End_Time: string; Trainer_Code: string; Trainer_Name: string; Open_Registration: string };
@@ -143,7 +144,8 @@ export default function Batches() {
   const [batches, setBatches] = useState<Batch[]>(() => readList(BATCHES_KEY));
   const [holidays] = useState<Holiday[]>(() => readList(HOLIDAYS_KEY, fallbackHolidays));
   const [venues] = useState<ApprovedVenue[]>(() => readList(VENUES_KEY));
-  const trainers = useMemo(() => getUsers().filter(user => user.active && user.role === 'trainer'), []);
+  const trainerDirectory = useMemo(() => trainerProfiles(), []);
+  const trainers = useMemo(() => getUsers().filter(user => user.active && user.role === 'trainer' && trainerDirectory.some(profile => profile.active && profile.userId?.toLowerCase() === user.userId.toLowerCase())), [trainerDirectory]);
   const [fileName, setFileName] = useState('');
   const [validation, setValidation] = useState<ValidationRow[]>([]);
   const [fileHeaders, setFileHeaders] = useState<string[]>([]);
@@ -163,6 +165,8 @@ export default function Batches() {
     const prior = [...batches];
     const allProjects = projects;
     const userList = getUsers();
+    const trainerDirectory = trainerProfiles();
+    const availabilityRecords = trainerAvailability();
     for (let index = 0; index < rawRows.length; index++) {
       const source = rawRows[index]; const values = { ...blankRow(), ...source } as DraftRow;
       const rowNumber = Number(source.__sourceRowNumber) || index + 2; const errors: string[] = []; const warnings: string[] = [];
@@ -210,11 +214,19 @@ export default function Batches() {
       if (startTime && endTime && startTime >= endTime) errors.push('Training_End_Time must be later than Training_Start_Time.');
       const openRegistration = parseFlag(values.Open_Registration);
       if (openRegistration === null) errors.push('Open_Registration must be Yes/No, True/False, or 1/0.');
-      const trainerCode = values.Trainer_Code.trim();
+      const suppliedTrainerCode = values.Trainer_Code.trim();
+      const trainerProfile = trainerDirectory.find(item => item.trainerCode.toLowerCase() === suppliedTrainerCode.toLowerCase() || item.userId?.toLowerCase() === suppliedTrainerCode.toLowerCase());
+      const trainerCode = trainerProfile?.userId ?? suppliedTrainerCode;
       const trainer = userList.find(item => item.userId.toLowerCase() === trainerCode.toLowerCase());
-      if (!trainerCode) errors.push('Trainer_Code is required.');
-      else if (!trainer || !trainer.active || trainer.role !== 'trainer') errors.push(`Trainer_Code “${trainerCode}” is not an active, eligible trainer.`);
-      if (values.Trainer_Name.trim()) warnings.push('Trainer_Name could not be verified; Trainer_Code is authoritative in the current trainer master.');
+      if (!suppliedTrainerCode) errors.push('Trainer_Code is required.');
+      else if (!trainerProfile) errors.push(`Trainer_Code “${suppliedTrainerCode}” was not found in the trainer repository.`);
+      else if (!trainerProfile.active || !trainer || !trainer.active || trainer.role !== 'trainer') errors.push(`Trainer ${trainerProfile.trainerCode} is inactive or is not linked to an active trainer account.`);
+      if (trainerProfile && values.Trainer_Name.trim() && values.Trainer_Name.trim().toLowerCase() !== trainerProfile.name.toLowerCase()) warnings.push(`Trainer_Name was changed to the trainer repository name (${trainerProfile.name}).`);
+      const projectRules = project as (Project & Record<string, unknown>) | undefined;
+      const permittedTrainers = Array.isArray(projectRules?.eligibleTrainerCodes) ? projectRules.eligibleTrainerCodes : Array.isArray(projectRules?.eligibleTrainerIds) ? projectRules.eligibleTrainerIds : Array.isArray(projectRules?.eligibleTrainers) ? projectRules.eligibleTrainers : [];
+      if (trainerProfile && permittedTrainers.length && !permittedTrainers.some(value => String(value).toLowerCase() === trainerProfile.trainerCode.toLowerCase() || String(value).toLowerCase() === trainerCode.toLowerCase())) errors.push(`Trainer ${trainerProfile.trainerCode} is not eligible for project ${projectCode}.`);
+      const requiredCompetencies = Array.isArray(projectRules?.requiredTrainerCompetencies) ? projectRules.requiredTrainerCompetencies : [];
+      if (trainerProfile && requiredCompetencies.some(value => !trainerProfile.competencies.some(competency => competency.toLowerCase() === String(value).toLowerCase()))) errors.push(`Trainer ${trainerProfile.trainerCode} does not meet all competencies required by project ${projectCode}.`);
       let phaseId: string | undefined;
       if (values.Project_Phase.trim()) {
         const phase = project?.phases?.find(item => item.id === values.Project_Phase.trim() || item.name.toLowerCase() === values.Project_Phase.trim().toLowerCase());
@@ -236,6 +248,11 @@ export default function Batches() {
           else if (suppliedEnd !== calculatedEnd) errors.push(`Training_End_Auto is ${suppliedEnd}, but the approved weekday/holiday rule calculates ${calculatedEnd}.`);
         }
         if (project && (startDate < project.startDate || calculatedEnd > project.endDate)) errors.push(`Training dates ${startDate} to ${calculatedEnd} fall outside the project period ${project.startDate} to ${project.endDate}.`);
+        if (trainerProfile?.active && trainerProfile.userId) {
+          const availability = trainerAvailabilityConflict(trainerCode, trainingDates, startTime ?? '', endTime ?? '', availabilityRecords);
+          if (availability.conflicts.length) errors.push(`Trainer availability conflict: ${availability.conflicts.join('; ')}.`);
+          if (availability.undeclared.length) warnings.push(`No declared availability for ${trainerProfile.name} on ${availability.undeclared.join(', ')}; confirm availability before scheduling.`);
+        }
         const plannedConflict = [...prior, ...rows.flatMap(item => item.batch ? [item.batch] : [])].find(item => item.status !== 'Cancelled' && item.status !== 'Archived' && item.trainerCode?.toLowerCase() === trainerCode.toLowerCase() && (item.trainingDates ?? (item.trainingStartDate ? scheduleDays(item.trainingStartDate, item.trainingDuration ?? 1, holidays, item.state ?? '') : [])).some(date => trainingDates.includes(date)) && timesOverlap(startTime ?? '', endTime ?? '', item.trainingStartTime ?? '', item.trainingEndTime ?? ''));
         if (plannedConflict) errors.push(`Trainer ${trainerCode} has an overlapping booking (${plannedConflict.batchCode}) on one or more training days.`);
       }
@@ -249,7 +266,7 @@ export default function Batches() {
         id: crypto.randomUUID(), batchCode: uniqueId, uniqueId, projectId: project.id, projectPlanAssociationId: association.id, name: values.Location || `Batch ${uniqueId}`,
         phaseId, trainingCycle: values.Training_Cycle.trim(), deliveryMode, schoolUdiseVenue: venueRef, state: values.State.trim(), district: values.District.trim(), location: values.Location.trim(),
         trainingPlanCode: plan.code, trainingStartDate: startDate, trainingDuration: duration, trainingEndAuto: calculatedEnd, trainingDates, trainingStartTime: startTime, trainingEndTime: endTime,
-        trainerCode, trainerName: values.Trainer_Name.trim(), openRegistration, registrationWindowBeforeDays: 0, registrationWindowAfterDays: 0, createdAt: new Date().toISOString(), createdBy: session?.userId ?? '', status: 'Scheduled', warnings: [...warnings],
+        trainerCode, trainerProfileCode: trainerProfile?.trainerCode, trainerName: trainerProfile?.name ?? values.Trainer_Name.trim(), openRegistration, registrationWindowBeforeDays: 0, registrationWindowAfterDays: 0, createdAt: new Date().toISOString(), createdBy: session?.userId ?? '', status: 'Scheduled', warnings: [...warnings],
       } : undefined;
       rows.push({ rowNumber, values, batch, errors: [...new Set(errors)], warnings });
     }
@@ -290,7 +307,15 @@ export default function Batches() {
     const dates = scheduleDays(start, days, holidays, editBatch.state ?? ''); const end = dates.at(-1) ?? '';
     if (!start || !end || days <= 0 || startTime >= endTime) { setEditError('Enter a valid start date, positive duration, and end time later than start time.'); return; }
     if (dates[0] !== start) { setEditError(`The start date is not a training day. Choose an available weekday such as ${dates[0] ?? 'a later date'}.`); return; }
-    if (!trainers.some(item => item.userId.toLowerCase() === (editBatch.trainerCode ?? '').toLowerCase())) { setEditError('The assigned trainer is no longer active or eligible.'); return; }
+    const editTrainerProfile = trainerDirectory.find(item => item.userId?.toLowerCase() === (editBatch.trainerCode ?? '').toLowerCase());
+    if (!editTrainerProfile?.active || !trainers.some(item => item.userId.toLowerCase() === (editBatch.trainerCode ?? '').toLowerCase())) { setEditError('The assigned trainer is inactive, unlinked, or no longer eligible.'); return; }
+    const availabilityCheck = trainerAvailabilityConflict(editTrainerProfile.userId || editTrainerProfile.trainerCode, dates, startTime, endTime);
+    if (availabilityCheck.conflicts.length) { setEditError(`Trainer availability conflict: ${availabilityCheck.conflicts.join('; ')}.`); return; }
+    const projectRules = projects.find(item => item.id === editBatch.projectId) as (Project & Record<string, unknown>) | undefined;
+    const permittedTrainers = Array.isArray(projectRules?.eligibleTrainerCodes) ? projectRules.eligibleTrainerCodes : Array.isArray(projectRules?.eligibleTrainerIds) ? projectRules.eligibleTrainerIds : Array.isArray(projectRules?.eligibleTrainers) ? projectRules.eligibleTrainers : [];
+    if (permittedTrainers.length && !permittedTrainers.some(value => String(value).toLowerCase() === editTrainerProfile.trainerCode.toLowerCase() || String(value).toLowerCase() === editTrainerProfile.userId?.toLowerCase())) { setEditError('The assigned trainer is not eligible for this project.'); return; }
+    const requiredCompetencies = Array.isArray(projectRules?.requiredTrainerCompetencies) ? projectRules.requiredTrainerCompetencies : [];
+    if (requiredCompetencies.some(value => !editTrainerProfile.competencies.some(competency => competency.toLowerCase() === String(value).toLowerCase()))) { setEditError('The assigned trainer does not meet the project competency requirements.'); return; }
     const activeRegistrations = readList<Record<string, unknown>>(REGISTRATIONS_KEY).filter(row => String(row.batchId ?? '') === editBatch.id && !['rejected', 'cancelled', 'withdrawn'].includes(String(row.status ?? '').toLowerCase())).length;
     if (editBatch.registrationCapacity !== undefined && (!Number.isInteger(editBatch.registrationCapacity) || editBatch.registrationCapacity < 1)) { setEditError('Registration capacity must be a positive whole number, or leave it blank for no limit.'); return; }
     if (editBatch.registrationCapacity !== undefined && editBatch.registrationCapacity < activeRegistrations) { setEditError(`Capacity cannot be lower than the ${activeRegistrations} existing active registrations.`); return; }
@@ -298,7 +323,7 @@ export default function Batches() {
     if (project && (start < project.startDate || end > project.endDate)) { setEditError('The calculated training dates must remain within the project period.'); return; }
     const conflict = batches.find(item => item.id !== editBatch.id && item.status !== 'Cancelled' && item.status !== 'Archived' && item.trainerCode?.toLowerCase() === editBatch.trainerCode?.toLowerCase() && (item.trainingDates ?? []).some(date => dates.includes(date)) && timesOverlap(startTime, endTime, item.trainingStartTime ?? '', item.trainingEndTime ?? ''));
     if (conflict) { setEditError(`Trainer booking conflicts with ${conflict.batchCode}.`); return; }
-    const updatedBatch = { ...editBatch, trainingDates: dates, trainingEndAuto: end };
+    const updatedBatch = { ...editBatch, trainerProfileCode: editTrainerProfile.trainerCode, trainerName: editTrainerProfile.name, trainingDates: dates, trainingEndAuto: end };
     const next = batches.map(item => item.id === editBatch.id ? updatedBatch : item); localStorage.setItem(BATCHES_KEY, JSON.stringify(next)); setBatches(next); setEditBatch(null); setEditError('');
   }
   function cancelBatch(batch: Batch) {
@@ -357,7 +382,7 @@ export default function Batches() {
           <TextField select size="small" label="District" value={filter.district} disabled={!filter.state} onChange={event => setFilter(current => ({ ...current, district: event.target.value, school: '' }))}><MenuItem value="">All districts</MenuItem>{districtOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField>
           <TextField select size="small" label="School / UDISE" value={filter.school} disabled={!filter.state || !filter.district} onChange={event => setFilterValue('school', event.target.value)}><MenuItem value="">All schools</MenuItem>{schoolOptions.map(item => <MenuItem key={item.udise} value={item.udise}>{item.school} · {item.udise}</MenuItem>)}</TextField>
           <TextField select size="small" label="Training plan" value={filter.plan} onChange={event => setFilterValue('plan', event.target.value)}><MenuItem value="">All plans</MenuItem>{plans.map(item => <MenuItem key={item.id} value={item.code}>{item.name}</MenuItem>)}</TextField>
-          <TextField select size="small" label="Trainer" value={filter.trainer} onChange={event => setFilterValue('trainer', event.target.value)}><MenuItem value="">All trainers</MenuItem>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{item.userId}</MenuItem>)}</TextField>
+          <TextField select size="small" label="Trainer" value={filter.trainer} onChange={event => setFilterValue('trainer', event.target.value)}><MenuItem value="">All trainers</MenuItem>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.trainerCode} · {trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.name}</MenuItem>)}</TextField>
           <TextField size="small" type="date" label="Start from" InputLabelProps={{ shrink: true }} value={filter.from} onChange={event => setFilterValue('from', event.target.value)} />
           <TextField size="small" type="date" label="Start to" InputLabelProps={{ shrink: true }} value={filter.to} onChange={event => setFilterValue('to', event.target.value)} />
           <TextField select size="small" label="Status" value={filter.status} onChange={event => setFilterValue('status', event.target.value)}><MenuItem value="">All statuses</MenuItem>{(['Scheduled', 'Ongoing', 'Completed', 'Cancelled', 'Archived'] as BatchStatus[]).map(status => <MenuItem key={status} value={status}>{status}</MenuItem>)}</TextField>
@@ -367,7 +392,7 @@ export default function Batches() {
     </Stack></Box><Footer /></main>
 
     <Dialog open={confirmImport} onClose={() => setConfirmImport(false)} maxWidth="sm" fullWidth><DialogTitle>Confirm batch import</DialogTitle><DialogContent><Typography>Import {rowsForImport.length} batch row(s) from {fileName}? Invalid rows will be excluded. Warning rows will be imported with their warnings recorded.</Typography>{invalidProjectIds.size > 0 && <Typography sx={{ mt: 1 }} variant="body2" color="text.secondary">All-or-nothing policy holds every row for {invalidProjectIds.size} project(s) with validation errors.</Typography>}</DialogContent><DialogActions><Button onClick={() => setConfirmImport(false)}>Back</Button><Button variant="contained" onClick={importValidRows}>Import valid rows</Button></DialogActions></Dialog>
-    <Dialog open={Boolean(editBatch)} onClose={() => setEditBatch(null)} maxWidth="sm" fullWidth><Box component="form" onSubmit={saveEditedBatch}><DialogTitle>Edit batch schedule</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}>{editBatch && <><TextField type="date" label="Training start date" InputLabelProps={{ shrink: true }} value={editBatch.trainingStartDate ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingStartDate: event.target.value })} /><TextField type="number" label="Training duration (days)" inputProps={{ min: 1, max: 365 }} value={editBatch.trainingDuration ?? 1} onChange={event => setEditBatch({ ...editBatch, trainingDuration: Number(event.target.value) })} /><TextField type="number" label="Registration capacity (blank = no limit)" inputProps={{ min: 1, step: 1 }} value={editBatch.registrationCapacity ?? ''} onChange={event => setEditBatch({ ...editBatch, registrationCapacity: event.target.value === '' ? undefined : Number(event.target.value) })} /><TextField select label="Open registration" value={editBatch.openRegistration ? 'yes' : 'no'} onChange={event => setEditBatch({ ...editBatch, openRegistration: event.target.value === 'yes' })}><MenuItem value="yes">Open</MenuItem><MenuItem value="no">Closed</MenuItem></TextField><TextField select label="Trainer" value={editBatch.trainerCode ?? ''} onChange={event => setEditBatch({ ...editBatch, trainerCode: event.target.value })}>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{item.userId}</MenuItem>)}</TextField><TextField type="time" label="Start time" InputLabelProps={{ shrink: true }} value={editBatch.trainingStartTime ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingStartTime: event.target.value })} /><TextField type="time" label="End time" InputLabelProps={{ shrink: true }} value={editBatch.trainingEndTime ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingEndTime: event.target.value })} />{editError && <Alert severity="error">{editError}</Alert>}</>}</Stack></DialogContent><DialogActions><Button type="button" onClick={() => setEditBatch(null)}>Cancel</Button><Button type="submit" variant="contained">Save schedule</Button></DialogActions></Box></Dialog>
+    <Dialog open={Boolean(editBatch)} onClose={() => setEditBatch(null)} maxWidth="sm" fullWidth><Box component="form" onSubmit={saveEditedBatch}><DialogTitle>Edit batch schedule</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}>{editBatch && <><TextField type="date" label="Training start date" InputLabelProps={{ shrink: true }} value={editBatch.trainingStartDate ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingStartDate: event.target.value })} /><TextField type="number" label="Training duration (days)" inputProps={{ min: 1, max: 365 }} value={editBatch.trainingDuration ?? 1} onChange={event => setEditBatch({ ...editBatch, trainingDuration: Number(event.target.value) })} /><TextField type="number" label="Registration capacity (blank = no limit)" inputProps={{ min: 1, step: 1 }} value={editBatch.registrationCapacity ?? ''} onChange={event => setEditBatch({ ...editBatch, registrationCapacity: event.target.value === '' ? undefined : Number(event.target.value) })} /><TextField select label="Open registration" value={editBatch.openRegistration ? 'yes' : 'no'} onChange={event => setEditBatch({ ...editBatch, openRegistration: event.target.value === 'yes' })}><MenuItem value="yes">Open</MenuItem><MenuItem value="no">Closed</MenuItem></TextField><TextField select label="Trainer" value={editBatch.trainerCode ?? ''} onChange={event => setEditBatch({ ...editBatch, trainerCode: event.target.value })}>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.trainerCode} · {trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.name}</MenuItem>)}</TextField><TextField type="time" label="Start time" InputLabelProps={{ shrink: true }} value={editBatch.trainingStartTime ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingStartTime: event.target.value })} /><TextField type="time" label="End time" InputLabelProps={{ shrink: true }} value={editBatch.trainingEndTime ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingEndTime: event.target.value })} />{editError && <Alert severity="error">{editError}</Alert>}</>}</Stack></DialogContent><DialogActions><Button type="button" onClick={() => setEditBatch(null)}>Cancel</Button><Button type="submit" variant="contained">Save schedule</Button></DialogActions></Box></Dialog>
   </div>;
 }
 function timesOverlap(startA: string, endA: string, startB: string, endB: string) { return Boolean(startA && endA && startB && endB && startA < endB && startB < endA); }
