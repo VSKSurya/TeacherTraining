@@ -16,6 +16,7 @@ export type MenuKey =
   | 'attendance'
   | 'content-library'
   | 'assessments'
+  | 'assessment-feedback'
   | 'certificates'
   | 'mis-reports'
   | 'holiday-master'
@@ -40,12 +41,12 @@ export const ROLES = Object.keys(ROLE_LABELS) as UserRole[];
 
 const ROLE_MENUS: Record<UserRole, readonly MenuKey[]> = {
   'sponsor-admin': ['dashboard', 'projects', 'mis-reports'],
-  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository'],
-  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'certificates', 'mis-reports', 'trainer-repository'],
-  'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'mis-reports', 'trainer-repository'],
-  'school-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'trainer-repository'],
-  trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library', 'trainer-repository'],
-  trainee: ['dashboard', 'projects', 'training-plans', 'content-library', 'assessments', 'certificates'],
+  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'assessment-feedback', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository'],
+  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
+  'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'assessment-feedback', 'mis-reports', 'trainer-repository'],
+  'school-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
+  trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
+  trainee: ['dashboard', 'projects', 'training-plans', 'content-library', 'assessments', 'assessment-feedback', 'certificates'],
   'reporting-audit-user': ['dashboard', 'projects', 'mis-reports'],
 };
 
@@ -54,6 +55,7 @@ export function canAccessMenu(role: UserRole, menu: MenuKey) {
 }
 
 export function canAccessRoute(role: UserRole, path: string) {
+  if (path === '/assessments') return canAccessMenu(role, 'assessment-feedback');
   if (path === '/trainers') return canAccessMenu(role, 'trainer-repository');
   if (path === '/registration-requests') return ['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin', 'trainer'].includes(role);
   if (!path || path === '/') return canAccessMenu(role, 'dashboard');

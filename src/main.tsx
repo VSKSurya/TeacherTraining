@@ -7,5 +7,7 @@ import './projects.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import DashboardApp from './App';
+import { seedDemoSampleData } from './demoSampleData';
 
+seedDemoSampleData();
 createRoot(document.getElementById('root')!).render(<DashboardApp />);

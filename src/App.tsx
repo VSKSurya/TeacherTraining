@@ -20,7 +20,8 @@ import OpenRegistration from './components/OpenRegistration';
 import RegistrationRequests from './components/RegistrationRequests';
 import RecoverTraineeId from './components/RecoverTraineeId';
 import TrainerRepository from './components/TrainerRepository';
-import { canAccessRoute, getSession } from './auth';
+import AssessmentFeedback from './components/AssessmentFeedback';
+import { canAccessRoute, getSession, ROLE_LABELS } from './auth';
 
 const theme = createTheme({
   palette: { primary: { main: '#176fba' }, background: { default: '#f4f7fb', paper: '#ffffff' }, text: { primary: '#173553', secondary: '#71839a' } },
@@ -42,10 +43,35 @@ function AppContent() {
   const basePath = import.meta.env.BASE_URL;
   const pathname = window.location.pathname;
   const path = (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname).replace(/\/$/, '');
+  const session = getSession();
+  useEffect(() => {
+    const pages: Record<string, string> = {
+      '/login': 'Sign in', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
+      '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
+      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Repository',
+      '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
+      '/content-library': 'Learning Library', '/assessments': 'Assessments and Feedback',
+      '/reports/batch-performance': 'Batch Performance', '/reports/training-summary': 'Training Summary',
+      '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report',
+    };
+    const role = session ? ROLE_LABELS[session.role] : '';
+    const page = pages[path] ?? 'Dashboard';
+    const title = session ? `${role} · ${page} · ${session.userId} | Schoolnet` : `${page} | Schoolnet`;
+    const roleDescription = session ? `Signed in as ${session.userId}, ${role}. Access the Schoolnet teacher training portal.` : 'Schoolnet teacher training portal for projects, training plans, batches, learning resources, and registration.';
+    document.title = title;
+    const updateMeta = (selector: string, attribute: string, value: string, create: () => HTMLMetaElement) => {
+      let element = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!element) { element = create(); document.head.appendChild(element); }
+      element.setAttribute(attribute, value);
+    };
+    updateMeta('meta[name="description"]', 'content', roleDescription, () => { const meta = document.createElement('meta'); meta.name = 'description'; return meta; });
+    updateMeta('meta[name="application-name"]', 'content', session ? `Schoolnet ${role}` : 'Schoolnet Teacher Training', () => { const meta = document.createElement('meta'); meta.name = 'application-name'; return meta; });
+    updateMeta('meta[property="og:title"]', 'content', title, () => { const meta = document.createElement('meta'); meta.setAttribute('property', 'og:title'); return meta; });
+    updateMeta('meta[property="og:description"]', 'content', roleDescription, () => { const meta = document.createElement('meta'); meta.setAttribute('property', 'og:description'); return meta; });
+  }, [path, session?.userId, session?.role]);
   if (path === '/login') return <Login />;
   if (path === '/register') return <OpenRegistration />;
   if (path === '/recover-trainee') return <RecoverTraineeId />;
-  const session = getSession();
   if (!session) return <Login />;
   if (!canAccessRoute(session.role, path)) return <DashboardFrame />;
   if (path === '/projects') return <Projects />;
@@ -56,6 +82,7 @@ function AppContent() {
   if (path === '/attendance') return <Attendance />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
+  if (path === '/assessments') return <AssessmentFeedback />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;
   return <DashboardFrame />;
 }

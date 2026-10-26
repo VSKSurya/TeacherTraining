@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Dialog, IconButton, Snackbar } from '@mui/material';
+import { Box, Dialog, IconButton, Snackbar } from '@mui/material';
 import { batchRecords, locations, statusNames, trainers, uniqueSorted, type BatchRecord } from '../data/reportData';
 import { Sidebar, Topbar, Footer, type AppPage } from '../components/DashboardParts';
 import { ReportFilterPanel, ReportPanel, ReportTable, type FilterSpec, type ReportFilters, type TableColumn } from './ReportComponents';
+import AssessmentFeedbackReport from './AssessmentFeedbackReport';
+import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportCharts';
 
 const reportMeta = {
   'batch-performance': { page: 'Batch Performance' as AppPage, title: 'Batch Performance', description: 'Review scheduled batches, attendance, and completion across the training plan.', heading: 'Batch performance details', note: '750 batch records from the Phasewise Dashboard. UDISE codes and end dates are not provided in that data.' },
@@ -50,13 +52,7 @@ function ShellBehavior({ onToast }: { onToast: (text: string) => void }) {
   useEffect(() => {
     const click = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (target.closest('.collapse')) {
-        const button = target.closest<HTMLButtonElement>('.collapse');
-        const app = document.querySelector('.report-app');
-        const collapsed = app?.classList.toggle('is-collapsed') ?? false;
-        button?.setAttribute('aria-expanded', String(!collapsed));
-        button?.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
-      } else if (target.closest('#notifications')) onToast('You’re all caught up on dashboard notifications.');
+      if (target.closest('#notifications')) onToast('You’re all caught up on dashboard notifications.');
       else if (target.closest('#profile-button')) onToast('Signed in as Project Sponsor.');
     };
     document.addEventListener('click', click);
@@ -67,6 +63,7 @@ function ShellBehavior({ onToast }: { onToast: (text: string) => void }) {
 
 function BatchPerformance() {
   const [filters, setFilters] = useState<ReportFilters>(emptyBatchFilters);
+  const [view, setView] = useState<ReportView>('table');
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const rows = useMemo(() => batchRecords.filter(row => {
     if (filters.batch && !row.batch.toLowerCase().includes(filters.batch.trim().toLowerCase())) return false;
@@ -87,12 +84,17 @@ function BatchPerformance() {
     if (key === 'state' && next.district && !reportDistrictOptions(value).some(option => option.value === next.district)) next.district = '';
     return next;
   });
-  return <ReportPage kind="batch-performance"><ReportFilterPanel fields={batchFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={() => setFilters(emptyBatchFilters)} onApply={() => setFilters(current => ({ ...current }))} /><ReportPanel title="Batch performance details" description={reportMeta['batch-performance'].note} count={`${rows.length.toLocaleString()} of ${batchRecords.length.toLocaleString()} batches`}><ReportTable columns={columns} rows={rows} rowKey={row => row.batch} emptyMessage="No batches match these filters." tableClassName="batch-table" /></ReportPanel></ReportPage>;
+  const statusColors = ['#8295a8', '#2386bd', '#16945b'];
+  const statusSeries = statusNames.map((label, index) => ({ label, color: statusColors[index] }));
+  const batchStatusRows = [{ label: 'Filtered batches', values: statusNames.map(status => rows.filter(row => row.status === status).length) }];
+  const attendanceByStatus = statusNames.map(status => { const matching = rows.filter(row => row.status === status); return { label: status, values: [matching.length ? matching.reduce((sum, row) => sum + row.attendance, 0) / matching.length : 0] }; });
+  return <ReportPage kind="batch-performance"><ReportFilterPanel fields={batchFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={() => setFilters(emptyBatchFilters)} onApply={() => setFilters(current => ({ ...current }))} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Batch status" description="Filtered batch count by delivery status" series={statusSeries} rows={batchStatusRows} chartType="pie" /><ReportBarChart title="Attendance by status" description="Average attendance percentage in each batch status" series={[{ label: 'Average attendance', color: '#176fba' }]} rows={attendanceByStatus} formatter={value => `${value.toFixed(1)}%`} chartType="cluster" /></Box> : <ReportPanel title="Batch performance details" description={reportMeta['batch-performance'].note} count={`${rows.length.toLocaleString()} of ${batchRecords.length.toLocaleString()} batches`}><ReportTable columns={columns} rows={rows} rowKey={row => row.batch} emptyMessage="No batches match these filters." tableClassName="batch-table" /></ReportPanel>}</ReportPage>;
 }
 
 type SummaryRow = { plan: string; batches: number; planned: number; registered: number; started: number; completed: number; attendance: number; completion: number };
 function TrainingSummary() {
   const [filters, setFilters] = useState<ReportFilters>(emptySummaryFilters);
+  const [view, setView] = useState<ReportView>('table');
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const rows = useMemo(() => {
     const source = batchRecords.filter(row => {
@@ -125,7 +127,10 @@ function TrainingSummary() {
     return next;
   });
   const matchingBatches = batchRecords.filter(row => (!filters.plan || asPlanLabel(row.plan) === filters.plan) && (!filters.state || row.state === filters.state) && (!filters.district || row.district === filters.district) && (!filters.trainer || row.trainer === filters.trainer) && (!filters.start || row.startDate >= new Date(`${filters.start}T00:00:00`)) && (!filters.to || row.startDate <= new Date(`${filters.to}T23:59:59`)) && (!filters.status || row.status === filters.status) && attendanceMatch(row.attendance, filters.attendance)).length;
-  return <ReportPage kind="training-summary"><ReportFilterPanel fields={summaryFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={() => setFilters(emptySummaryFilters)} onApply={() => setFilters(current => ({ ...current }))} /><ReportPanel title="Training summary details" description={reportMeta['training-summary'].note} count={`${rows.length} training plans from ${matchingBatches.toLocaleString()} batches`}><ReportTable columns={columns} rows={rows} rowKey={row => row.plan} emptyMessage="No training plans match these filters." tableClassName="summary-table" /></ReportPanel></ReportPage>;
+  const traineeSeries = [{ label: 'Planned', color: '#9bb1c5' }, { label: 'Registered', color: '#2584b9' }, { label: 'Completed', color: '#16945b' }];
+  const traineeRows = rows.map(row => ({ label: row.plan, values: [row.planned, row.registered, row.completed] }));
+  const rateRows = rows.map(row => ({ label: row.plan, values: [row.attendance, row.completion] }));
+  return <ReportPage kind="training-summary"><ReportFilterPanel fields={summaryFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={() => setFilters(emptySummaryFilters)} onApply={() => setFilters(current => ({ ...current }))} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Trainee progress by plan" description="Planned, registered, and completed trainees in the filtered plans" series={traineeSeries} rows={traineeRows} chartType="cluster" /><ReportBarChart title="Training rates by plan" description="Attendance and completion percentages for the filtered plans" series={[{ label: 'Attendance', color: '#2584b9' }, { label: 'Completion', color: '#16945b' }]} rows={rateRows} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title="Training summary details" description={reportMeta['training-summary'].note} count={`${rows.length} training plans from ${matchingBatches.toLocaleString()} batches`}><ReportTable columns={columns} rows={rows} rowKey={row => row.plan} emptyMessage="No training plans match these filters." tableClassName="summary-table" /></ReportPanel>}</ReportPage>;
 }
 
 type AttendanceRow = { batch: string; batchIndex: number; plan: string; state: string; district: string; trainer: string; date: Date; dateText: string; present: boolean; totalDays: number; daysPresent: number; attendance: number; name: string };
@@ -139,6 +144,7 @@ const attendanceRows: AttendanceRow[] = batchRecords.filter(batch => batch.statu
 }));
 function AttendanceReport() {
   const [filters, setFilters] = useState<ReportFilters>(emptyAttendanceFilters);
+  const [view, setView] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AttendanceRow | null>(null);
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
@@ -167,7 +173,10 @@ function AttendanceReport() {
   };
   const clear = () => { setFilters(emptyAttendanceFilters); setPage(1); };
   const info = rows.length ? `Showing ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, rows.length)} of ${rows.length.toLocaleString()}` : 'No attendance records';
-  return <><ReportPage kind="attendance-report"><ReportFilterPanel fields={attendanceFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={clear} onApply={() => setPage(1)} /><ReportPanel title="Attendance details" description={reportMeta['attendance-report'].note} count={`${rows.length.toLocaleString()} attendance records`}><ReportTable columns={columns} rows={pageRows} rowKey={(row, index) => `${row.batchIndex}-${index}-${row.name}`} emptyMessage="No attendance records match these filters." tableClassName="attendance-table" pagination={{ info, onPrevious: () => setPage(Math.max(1, currentPage - 1)), onNext: () => setPage(Math.min(pages, currentPage + 1)), previousDisabled: currentPage === 1, nextDisabled: currentPage === pages }} /></ReportPanel></ReportPage>
+  const presentCount = rows.filter(row => row.present).length;
+  const absentCount = rows.length - presentCount;
+  const attendanceByPlan = [...rows.reduce((grouped, row) => { const current = grouped.get(row.plan) ?? { count: 0, total: 0 }; current.count++; current.total += row.attendance; grouped.set(row.plan, current); return grouped; }, new Map<string, { count: number; total: number }>()).entries()].map(([plan, value]) => ({ label: plan, values: [value.count ? value.total / value.count : 0] })).sort((a, b) => a.label.localeCompare(b.label));
+  return <><ReportPage kind="attendance-report"><ReportFilterPanel fields={attendanceFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={clear} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Present and absent" description="Attendance record counts using the active report filters" series={[{ label: 'Present', color: '#16945b' }, { label: 'Absent', color: '#dd6670' }]} rows={[{ label: 'Filtered records', values: [presentCount, absentCount] }]} chartType="pie" /><ReportBarChart title="Attendance rate by plan" description="Average present percentage in the filtered plan records" series={[{ label: 'Attendance', color: '#2584b9' }]} rows={attendanceByPlan} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title="Attendance details" description={reportMeta['attendance-report'].note} count={`${rows.length.toLocaleString()} attendance records`}><ReportTable columns={columns} rows={pageRows} rowKey={(row, index) => `${row.batchIndex}-${index}-${row.name}`} emptyMessage="No attendance records match these filters." tableClassName="attendance-table" pagination={{ info, onPrevious: () => setPage(Math.max(1, currentPage - 1)), onNext: () => setPage(Math.min(pages, currentPage + 1)), previousDisabled: currentPage === 1, nextDisabled: currentPage === pages }} /></ReportPanel>}</ReportPage>
     <Dialog open={Boolean(selected)} onClose={() => setSelected(null)} PaperProps={{ className: 'attendance-dialog' }} slotProps={{ backdrop: { className: 'attendance-backdrop' } }}>{selected && <><header><div><span className="dialog-eyebrow">Attendance record</span><h2>{selected.name}</h2></div><IconButton className="dialog-close" aria-label="Close details" onClick={() => setSelected(null)}>×</IconButton></header><div className="dialog-content">{[['Batch', selected.batch], ['Training Plan', selected.plan], ['Training Date', selected.dateText], ['Location', `${selected.district}, ${selected.state}`], ['Trainer', selected.trainer], ['Attendance', selected.present ? 'Present' : 'Absent']].map(([label, value]) => <div className="dialog-item" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></>}</Dialog>
   </>;
 }
@@ -177,6 +186,7 @@ function ReportPage({ kind, children }: { kind: ReportKey; children: React.React
   return <div className="app report-app"><Sidebar activePage={meta.page} /><main className="main report-main"><Topbar title={meta.title} description={meta.description} />{children}<Footer /></main><ShellBehavior onToast={setToast} /><Snackbar open={Boolean(toast)} autoHideDuration={2800} onClose={() => setToast('')} message={toast} /></div>;
 }
 export function Reports({ report }: { report: string }) {
+  if (report === 'assessment-feedback') return <AssessmentFeedbackReport />;
   if (report === 'batch-performance') return <BatchPerformance />;
   if (report === 'training-summary') return <TrainingSummary />;
   return <AttendanceReport />;

@@ -5,7 +5,6 @@ import { getSession } from '../auth';
 import { kgbvSchools, type KgbvSchool } from '../data/kgbvSchools';
 
 type Row = Record<string, unknown>;
-type Project = Row & { id: string; name: string; assignedUsers?: string[] };
 type Batch = Row & { id: string; batchCode?: string; projectId?: string; schoolUdiseVenue?: string; status?: string; trainingStartDate?: string; trainingEndAuto?: string; trainingDates?: string[]; trainingStartTime?: string; trainingEndTime?: string; trainingCycle?: string; trainerCode?: string };
 const KEYS = { projects: 'teacher-training-projects', batches: 'teacher-training-batch-plan-uses', registrations: 'teacher-training-registrations', attendance: 'teacher-training-attendance-records', assessments: 'teacher-training-assessment-records', feedback: 'teacher-training-feedback-records', certificates: 'teacher-training-certificates', eligible: 'teacher-training-eligible-participants', eligibleTeachers: 'teacher-training-eligible-teachers', eligibleStudents: 'teacher-training-eligible-students', schoolEligibility: 'teacher-training-school-eligibility', schoolAccess: 'teacher-training-school-access', schoolAssignments: 'teacher-training-school-admin-assignments' };
 function readRows<T extends Row>(key: string): T[] { try { const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value.filter(row => row && typeof row === 'object') as T[] : []; } catch { return []; } }
@@ -46,7 +45,6 @@ function Stat({ label, value, detail, color = '#153f68' }: { label: string; valu
 
 export default function SchoolAdminDashboard() {
   const session = getSession();
-  const projects = useMemo(() => readRows<Project>(KEYS.projects), []);
   const batches = useMemo(() => readRows<Batch>(KEYS.batches), []);
   const registrations = useMemo(() => readRows<Row>(KEYS.registrations), []);
   const attendance = useMemo(() => readRows<Row>(KEYS.attendance), []);
@@ -55,18 +53,29 @@ export default function SchoolAdminDashboard() {
   const certificates = useMemo(() => readRows<Row>(KEYS.certificates), []);
   const eligibleRows = useMemo<Row[]>(() => [...readRows<Row>(KEYS.eligible), ...readRows<Row>(KEYS.schoolEligibility), ...readRows<Row>(KEYS.eligibleTeachers).map(row => ({ ...row, participantType: 'teacher', eligible: row.eligible ?? true })), ...readRows<Row>(KEYS.eligibleStudents).map(row => ({ ...row, participantType: 'student', eligible: row.eligible ?? true }))], []);
   const userId = session?.userId ?? '';
-  const assignedProjects = projects.filter(project => (project.assignedUsers ?? []).some(id => id.toLowerCase() === userId.toLowerCase()));
-  const assignedProjectIds = new Set(assignedProjects.map(project => project.id));
-  const assignedBatches = batches.filter(batch => batch.projectId && assignedProjectIds.has(batch.projectId) && !['cancelled', 'archived'].includes(str(batch.status).toLowerCase()));
+  const activeBatches = batches.filter(batch => !['cancelled', 'archived'].includes(str(batch.status).toLowerCase()));
   const explicitSchools = schoolAssignmentsFor(userId);
-  const schoolIds = new Set([...explicitSchools, ...assignedBatches.map(batch => str(batch.schoolUdiseVenue)).filter(Boolean)]);
+  const schoolIds = new Set([...kgbvSchools.map(school => school.udise), ...explicitSchools, ...activeBatches.map(batch => str(batch.schoolUdiseVenue)).filter(Boolean)]);
   const schools = [...schoolIds].map(id => kgbvSchools.find(school => school.udise === id) ?? { udise: id, school: `School ${id}`, state: '', district: '', block: '', enrollment: 0 } as KgbvSchool);
+  const [stateFilter, setStateFilter] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('');
+  const [blockFilter, setBlockFilter] = useState('');
+  const [udiseFilter, setUdiseFilter] = useState('');
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
-  const selectedId = schools.some(school => school.udise === selectedSchoolId) ? selectedSchoolId : (schools[0]?.udise ?? '');
-  const school = schools.find(item => item.udise === selectedId);
-  const schoolBatches = assignedBatches.filter(batch => str(batch.schoolUdiseVenue) === selectedId);
+  const stateOptions = [...new Set(schools.map(item => item.state).filter(Boolean))].sort();
+  const stateSchools = schools.filter(item => !stateFilter || item.state === stateFilter);
+  const districtOptions = [...new Set(stateSchools.map(item => item.district).filter(Boolean))].sort();
+  const districtSchools = stateSchools.filter(item => !districtFilter || item.district === districtFilter);
+  const blockOptions = [...new Set(districtSchools.map(item => item.block).filter(Boolean))].sort();
+  const blockSchools = districtSchools.filter(item => !blockFilter || item.block === blockFilter);
+  const schoolOptions = blockSchools.filter(item => !udiseFilter || item.udise.toLowerCase().includes(udiseFilter.trim().toLowerCase()));
+  const selectedSchools = selectedSchoolId && schoolOptions.some(item => item.udise === selectedSchoolId) ? schoolOptions.filter(item => item.udise === selectedSchoolId) : schoolOptions;
+  const selectedId = selectedSchools.length === 1 ? selectedSchools[0].udise : '';
+  const school = selectedSchools[0];
+  const selectedSchoolIds = new Set(selectedSchools.map(item => item.udise));
+  const schoolBatches = activeBatches.filter(batch => selectedSchoolIds.has(str(batch.schoolUdiseVenue)));
   const batchIds = new Set(schoolBatches.flatMap(batch => [batch.id, batch.batchCode ?? '', str(batch.uniqueId)]).filter(Boolean));
-  const related = (rows: Row[]) => rows.filter(row => batchIds.has(rowBatch(row)) || (selectedId && rowSchool(row) === selectedId));
+  const related = (rows: Row[]) => rows.filter(row => batchIds.has(rowBatch(row)) || selectedSchoolIds.has(rowSchool(row)));
   const schoolRegistrations = related(registrations).filter(row => !['cancelled', 'withdrawn', 'rejected'].includes(str(row.status).toLowerCase()));
   const approvedRegistrations = schoolRegistrations.filter(approved);
   const schoolAttendance = related(attendance);
@@ -77,7 +86,7 @@ export default function SchoolAdminDashboard() {
   const attendanceRate = schoolAttendance.length ? Math.round(presentCount / schoolAttendance.length * 100) : null;
   const assessmentDone = schoolAssessments.filter(done).length;
   const issuedCertificates = schoolCertificates.filter(row => row.issued === true || ['issued', 'generated', 'delivered'].includes(str(row.status).toLowerCase())).length;
-  const eligibleForSchool = eligibleRows.filter(row => rowSchool(row) === selectedId || (rowBatch(row) && batchIds.has(rowBatch(row))));
+  const eligibleForSchool = eligibleRows.filter(row => selectedSchoolIds.has(rowSchool(row)) || (rowBatch(row) && batchIds.has(rowBatch(row))));
   const isEligible = (row: Row) => row.eligible === true || ['eligible', 'approved', 'active'].includes(str(row.eligibilityStatus ?? row.status).toLowerCase());
   const isTeacher = (row: Row) => ['teacher', 'educator', 'trainer'].includes(str(row.participantType ?? row.beneficiaryCategory ?? row.role ?? row.category).toLowerCase());
   const isStudent = (row: Row) => ['student', 'pupil', 'learner'].includes(str(row.participantType ?? row.beneficiaryCategory ?? row.role ?? row.category).toLowerCase());
@@ -116,21 +125,28 @@ export default function SchoolAdminDashboard() {
     ...(pendingApprovals ? [{ title: 'Trainees awaiting approval', count: pendingApprovals, detail: 'Review registrations for this school.', href: '/batches' }] : []),
     ...(overdueBatches ? [{ title: 'Training dates past due', count: overdueBatches, detail: 'Update the batch status or schedule.', href: '/batches' }] : []),
     ...(missingAttendance ? [{ title: 'Attendance records missing', count: missingAttendance, detail: 'Review past training dates with incomplete trainee attendance.', href: '/attendance' }] : []),
-    ...(pendingAssessments ? [{ title: 'Assessment records pending', count: pendingAssessments, detail: 'Approved trainees without completed assessment records.', href: '/reports/training-summary' }] : []),
-    ...(pendingFeedback ? [{ title: 'Feedback responses pending', count: pendingFeedback, detail: 'Feedback has not been recorded for all approved trainees.', href: '/reports/training-summary' }] : []),
-    ...(completedTraineeIds.size > issuedCertificates ? [{ title: 'Certificates to review', count: completedTraineeIds.size - issuedCertificates, detail: 'Review completed trainees who do not have an issued certificate.', href: '/reports/training-summary' }] : []),
+    ...(pendingAssessments ? [{ title: 'Assessment records pending', count: pendingAssessments, detail: 'Approved trainees without completed assessment records.', href: '/assessments' }] : []),
+    ...(pendingFeedback ? [{ title: 'Feedback responses pending', count: pendingFeedback, detail: 'Feedback has not been recorded for all approved trainees.', href: '/assessments' }] : []),
+    ...(completedTraineeIds.size > issuedCertificates ? [{ title: 'Certificates to review', count: completedTraineeIds.size - issuedCertificates, detail: 'Review completed trainees who do not have an issued certificate.', href: '/assessments' }] : []),
   ];
 
-  return <div className="app"><Sidebar /><main className="main"><Topbar title="School Admin Dashboard" description="A school-level view of training delivery, participation, and pending work." />
-    <Box sx={{ maxWidth: 1480, mx: 'auto', pb: 3 }}>
-      {!schools.length ? <Alert severity="warning" sx={{ mb: 2 }}>No school is assigned to {userId}. This dashboard only shows schools linked to projects assigned to your account or schools explicitly assigned by a Schoolnet Admin.</Alert> : <>
-        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1.5} sx={{ mb: 2 }}>
-          <Box><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 780, fontSize: 'clamp(22px,2.25vw,29px)', letterSpacing: '-.7px' }}>School overview</Typography><Typography variant="body2" color="text.secondary">{school?.state ? `${school.state} · ${school.district} · ` : ''}{school?.school} {school?.udise ? `· UDISE ${school.udise}` : ''}</Typography></Box>
-          {schools.length > 1 && <TextField select label="Authorized school" value={selectedId} onChange={event => setSelectedSchoolId(event.target.value)} size="small" sx={{ minWidth: 280 }}>{schools.map(item => <MenuItem key={item.udise} value={item.udise}>{item.school} · {item.udise}</MenuItem>)}</TextField>}
-        </Stack>
+  return <div className="app"><Sidebar /><main className="main"><Topbar title="School Admin Dashboard" description="A state and school view of training delivery, participation, and pending work." />
+    <Box sx={{ width: '100%', maxWidth: '100%', margin: '0px', pb: 3 }}>
+      {!schools.length ? <Alert severity="warning" sx={{ mb: 2 }}>No schools are available in the school master data.</Alert> : <>
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 1.25 }}><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 780, fontSize: 'clamp(22px,2.25vw,29px)', letterSpacing: '-.7px' }}>Overview</Typography><Typography variant="body2" color="text.secondary">{selectedSchools.length === 1 && school ? `${school.state ? `${school.state} · ${school.district} · ` : ''}${school.school} · UDISE ${school.udise}` : `${selectedSchools.length} authorized school${selectedSchools.length === 1 ? '' : 's'} in the selected hierarchy`}</Typography></Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(150px, 1fr))', gap: 1, overflowX: 'auto', pb: .5 }}>
+            <TextField select size="small" label="State" value={stateFilter} onChange={event => { setStateFilter(event.target.value); setDistrictFilter(''); setBlockFilter(''); setSelectedSchoolId(''); }}><MenuItem value="">All authorized states</MenuItem>{stateOptions.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+            <TextField select size="small" label="District" value={districtFilter} onChange={event => { setDistrictFilter(event.target.value); setBlockFilter(''); setSelectedSchoolId(''); }}><MenuItem value="">All districts</MenuItem>{districtOptions.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+            <TextField select size="small" label="Block" value={blockFilter} onChange={event => { setBlockFilter(event.target.value); setSelectedSchoolId(''); }}><MenuItem value="">All blocks</MenuItem>{blockOptions.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+            <TextField select size="small" label="School" value={selectedSchoolId} onChange={event => setSelectedSchoolId(event.target.value)}><MenuItem value="">All schools in selection</MenuItem>{schoolOptions.map(item => <MenuItem key={item.udise} value={item.udise}>{item.school}</MenuItem>)}</TextField>
+            <TextField size="small" label="UDISE Code" placeholder="Search UDISE code" value={udiseFilter} onChange={event => { setUdiseFilter(event.target.value); setSelectedSchoolId(''); }} inputProps={{ 'aria-label': 'Filter by UDISE code' }} />
+          </Box>
+        </Box>
+        {!selectedSchools.length && <Alert severity="info" sx={{ mb: 1.5 }}>No authorized schools match the selected filters.</Alert>}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
           <Stat label="Eligible teachers" value={eligibleRows.length ? eligibleTeachers : '—'} detail={eligibleRows.length ? 'On the school eligibility roster' : 'Eligibility roster not configured'} />
-          <Stat label="Eligible students" value={eligibleRows.length ? eligibleStudents : '—'} detail={eligibleRows.length ? `On roster · school profile enrollment ${school?.enrollment ?? 0}` : `School profile enrollment: ${school?.enrollment ?? 0}; eligibility roster not configured`} />
+          <Stat label="Eligible students" value={eligibleRows.length ? eligibleStudents : '—'} detail={eligibleRows.length ? `On roster · school profile enrollment ${selectedSchools.reduce((total, item) => total + (item.enrollment || 0), 0)}` : `School profile enrollment: ${selectedSchools.reduce((total, item) => total + (item.enrollment || 0), 0)}; eligibility roster not configured`} />
           <Stat label="Registered trainees" value={schoolRegistrations.length} detail={`${approvedRegistrations.length} approved`} />
           <Stat label="Training batches" value={schoolBatches.length} detail={`${completedBatchCount} completed`} />
           <Stat label="Attendance" value={attendanceRate === null ? '—' : `${attendanceRate}%`} detail={`${presentCount} present of ${schoolAttendance.length} saved records`} color="#078347" />

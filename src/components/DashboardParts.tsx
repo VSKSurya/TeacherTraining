@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { Box, Dialog, IconButton, Popover, Snackbar, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../store';
-import { setAudience, setFilter, setPhase, setSidebarCollapsed, clearFilters } from '../store';
+import { setAudience, setFilter, setPhase, clearFilters } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
 import { locations } from '../data/locations';
 import { kgbvSchools } from '../data/kgbvSchools';
@@ -17,7 +17,7 @@ const Markup = memo(function Markup({ html, className }: { html: string; classNa
   const baseAwareHtml = html.replace(/\b(src|href)="\/(?!\/)/g, (_match, attribute: string) => `${attribute}="${import.meta.env.BASE_URL}`);
   return <div className={`component-markup ${className ?? ''}`} dangerouslySetInnerHTML={{ __html: baseAwareHtml }} />;
 });
-export type AppPage = 'Dashboard' | 'Projects' | 'Training Plans' | 'Batches' | 'Attendance' | 'Content Library' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Holiday Master' | 'Trainer Repository';
+export type AppPage = 'Dashboard' | 'Projects' | 'Training Plans' | 'Batches' | 'Attendance' | 'Content Library' | 'Assessments & Feedback' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Assessment & Feedback Report' | 'Holiday Master' | 'Trainer Repository';
 export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) {
   const dashboard = activePage === 'Dashboard';
   const role = getSession()?.role ?? 'sponsor-admin';
@@ -30,18 +30,25 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
   html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Repository' ? ' active' : ''}" href="/trainers"${activePage === 'Trainer Repository' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Repository</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
-  const reportLinks: Record<string, string> = { 'Batch Performance': '/reports/batch-performance', 'Training Summary': '/reports/training-summary', 'Attendance Report': '/reports/attendance-report' };
+  html = html.replace('href="#effectiveness">Feedback Report</a>', 'href="/reports/assessment-feedback">Assessment &amp; Feedback Report</a>');
+  const reportLinks: Record<string, string> = { 'Batch Performance': '/reports/batch-performance', 'Training Summary': '/reports/training-summary', 'Attendance Report': '/reports/attendance-report', 'Assessment & Feedback Report': '/reports/assessment-feedback' };
   for (const [label, href] of Object.entries(reportLinks)) {
     const fileName = label === 'Batch Performance' ? 'Batch_performance.html' : label === 'Training Summary' ? 'Training_Summary.html' : 'Attendance_Report.html';
     html = html.replace(`href="${fileName}"`, `href="${href}"${activePage === label ? ' aria-current="page"' : ''}`);
   }
+  if (activePage === 'Assessment & Feedback Report') html = html.replace('href="/reports/assessment-feedback"', 'href="/reports/assessment-feedback" aria-current="page"');
   if (activePage in reportLinks) html = html.replace('<summary class="side-link">', '<summary class="side-link active">');
   const menuByLabel: Record<string, MenuKey> = {
     Dashboard: 'dashboard', Projects: 'projects', 'Training Plans': 'training-plans', Batches: 'batches',
-    Attendance: 'attendance', 'Content Library': 'content-library', Assessments: 'assessments',
+    Attendance: 'attendance', 'Content Library': 'content-library', Assessments: 'assessment-feedback',
     Certificates: 'certificates', 'MIS Reports': 'mis-reports', 'Holiday Master': 'holiday-master', 'Trainer Repository': 'trainer-repository',
   };
   const sidebarDocument = new DOMParser().parseFromString(html, 'text/html');
+  const assessmentsLink = [...sidebarDocument.querySelectorAll<HTMLAnchorElement>('.side-nav > .side-link')].find(link => link.textContent?.trim() === 'Assessments');
+  if (assessmentsLink) {
+    assessmentsLink.href = '/assessments';
+    if (activePage === 'Assessments & Feedback') { assessmentsLink.classList.add('active'); assessmentsLink.setAttribute('aria-current', 'page'); }
+  }
   sidebarDocument.querySelectorAll<HTMLElement>('.side-nav > .side-link, .side-nav > .side-group').forEach(item => {
     const label = item.querySelector('span')?.textContent?.trim() ?? item.querySelector('summary')?.textContent?.trim() ?? '';
     const menu = menuByLabel[label];
@@ -49,6 +56,17 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   });
   html = sidebarDocument.body.innerHTML;
   useEffect(() => {
+    const syncResponsiveCollapse = () => {
+      const button = document.querySelector<HTMLButtonElement>('.sidebar .collapse');
+      const app = button?.closest<HTMLElement>('.app');
+      if (!button || !app || !window.matchMedia('(max-width: 900px) and (min-width: 621px)').matches) return;
+      if (app.classList.contains('is-expanded') || app.classList.contains('is-collapsed')) return;
+      app.classList.add('is-collapsed');
+      button.setAttribute('aria-expanded', 'false');
+      button.setAttribute('aria-label', 'Expand navigation');
+    };
+    syncResponsiveCollapse();
+    window.addEventListener('resize', syncResponsiveCollapse);
     const groups = () => Array.from(document.querySelectorAll<HTMLDetailsElement>('.sidebar .side-group'));
     const placeSubmenu = (group: HTMLDetailsElement) => {
       const submenu = group.querySelector<HTMLElement>('.side-submenu');
@@ -65,6 +83,17 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     };
     const onClick = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
+      const collapseButton = event.target.closest<HTMLButtonElement>('.sidebar .collapse');
+      if (collapseButton) {
+        const app = collapseButton.closest<HTMLElement>('.app');
+        if (!app) return;
+        const collapsed = app.classList.toggle('is-collapsed');
+        const tablet = window.matchMedia('(max-width: 900px) and (min-width: 621px)').matches;
+        app.classList.toggle('is-expanded', !collapsed && tablet);
+        collapseButton.setAttribute('aria-expanded', String(!collapsed));
+        collapseButton.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+        return;
+      }
       const link = event.target.closest<HTMLAnchorElement>('.sidebar .side-submenu a');
       if (!link) return;
       const group = link.closest<HTMLDetailsElement>('.side-group');
@@ -82,6 +111,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     return () => {
       document.removeEventListener('toggle', onToggle, true);
       document.removeEventListener('click', onClick, true);
+      window.removeEventListener('resize', syncResponsiveCollapse);
       window.removeEventListener('resize', onLayoutChange);
       sidebar?.removeEventListener('scroll', onLayoutChange);
     };
@@ -225,7 +255,6 @@ export function DashboardBridge() {
         if (phase) window.setTimeout(() => dispatch(setPhase(selectableCard.classList.contains('selected') ? phase : null)), 0);
       }
       if (target.closest('#clear-filters')) dispatch(clearFilters());
-      if (target.closest('.collapse')) window.setTimeout(() => dispatch(setSidebarCollapsed(document.querySelector('.app')?.classList.contains('is-collapsed') ?? false)), 0);
     };
     const onChange = (event: Event) => {
       const select = event.target as HTMLSelectElement;

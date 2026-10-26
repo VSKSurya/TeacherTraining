@@ -338,16 +338,6 @@
 
   document.querySelector('#notifications').addEventListener('click',()=>showToast('You’re all caught up on dashboard notifications.'));
   document.querySelector('#profile-button').addEventListener('click',()=>showToast('Signed in as Project Sponsor.'));
-  const appRoot=document.querySelector('.app');
-  const collapseButton=document.querySelector('.collapse');
-  function setSidebarCollapsed(collapsed){
-    appRoot.classList.toggle('is-collapsed',collapsed);
-    appRoot.classList.toggle('is-expanded',!collapsed && window.matchMedia('(max-width: 900px) and (min-width: 621px)').matches);
-    collapseButton.setAttribute('aria-label',collapsed?'Expand navigation':'Collapse navigation');
-    collapseButton.setAttribute('aria-expanded',String(!collapsed));
-  }
-  if(window.matchMedia('(max-width: 900px) and (min-width: 621px)').matches)setSidebarCollapsed(true);
-  collapseButton.addEventListener('click',()=>setSidebarCollapsed(!appRoot.classList.contains('is-collapsed')));
   function selectPhase(phase){
     const phaseNumber=Number(phase.querySelector('.phase-number').textContent.match(/\d+/)?.[0]);
     selectedPhase=selectedPhase===phaseNumber?null:phaseNumber;
