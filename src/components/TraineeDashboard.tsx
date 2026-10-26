@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Button, Chip, LinearProgress, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
 
@@ -73,7 +73,6 @@ export default function TraineeDashboard() {
 
   return <div className="app"><Sidebar /><main className="main"><Topbar title="Trainee Dashboard" description={`Your training, learning tasks, and records · ${ownName}`} />
     <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 3 }}>
-      {!ownRegistrations.length && <Alert severity="info" sx={{ mb: 1.5 }}>No training registrations are linked to {traineeId}. Your batches and personal records will appear here after registration.</Alert>}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
         <Metric label="Registered batches" value={ownRegistrations.length} detail={`${approvedRegistrations.length} approved`} />
         <Metric label="Upcoming sessions" value={upcomingSessions.length} detail="Across your registered batches" />
