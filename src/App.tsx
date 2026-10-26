@@ -10,8 +10,12 @@ import HolidayMaster from './HolidayMaster';
 import Projects from './Projects';
 import TrainingPlanPage from './components/TrainingPlan';
 import Batches from './components/Batches';
+import Attendance from './components/Attendance';
 import SchoolnetDashboard from './components/SchoolnetDashboard';
 import StateAdminDashboard from './components/StateAdminDashboard';
+import SchoolAdminDashboard from './components/SchoolAdminDashboard';
+import TrainerDashboard from './components/TrainerDashboard';
+import TraineeDashboard from './components/TraineeDashboard';
 import { canAccessRoute, getSession } from './auth';
 
 const theme = createTheme({
@@ -25,6 +29,9 @@ function DashboardFrame() {
   useEffect(() => { document.body.classList.add('react-dashboard'); return () => document.body.classList.remove('react-dashboard'); }, []);
   if (session?.role === 'schoolnet-super-admin' || session?.role === 'schoolnet-project-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolnetDashboard /></ThemeProvider>;
   if (session?.role === 'state-admin') return <ThemeProvider theme={theme}><CssBaseline /><StateAdminDashboard /></ThemeProvider>;
+  if (session?.role === 'school-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolAdminDashboard /></ThemeProvider>;
+  if (session?.role === 'trainer') return <ThemeProvider theme={theme}><CssBaseline /><TrainerDashboard /></ThemeProvider>;
+  if (session?.role === 'trainee') return <ThemeProvider theme={theme}><CssBaseline /><TraineeDashboard /></ThemeProvider>;
   return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="overview"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
@@ -38,6 +45,7 @@ function AppContent() {
   if (path === '/projects') return <Projects />;
   if (path === '/training-plans') return <TrainingPlanPage />;
   if (path === '/batches') return <Batches />;
+  if (path === '/attendance') return <Attendance />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;

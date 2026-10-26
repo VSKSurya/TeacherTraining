@@ -20,3 +20,5 @@ The app uses the shared sidebar, topbar, and footer. MIS report pages share the 
 - `npm run dev` — start the Vite development server
 - `npm run build` — type-check and build the production bundle
 - `npm run preview` — serve the production bundle locally
+
+Set `VITE_BUSINESS_TIME_ZONE` to an IANA time zone (for example, `Asia/Kolkata`) to define the business date used by daily attendance. The attendance page defaults to `Asia/Kolkata` when the variable is not set.

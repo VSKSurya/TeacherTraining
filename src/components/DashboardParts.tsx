@@ -17,7 +17,7 @@ const Markup = memo(function Markup({ html, className }: { html: string; classNa
   const baseAwareHtml = html.replace(/\b(src|href)="\/(?!\/)/g, (_match, attribute: string) => `${attribute}="${import.meta.env.BASE_URL}`);
   return <div className={`component-markup ${className ?? ''}`} dangerouslySetInnerHTML={{ __html: baseAwareHtml }} />;
 });
-export type AppPage = 'Dashboard' | 'Projects' | 'Training Plans' | 'Batches' | 'Content Library' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Holiday Master';
+export type AppPage = 'Dashboard' | 'Projects' | 'Training Plans' | 'Batches' | 'Attendance' | 'Content Library' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Holiday Master';
 export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) {
   const dashboard = activePage === 'Dashboard';
   const role = getSession()?.role ?? 'sponsor-admin';
@@ -26,6 +26,8 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     .replace('class="side-link" href="#projects"', `class="side-link${activePage === 'Projects' ? ' active' : ''}" href="/projects"${activePage === 'Projects' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="#training-progress"', `class="side-link${activePage === 'Training Plans' ? ' active' : ''}" href="/training-plans"${activePage === 'Training Plans' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="#batch-status"', `class="side-link${activePage === 'Batches' ? ' active' : ''}" href="/batches"${activePage === 'Batches' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="#attendance"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
   html = html.replace('</nav>', `<a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
   const reportLinks: Record<string, string> = { 'Batch Performance': '/reports/batch-performance', 'Training Summary': '/reports/training-summary', 'Attendance Report': '/reports/attendance-report' };
