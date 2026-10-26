@@ -80,9 +80,8 @@ export default function TrainingPlanPage() {
 
   return <div className="app"><Sidebar activePage="Training Plans" /><main className="main"><Topbar title="Training Plans" description="Create and manage structured learning programs." />
     <Box sx={{ maxWidth: 1440, width: '100%', mx: 'auto', pb: 3 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2} sx={{ mb: 2.5 }}>
-        <Box><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 750 }}>Training plan registry</Typography><Typography variant="body2" sx={{ color: '#71839a', mt: .4 }}>Set the delivery format, audience, duration, and learning resources.</Typography></Box>
-        <Stack direction="row" spacing={1}><Chip label={`${plans.length} total plans`} variant="outlined" /><Chip color="success" label={`${totals.active} active`} /><Chip color="warning" label={`${totals.drafts} drafts`} /></Stack>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="flex-end" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2} sx={{ mb: 2.5 }}>
+        <Stack direction="row" spacing={1} justifyContent="flex-end"><Chip label={`${plans.length} total plans`} variant="outlined" /><Chip color="success" label={`${totals.active} active`} /><Chip color="warning" label={`${totals.drafts} drafts`} /></Stack>
       </Stack>
       {!authorized && <Alert severity="error" sx={{ mb: 2 }}>Only authorized administrators can create training plans.</Alert>}
       <Paper component="form" onSubmit={createPlan} elevation={0} sx={{ p: { xs: 2, md: 3 }, border: '1px solid #e3ebf3', borderRadius: 3 }}>
