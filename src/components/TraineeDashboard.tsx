@@ -82,7 +82,7 @@ export default function TraineeDashboard() {
   const ownName = text(ownRegistrations[0]?.traineeName ?? ownRegistrations[0]?.participantName ?? ownRegistrations[0]?.name) || traineeId;
 
   return <div className="app"><Sidebar /><main className="main"><Topbar title="Trainee Dashboard" description={`Your training, learning tasks, and records · ${ownName}`} />
-    <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 3 }}>
+    <Box sx={{ maxWidth: 1440, m: 0, pb: '24px' }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
         <Metric label="Registered batches" value={ownRegistrations.length} detail={`${approvedRegistrations.length} approved`} />
         <Metric label="Upcoming sessions" value={upcomingSessions.length} detail="Across your registered batches" />
