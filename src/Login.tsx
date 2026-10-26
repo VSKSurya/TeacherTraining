@@ -49,7 +49,7 @@ export default function Login() {
           <button className="login-submit" type="submit">Sign in</button>
           {message && <p className="login-message" role="status">{message}</p>}
         </form>
-        <p className="register-prompt">Don’t have an account? <a href="mailto:ernet@example.com?subject=ERNet%20registration">Register here</a></p>
+        <p className="register-prompt">Have a batch registration link? <a href={`${import.meta.env.BASE_URL}register`}>Open registration</a><br /><a href={`${import.meta.env.BASE_URL}recover-trainee`}>Forgot your Trainee ID? Recover it with OTP</a></p>
       </div>
       <footer className="login-footer"><nav><a href="#privacy">Privacy policy</a><a href="#consent">Consent form</a></nav><span>© 2026 Schoolnet India Limited</span></footer>
     </section>

@@ -53,6 +53,7 @@ export function canAccessMenu(role: UserRole, menu: MenuKey) {
 }
 
 export function canAccessRoute(role: UserRole, path: string) {
+  if (path === '/registration-requests') return ['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin', 'trainer'].includes(role);
   if (!path || path === '/') return canAccessMenu(role, 'dashboard');
   if (path === '/holiday-master') return canAccessMenu(role, 'holiday-master');
   if (path === '/content-library') return canAccessMenu(role, 'content-library');

@@ -16,6 +16,9 @@ import StateAdminDashboard from './components/StateAdminDashboard';
 import SchoolAdminDashboard from './components/SchoolAdminDashboard';
 import TrainerDashboard from './components/TrainerDashboard';
 import TraineeDashboard from './components/TraineeDashboard';
+import OpenRegistration from './components/OpenRegistration';
+import RegistrationRequests from './components/RegistrationRequests';
+import RecoverTraineeId from './components/RecoverTraineeId';
 import { canAccessRoute, getSession } from './auth';
 
 const theme = createTheme({
@@ -39,12 +42,15 @@ function AppContent() {
   const pathname = window.location.pathname;
   const path = (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname).replace(/\/$/, '');
   if (path === '/login') return <Login />;
+  if (path === '/register') return <OpenRegistration />;
+  if (path === '/recover-trainee') return <RecoverTraineeId />;
   const session = getSession();
   if (!session) return <Login />;
   if (!canAccessRoute(session.role, path)) return <DashboardFrame />;
   if (path === '/projects') return <Projects />;
   if (path === '/training-plans') return <TrainingPlanPage />;
   if (path === '/batches') return <Batches />;
+  if (path === '/registration-requests') return <RegistrationRequests />;
   if (path === '/attendance') return <Attendance />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;

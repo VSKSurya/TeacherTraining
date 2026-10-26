@@ -6,9 +6,16 @@ import { getSession } from '../auth';
 type PlanType = 'Classroom' | 'Online' | 'Hybrid';
 type PlanStatus = 'Draft' | 'Active' | 'Inactive';
 type ResourceAssignment = { id: string; resource: string; fromDay: number; toDay: number; throughProjectEnd: boolean };
-type TrainingPlan = { id: string; code: string; name: string; type: PlanType; description: string; days: number; beneficiaries: string[]; resources: string[]; resourceAssignments?: ResourceAssignment[]; status: PlanStatus; createdAt: string };
+type TrainingPlan = { id: string; code: string; name: string; type: PlanType; description: string; days: number; beneficiaries: string[]; resources: string[]; learningResourceIds?: string[]; resourceAssignments?: ResourceAssignment[]; status: PlanStatus; createdAt: string };
 const STORAGE_KEY = 'teacher-training-plans';
 const resourceOptions = ['Pre-training survey', 'Pre-assessment', 'Daily assessment', 'Feedback form', 'Post-assessment', 'Post-training survey'];
+const learningResources = [
+  { id: 'video', title: 'Digital classroom training' },
+  { id: 'manual', title: 'Teacher training manual' },
+  { id: 'presentation', title: 'Teacher training presentation' },
+  { id: 'guide', title: 'Teacher training guide' },
+  { id: 'workflow', title: 'Educator onboarding workflow' },
+];
 const beneficiaryOptions = ['Teacher', 'Student', 'School leader', 'Trainer', 'Other'];
 const adminRoles = new Set(['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin']);
 function loadPlans(): TrainingPlan[] {
@@ -30,6 +37,7 @@ export default function TrainingPlanPage() {
   const [description, setDescription] = useState('');
   const [days, setDays] = useState('1');
   const [beneficiaries, setBeneficiaries] = useState<string[]>([]);
+  const [learningResourceIds, setLearningResourceIds] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<ResourceAssignment[]>([]);
   const [status, setStatus] = useState<PlanStatus>('Draft');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,19 +63,19 @@ export default function TrainingPlanPage() {
     if (!Number.isInteger(duration) || duration < 1 || duration > 365) { setNotice('Training duration must be between 1 and 365 days.'); return; }
     if (assignments.some(item => !item.resource || item.fromDay < 1 || item.fromDay > duration || item.toDay < item.fromDay || item.toDay > duration)) { setNotice('Each resource must have a valid training day range within the plan duration.'); return; }
     const existing = editingId ? plans.find(item => item.id === editingId) : undefined;
-    const record: TrainingPlan = { ...existing, id: existing?.id ?? crypto.randomUUID(), code: existing?.code ?? nextCode(plans), name: name.trim(), type, description: description.trim(), days: duration, beneficiaries, resources: existing?.resources ?? [], resourceAssignments: assignments.map(item => ({ ...item })), status, createdAt: existing?.createdAt ?? new Date().toISOString() };
+    const record: TrainingPlan = { ...existing, id: existing?.id ?? crypto.randomUUID(), code: existing?.code ?? nextCode(plans), name: name.trim(), type, description: description.trim(), days: duration, beneficiaries, resources: existing?.resources ?? [], learningResourceIds, resourceAssignments: assignments.map(item => ({ ...item })), status, createdAt: existing?.createdAt ?? new Date().toISOString() };
     const updated = existing ? plans.map(item => item.id === existing.id ? record : item) : [record, ...plans];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setPlans(updated); setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setAssignments([]); setStatus('Draft');
+    setPlans(updated); setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setLearningResourceIds([]); setAssignments([]); setStatus('Draft');
     setNotice(`${record.code} ${existing ? 'updated' : 'created'} successfully. Existing attendance and assessment records were left unchanged.`);
   }
   function editPlan(plan: TrainingPlan) {
-    setEditingId(plan.id); setName(plan.name); setType(plan.type); setDescription(plan.description); setDays(String(plan.days)); setBeneficiaries([...plan.beneficiaries]);
+    setEditingId(plan.id); setName(plan.name); setType(plan.type); setDescription(plan.description); setDays(String(plan.days)); setBeneficiaries([...plan.beneficiaries]); setLearningResourceIds([...(plan.learningResourceIds ?? [])]);
     setAssignments((plan.resourceAssignments ?? []).map(item => ({ ...item }))); setStatus(plan.status);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function cancelEdit() {
-    setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setAssignments([]); setStatus('Draft');
+    setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setLearningResourceIds([]); setAssignments([]); setStatus('Draft');
   }
 
   return <div className="app"><Sidebar activePage="Training Plans" /><main className="main"><Topbar title="Training Plans" description="Create and manage structured learning programs." />
@@ -82,9 +90,10 @@ export default function TrainingPlanPage() {
           <Box><Typography variant="h6" sx={{ fontWeight: 750, color: '#173553' }}>Plan details</Typography><Typography variant="body2" sx={{ color: '#71839a' }}>The system assigns a unique plan code when you save.</Typography></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,minmax(0,1fr))' }, gap: 2 }}>
             <TextField required fullWidth label="Training plan name" value={name} onChange={e => setName(e.target.value)} inputProps={{ maxLength: 120 }} placeholder="e.g. Foundational Literacy Workshop" />
-            <FormControl fullWidth><InputLabel>Training plan type</InputLabel><Select label="Training plan type" value={type} onChange={e => setType(e.target.value as PlanType)}>{(['Classroom', 'Online', 'Hybrid'] as const).map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl>
+            <FormControl fullWidth><InputLabel>Training plan type</InputLabel><Select label="Delivery format" value={type} onChange={e => setType(e.target.value as PlanType)}>{(['Classroom', 'Online', 'Hybrid'] as const).map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl>
             <TextField required fullWidth type="number" label="Number of training days" value={days} onChange={e => changeDays(e.target.value)} inputProps={{ min: 1, max: 365 }} />
-            <FormControl fullWidth><InputLabel>Beneficiary category</InputLabel><Select multiple value={beneficiaries} onChange={e => setBeneficiaries(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)} input={<OutlinedInput label="Beneficiary category" />} renderValue={selected => <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: .5 }}>{selected.map(item => <Chip size="small" key={item} label={item} />)}</Box>}>{beneficiaryOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl>
+            <FormControl fullWidth><InputLabel>Beneficiary category</InputLabel><Select multiple value={beneficiaries} onChange={e => setBeneficiaries(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)} input={<OutlinedInput label="Audience / beneficiary categories" />} renderValue={selected => <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: .5 }}>{selected.map(item => <Chip size="small" key={item} label={item} />)}</Box>}>{beneficiaryOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl>
+            <FormControl fullWidth sx={{ gridColumn: { md: '1 / -1' } }}><InputLabel>Learning library resources</InputLabel><Select multiple value={learningResourceIds} onChange={e => setLearningResourceIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)} input={<OutlinedInput label="Learning library resources" />} renderValue={selected => <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: .5 }}>{selected.map(id => <Chip size="small" key={id} label={learningResources.find(item => item.id === id)?.title ?? id} />)}</Box>}>{learningResources.map(item => <MenuItem key={item.id} value={item.id}>{item.title}</MenuItem>)}</Select></FormControl>
             <Box sx={{ gridColumn: { md: '1 / -1' }, p: 2, border: '1px solid #e3ebf3', borderRadius: 2, bgcolor: '#fbfdff' }}>
               <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1} sx={{ mb: 1.5 }}>
                 <Box><Typography variant="subtitle1" sx={{ fontWeight: 750 }}>Day-linked resources</Typography><Typography variant="caption" color="text.secondary">Assign each form a valid availability range. Multiple resources can share a day.</Typography></Box>
@@ -109,7 +118,7 @@ export default function TrainingPlanPage() {
       </Paper>
       <Paper elevation={0} sx={{ mt: 2.5, border: '1px solid #e3ebf3', borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ p: 2, borderBottom: '1px solid #e3ebf3' }}><Typography variant="h6" sx={{ fontWeight: 750 }}>Saved training plans</Typography></Box>
-        {plans.length === 0 ? <Typography sx={{ p: 3, color: '#71839a' }}>No plans created yet. Complete the form above to add the first plan.</Typography> : <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 820, '& th': { textAlign: 'left', color: '#71839a', fontSize: 12, fontWeight: 700, p: 1.5, bgcolor: '#f8fbff' }, '& td': { p: 1.5, borderTop: '1px solid #edf1f5', color: '#34516d', verticalAlign: 'top' } }}><thead><tr><th>Plan / Code</th><th>Type</th><th>Duration</th><th>Beneficiaries</th><th>Resources by day</th><th>Status</th><th>Action</th></tr></thead><tbody>{plans.map(plan => <tr key={plan.id}><td><strong>{plan.name}</strong><Typography variant="caption" display="block" color="text.secondary">{plan.code}</Typography>{plan.description && <Typography variant="caption" display="block" color="text.secondary">{plan.description}</Typography>}</td><td>{plan.type}</td><td>{plan.days} {plan.days === 1 ? 'day' : 'days'}</td><td>{plan.beneficiaries.join(', ') || '—'}</td><td>{(plan.resourceAssignments?.length ?? 0) > 0 ? plan.resourceAssignments!.map(item => <Typography key={item.id} variant="caption" display="block">{item.resource}: Day {item.fromDay}{item.toDay > item.fromDay ? `–${item.toDay}` : ''}{item.throughProjectEnd ? ' (through project end)' : ''}</Typography>) : plan.resources.join(', ') || '—'}</td><td><Chip size="small" label={plan.status} color={plan.status === 'Active' ? 'success' : plan.status === 'Draft' ? 'warning' : 'default'} /></td><td><Button size="small" onClick={() => editPlan(plan)} disabled={!authorized} sx={{ textTransform: 'none' }}>Edit</Button></td></tr>)}</tbody></Box></Box>}
+        {plans.length === 0 ? <Typography sx={{ p: 3, color: '#71839a' }}>No plans created yet. Complete the form above to add the first plan.</Typography> : <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 820, '& th': { textAlign: 'left', color: '#71839a', fontSize: 12, fontWeight: 700, p: 1.5, bgcolor: '#f8fbff' }, '& td': { p: 1.5, borderTop: '1px solid #edf1f5', color: '#34516d', verticalAlign: 'top' } }}><thead><tr><th>Plan / Code</th><th>Delivery format</th><th>Duration</th><th>Beneficiaries</th><th>Learning library resources</th><th>Forms by day</th><th>Status</th><th>Action</th></tr></thead><tbody>{plans.map(plan => <tr key={plan.id}><td><strong>{plan.name}</strong><Typography variant="caption" display="block" color="text.secondary">{plan.code}</Typography>{plan.description && <Typography variant="caption" display="block" color="text.secondary">{plan.description}</Typography>}</td><td>{plan.type}</td><td>{plan.days} {plan.days === 1 ? 'day' : 'days'}</td><td>{plan.beneficiaries.join(', ') || '—'}</td><td>{(plan.learningResourceIds ?? []).map(id => learningResources.find(item => item.id === id)?.title ?? id).join(', ') || '—'}</td><td>{(plan.resourceAssignments?.length ?? 0) > 0 ? plan.resourceAssignments!.map(item => <Typography key={item.id} variant="caption" display="block">{item.resource}: Day {item.fromDay}{item.toDay > item.fromDay ? `–${item.toDay}` : ''}{item.throughProjectEnd ? ' (through project end)' : ''}</Typography>) : plan.resources.join(', ') || '—'}</td><td><Chip size="small" label={plan.status} color={plan.status === 'Active' ? 'success' : plan.status === 'Draft' ? 'warning' : 'default'} /></td><td><Button size="small" onClick={() => editPlan(plan)} disabled={!authorized} sx={{ textTransform: 'none' }}>Edit</Button></td></tr>)}</tbody></Box></Box>}
       </Paper>
     </Box><Footer /></main><Snackbar open={Boolean(notice)} autoHideDuration={4000} onClose={() => setNotice('')} message={notice} />
   </div>;

@@ -106,9 +106,9 @@ export default function SchoolnetDashboard() {
 
   return <div className={`app schoolnet-dashboard ${sidebarCollapsed ? 'is-collapsed' : 'is-expanded'}`}><Sidebar /><main className="main"><Topbar title="Schoolnet Dashboard" description="Cross-project training delivery and operational monitoring." />
     <Box sx={{ width: '100%', maxWidth: 1600, mx: 'auto', pb: 3 }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2 }}>
-        <Box><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 780, fontSize: 'clamp(22px,2.25vw,29px)', lineHeight: 1.2, letterSpacing: '-.7px' }}>Schoolnet monitoring</Typography><Typography variant="body2" color="text.secondary" sx={{ fontSize: 14 }}>{superAdmin ? 'All projects' : `Authorized projects for ${session?.userId ?? ''}`}</Typography></Box>
-        <FormControl size="small" sx={{ minWidth: 240 }}><Select displayEmpty value={selectedProject} onChange={event => setSelectedProject(event.target.value)} inputProps={{ 'aria-label': 'Filter dashboard by project' }}><MenuItem value="">All authorized projects</MenuItem>{authorizedProjects.map(project => <MenuItem key={project.id} value={project.id}>{project.name}</MenuItem>)}</Select></FormControl>
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent={superAdmin ? 'flex-end' : 'space-between'} spacing={1.5} sx={{ mb: 2 }}>
+        {!superAdmin && <Box><Typography variant="h5" sx={{ color: '#12365c', fontWeight: 780, fontSize: 'clamp(22px,2.25vw,29px)', lineHeight: 1.2, letterSpacing: '-.7px' }}>Schoolnet monitoring</Typography><Typography variant="body2" color="text.secondary" sx={{ fontSize: 14 }}>Authorized projects for {session?.userId ?? ''}</Typography></Box>}
+        <FormControl size="small" sx={{ minWidth: 240 }}><Select displayEmpty value={selectedProject} onChange={event => setSelectedProject(event.target.value)} inputProps={{ 'aria-label': 'Filter dashboard by project' }}><MenuItem value="">All Authorised Projects</MenuItem>{authorizedProjects.map(project => <MenuItem key={project.id} value={project.id}>{project.name}</MenuItem>)}</Select></FormControl>
       </Stack>
       {!batchDataPresent && <Alert severity="info" sx={{ mb: 2 }}>No batch records are available yet. Delivery metrics will populate as batches and training records are added.</Alert>}
       <Box className="kpis schoolnet-kpis">
