@@ -31,6 +31,8 @@ jobs:
         run: npm run build
       - name: Add single-page app fallback
         run: cp dist/index.html dist/404.html
+      - name: Publish test case document
+        run: mkdir -p dist/docs && cp docs/Test_Cases.html dist/docs/Test_Cases.html
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:
