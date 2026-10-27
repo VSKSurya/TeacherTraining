@@ -5,10 +5,11 @@ import { getSession } from '../auth';
 
 type PlanType = 'Classroom' | 'Online' | 'Hybrid';
 type PlanStatus = 'Draft' | 'Active' | 'Inactive';
-type ResourceAssignment = { id: string; resource: string; fromDay: number; toDay: number; throughProjectEnd: boolean };
+type ResourceAssignment = { id: string; resource: string; formId?: string; fromDay: number; toDay: number; throughProjectEnd: boolean };
 type CompletionCriteria = { minimumAttendancePercent: number; mandatoryTrainingDays: number[]; requireAssessments: boolean; minimumAssessmentMarks: number | null; requireFeedback: boolean; requireExternalCourse: boolean };
 type TrainingPlan = { id: string; code: string; name: string; type: PlanType; description: string; days: number; beneficiaries: string[]; resources: string[]; learningResourceIds?: string[]; resourceAssignments?: ResourceAssignment[]; completionCriteria?: CompletionCriteria; status: PlanStatus; createdAt: string };
 const STORAGE_KEY = 'teacher-training-plans';
+const FORM_STORAGE_KEY = 'teacher-training-assessment-form-master';
 const resourceOptions = ['Pre-training survey', 'Pre-assessment', 'Daily assessment', 'Feedback form', 'Post-assessment', 'Post-training survey'];
 const learningResources = [
   { id: 'video', title: 'Digital classroom training' },
@@ -22,6 +23,9 @@ const adminRoles = new Set(['schoolnet-super-admin', 'schoolnet-project-admin', 
 function loadPlans(): TrainingPlan[] {
   try { const value: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); return Array.isArray(value) ? value as TrainingPlan[] : []; } catch { return []; }
 }
+function loadAssessmentForms(): { id: string; title: string; kind: string; stage: string }[] {
+  try { const value: unknown = JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) ?? '[]'); return Array.isArray(value) ? value.filter(item => item && typeof item.id === 'string') : []; } catch { return []; }
+}
 function nextCode(plans: TrainingPlan[]) {
   const used = new Set(plans.map(item => item.code));
   let latest = plans.reduce((max, item) => Math.max(max, Number(item.code.match(/(\d+)$/)?.[1] ?? 0)), 0);
@@ -33,6 +37,7 @@ function nextCode(plans: TrainingPlan[]) {
 export default function TrainingPlanPage() {
   const session = getSession();
   const [plans, setPlans] = useState(loadPlans);
+  const [assessmentForms] = useState(loadAssessmentForms);
   const [name, setName] = useState('');
   const [type, setType] = useState<PlanType>('Classroom');
   const [description, setDescription] = useState('');
@@ -57,6 +62,13 @@ export default function TrainingPlanPage() {
   }
   function updateAssignment(id: string, changes: Partial<ResourceAssignment>) {
     setAssignments(current => current.map(item => item.id === id ? { ...item, ...changes } : item));
+  }
+  function updateResourceChoice(id: string, value: string) {
+    if (value.startsWith('form:')) {
+      const form = assessmentForms.find(item => item.id === value.slice(5));
+      if (form) { updateAssignment(id, { resource: form.title, formId: form.id }); return; }
+    }
+    updateAssignment(id, { resource: value, formId: undefined });
   }
 
   function createPlan(event: FormEvent<HTMLFormElement>) {
@@ -103,7 +115,7 @@ export default function TrainingPlanPage() {
               </Stack>
               {assignments.length === 0 && <Typography variant="body2" color="text.secondary">No resources assigned yet.</Typography>}
               <Stack spacing={1.5}>{assignments.map((item, index) => <Box key={item.id} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr auto', md: 'minmax(220px,2fr) minmax(100px,1fr) minmax(100px,1fr) auto' }, gap: 1.25, alignItems: 'center', p: 1.25, border: '1px solid #e8eef4', borderRadius: 1.5, bgcolor: '#fff' }}>
-                <FormControl fullWidth sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }}><InputLabel id={`plan-resource-${item.id}`}>Resource</InputLabel><Select labelId={`plan-resource-${item.id}`} label="Resource" value={item.resource} onChange={e => updateAssignment(item.id, { resource: e.target.value })}><MenuItem value="" disabled>Select a resource</MenuItem>{resourceOptions.map(option => <MenuItem key={option} value={option}>{option}</MenuItem>)}</Select></FormControl>
+                <FormControl fullWidth sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }}><InputLabel id={`plan-resource-${item.id}`}>Resource</InputLabel><Select labelId={`plan-resource-${item.id}`} label="Resource" value={item.formId ? `form:${item.formId}` : item.resource} onChange={e => updateResourceChoice(item.id, e.target.value)}><MenuItem value="" disabled>Select a resource</MenuItem>{resourceOptions.map(option => <MenuItem key={option} value={option}>{option}</MenuItem>)}{assessmentForms.filter(form => (form.kind === 'assessment' && form.stage === 'pre') || form.kind === 'feedback').map(form => <MenuItem key={`form:${form.id}`} value={`form:${form.id}`}>{form.kind === 'feedback' ? 'Feedback' : 'Pre-assessment'} · {form.title}</MenuItem>)}</Select></FormControl>
                 <TextField fullWidth type="number" label="From day" value={item.fromDay} onChange={e => updateAssignment(item.id, { fromDay: Number(e.target.value) })} inputProps={{ min: 1, max: dayCount }} error={item.fromDay < 1 || item.fromDay > dayCount} helperText={item.fromDay > dayCount ? `Maximum Day ${dayCount}` : ''} />
                 <TextField fullWidth type="number" label="To day" value={item.throughProjectEnd ? dayCount : item.toDay} disabled={item.throughProjectEnd} onChange={e => updateAssignment(item.id, { toDay: Number(e.target.value) })} inputProps={{ min: item.fromDay, max: dayCount }} error={!item.throughProjectEnd && (item.toDay < item.fromDay || item.toDay > dayCount)} helperText={!item.throughProjectEnd && item.toDay > dayCount ? `Maximum Day ${dayCount}` : ''} />
                 <IconButton aria-label={`Remove resource assignment ${index + 1}`} color="error" onClick={() => setAssignments(items => items.filter(assignment => assignment.id !== item.id))} sx={{ gridColumn: { xs: '3', md: 'auto' } }}>×</IconButton>

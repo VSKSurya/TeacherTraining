@@ -36,7 +36,6 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     const fileName = label === 'Batch Performance' ? 'Batch_performance.html' : label === 'Training Summary' ? 'Training_Summary.html' : 'Attendance_Report.html';
     html = html.replace(`href="${fileName}"`, `href="${href}"${activePage === label ? ' aria-current="page"' : ''}`);
   }
-  if (activePage === 'Assessment & Feedback Report') html = html.replace('href="/reports/assessment-feedback"', 'href="/reports/assessment-feedback" aria-current="page"');
   if (activePage in reportLinks) html = html.replace('<summary class="side-link">', '<summary class="side-link active">');
   const menuByLabel: Record<string, MenuKey> = {
     Dashboard: 'dashboard', Projects: 'projects', 'Training Plans': 'training-plans', Batches: 'batches',
@@ -44,6 +43,16 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     Certificates: 'certificates', 'MIS Reports': 'mis-reports', 'Holiday Master': 'holiday-master', 'Trainer Repository': 'trainer-repository',
   };
   const sidebarDocument = new DOMParser().parseFromString(html, 'text/html');
+  const activeReportHref = reportLinks[activePage];
+  if (activeReportHref) {
+    const reportGroup = sidebarDocument.querySelector<HTMLDetailsElement>('.side-group');
+    const activeReportLink = reportGroup?.querySelector<HTMLAnchorElement>(`.side-submenu a[href="${activeReportHref}"]`);
+    if (reportGroup) reportGroup.open = true;
+    if (activeReportLink) {
+      activeReportLink.classList.add('active');
+      activeReportLink.setAttribute('aria-current', 'page');
+    }
+  }
   const certificatesLink = [...sidebarDocument.querySelectorAll<HTMLAnchorElement>('.side-nav > .side-link')].find(link => link.textContent?.trim() === 'Certificates');
   if (certificatesLink) {
     certificatesLink.href = '/certificates';

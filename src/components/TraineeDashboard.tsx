@@ -5,6 +5,7 @@ import { getSession } from '../auth';
 import { formatDate } from '../dateFormat';
 import { evaluateTrainingCompletion, type CompletionStatus } from '../completion';
 import { calculateAttendance } from '../attendanceMetrics';
+import { registrationWindowError } from '../registrationRules';
 
 type Row = Record<string, unknown>;
 type Batch = Row & { id: string; batchCode?: string; name?: string; projectId?: string; projectPlanAssociationId?: string; trainingPlanCode?: string; trainingDates?: string[]; trainingStartDate?: string; trainingEndAuto?: string; trainingStartTime?: string; trainingEndTime?: string; status?: string; venue?: string; schoolUdiseVenue?: string; meetingUrl?: string; meetingLink?: string; meetingDetails?: string; trainingPlanName?: string; resources?: string[]; assignedResources?: unknown[] };
@@ -42,6 +43,18 @@ export default function TraineeDashboard() {
   const assessmentForms = useMemo(() => readRows<Row>(KEYS.forms), []);
   const associations = useMemo(() => readRows<Row>(KEYS.associations), []);
   const ownRegistrations = registrations.filter(row => rowIds(row).includes(traineeId.toLowerCase()) || text(row.id).toLowerCase() === traineeId.toLowerCase());
+  const activeRegistrationForBatch = (batch: Batch) => ownRegistrations.some(row => rowBatch(row) === batch.id || rowBatch(row) === batch.batchCode);
+  const availableBatches = batches.filter(batch => {
+    if (!batch.openRegistration || activeRegistrationForBatch(batch) || ['cancelled', 'archived', 'completed'].includes(text(batch.status).toLowerCase())) return false;
+    if (registrationWindowError(batch)) return false;
+    const capacity = Number(batch.registrationCapacity ?? batch.participantCapacity ?? batch.capacity);
+    if (Number.isFinite(capacity) && capacity > 0) {
+      const refs = batchIds(batch);
+      const occupied = registrations.filter(row => refs.has(rowBatch(row)) && !['rejected', 'cancelled', 'withdrawn'].includes(text(row.status ?? row.registrationStatus).toLowerCase())).length;
+      if (occupied >= capacity) return false;
+    }
+    return true;
+  });
   const registrationIds = new Set(ownRegistrations.flatMap(row => [text(row.id), text(row.registrationId)]).filter(Boolean));
   const ownBatchRefs = new Set(ownRegistrations.map(rowBatch).filter(Boolean));
   const ownBatches = batches.filter(batch => [...batchIds(batch)].some(id => ownBatchRefs.has(id)));
@@ -89,7 +102,7 @@ export default function TraineeDashboard() {
   const completionRate = eligibleCompletionCount ? Math.round(trainingDone / eligibleCompletionCount * 100) : 0;
   const ownName = text(ownRegistrations[0]?.traineeName ?? ownRegistrations[0]?.participantName ?? ownRegistrations[0]?.name) || traineeId;
 
-  return <div className="app"><Sidebar /><main className="main"><Topbar title="Trainee Dashboard" description={`Your training, learning tasks, and records · ${ownName}`} />
+  return <div className="app"><Sidebar /><main className="main"><Topbar title="Trainee Dashboard" description={`Demo7 trainee access: register for eligible batches, view assigned training and resources, complete assessments, provide feedback, and access certificates when eligible · ${ownName}`} />
     <Box sx={{ maxWidth: 1440, m: 0, pb: '24px' }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
         <Metric label="Registered batches" value={ownRegistrations.length} detail={`${approvedRegistrations.length} approved`} />
@@ -99,6 +112,7 @@ export default function TraineeDashboard() {
         <Metric label="Attendance" value={ownAttendanceSummary.percentage === null ? '—' : `${ownAttendanceSummary.percentage}%`} detail={`${ownAttendanceSummary.present}/${ownAttendanceSummary.expected} present · ${ownAttendanceSummary.pending} pending`} color="#078347" />
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.05fr .95fr' }, gap: 1.5, mt: 1.5 }}>
+        <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2, gridColumn: { xs: '1', lg: '1 / -1' } }}><Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}><Box><Typography variant="h6" sx={{ fontWeight: 750 }}>Eligible batches</Typography><Typography variant="body2" color="text.secondary">Open batches with available places and an active registration window.</Typography></Box></Stack>{availableBatches.length ? <Stack spacing={.8}>{availableBatches.map(batch => <Box key={batch.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, py: .8, borderTop: '1px solid #edf1f5' }}><Box><Typography variant="body2" fontWeight={700}>{batch.batchCode || batch.name || 'Training batch'}</Typography><Typography variant="caption" color="text.secondary">{text(batch.projectName) || 'Training project'} · {text(batch.trainingPlanName ?? batch.trainingPlanCode) || 'Training plan'} · {fmtDate(date(batch.trainingStartDate ?? batch.trainingDates?.[0] ?? ''))}</Typography></Box><Button size="small" variant="contained" href={`${import.meta.env.BASE_URL}register?batch=${encodeURIComponent(batch.batchCode || batch.id)}`} sx={{ textTransform: 'none' }}>Register</Button></Box>)}</Stack> : <Typography variant="body2" color="text.secondary">There are no open batches available for registration right now.</Typography>}</Paper>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}><Typography variant="h6" sx={{ fontWeight: 750 }}>My registered batches</Typography><Button size="small" href={`${import.meta.env.BASE_URL}content-library`} sx={{ textTransform: 'none' }}>Learning library</Button></Stack>{ownRegistrations.length ? <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Batch</TableCell><TableCell>Registration</TableCell><TableCell>Approval</TableCell></TableRow></TableHead><TableBody>{ownRegistrations.map((registration, index) => { const batch = batchById.get(rowBatch(registration)); const status = text(registration.status) || 'Registered'; return <TableRow key={`${text(registration.id) || rowBatch(registration)}-${index}`}><TableCell><Typography variant="body2" sx={{ fontWeight: 700 }}>{batch?.batchCode || text(registration.batchCode) || 'Training batch'}</Typography><Typography variant="caption" color="text.secondary">{batch?.trainingPlanName || batch?.trainingPlanCode || ''}</Typography></TableCell><TableCell>{text(registration.registrationStatus) || 'Registered'}</TableCell><TableCell><Chip size="small" color={approved(registration) ? 'success' : ['rejected', 'cancelled'].includes(status.toLowerCase()) ? 'default' : 'warning'} label={approved(registration) ? 'Approved' : status} /></TableCell></TableRow>; })}</TableBody></Table></TableContainer> : <Typography variant="body2" color="text.secondary">No registrations found for your trainee account.</Typography>}</Paper>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="h6" sx={{ fontWeight: 750, mb: 1 }}>Training schedule and meeting details</Typography>{upcomingSessions.length ? <Stack spacing={.75}>{upcomingSessions.slice(0, 7).map(({ batch, date: sessionDate }) => <Box key={`${batch.id}-${sessionDate}`} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1.25, py: .75, borderTop: '1px solid #edf1f5' }}><Box><Typography variant="body2" sx={{ fontWeight: 700 }}>{batch.batchCode || batch.name || 'Training session'}</Typography><Typography variant="caption" color="text.secondary">{batch.trainingStartTime || 'Time pending'}{batch.trainingEndTime ? `–${batch.trainingEndTime}` : ''} · {text(batch.venue ?? batch.schoolUdiseVenue) || 'Venue pending'}</Typography>{(batch.meetingUrl || batch.meetingLink || batch.meetingDetails) && <Typography variant="caption" display="block" color="text.secondary">{batch.meetingDetails || 'Meeting details available'}{(batch.meetingUrl || batch.meetingLink) && <> · <a href={text(batch.meetingUrl ?? batch.meetingLink)} target="_blank" rel="noreferrer">Join meeting</a></>}</Typography>}</Box><Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{fmtDate(sessionDate)}</Typography></Box>)}</Stack> : <Typography variant="body2" color="text.secondary">No upcoming sessions have been scheduled for your batches.</Typography>}</Paper>
       </Box>

@@ -85,7 +85,7 @@ function AppContent() {
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
   if (path === '/assessments') return <AssessmentFeedback />;
-  if (path === '/certificates') return <CertificateTemplates />;
+  if (path === '/certificates') return session.role === 'trainee' ? <TraineeDashboard /> : <CertificateTemplates />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;
   return <DashboardFrame />;
 }

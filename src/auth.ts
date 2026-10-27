@@ -40,13 +40,13 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLES = Object.keys(ROLE_LABELS) as UserRole[];
 
 const ROLE_MENUS: Record<UserRole, readonly MenuKey[]> = {
-  'sponsor-admin': ['dashboard', 'projects', 'batches', 'content-library', 'certificates', 'mis-reports', 'trainer-repository'],
+  'sponsor-admin': ['dashboard', 'projects', 'batches', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
   'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'assessment-feedback', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository'],
   'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
   'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'assessment-feedback', 'mis-reports', 'trainer-repository'],
   'school-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
   trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
-  trainee: ['dashboard', 'projects', 'training-plans', 'content-library', 'assessments', 'assessment-feedback', 'certificates'],
+  trainee: ['dashboard', 'projects', 'content-library', 'assessments', 'assessment-feedback', 'certificates'],
   'reporting-audit-user': ['dashboard', 'projects', 'mis-reports'],
 };
 
@@ -55,7 +55,7 @@ export function canAccessMenu(role: UserRole, menu: MenuKey) {
 }
 
 export function canAccessRoute(role: UserRole, path: string) {
-  if (path === '/certificates') return ['sponsor-admin', 'schoolnet-super-admin', 'schoolnet-project-admin'].includes(role);
+  if (path === '/certificates') return ['sponsor-admin', 'schoolnet-super-admin', 'schoolnet-project-admin', 'trainee'].includes(role);
   if (path === '/assessments') return canAccessMenu(role, 'assessment-feedback');
   if (path === '/trainers') return canAccessMenu(role, 'trainer-repository');
   if (path === '/registration-requests') return ['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin', 'trainer'].includes(role);
