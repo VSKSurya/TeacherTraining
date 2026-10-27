@@ -6,7 +6,8 @@ import { getSession } from '../auth';
 type PlanType = 'Classroom' | 'Online' | 'Hybrid';
 type PlanStatus = 'Draft' | 'Active' | 'Inactive';
 type ResourceAssignment = { id: string; resource: string; fromDay: number; toDay: number; throughProjectEnd: boolean };
-type TrainingPlan = { id: string; code: string; name: string; type: PlanType; description: string; days: number; beneficiaries: string[]; resources: string[]; learningResourceIds?: string[]; resourceAssignments?: ResourceAssignment[]; status: PlanStatus; createdAt: string };
+type CompletionCriteria = { minimumAttendancePercent: number; mandatoryTrainingDays: number[]; requireAssessments: boolean; minimumAssessmentMarks: number | null; requireFeedback: boolean; requireExternalCourse: boolean };
+type TrainingPlan = { id: string; code: string; name: string; type: PlanType; description: string; days: number; beneficiaries: string[]; resources: string[]; learningResourceIds?: string[]; resourceAssignments?: ResourceAssignment[]; completionCriteria?: CompletionCriteria; status: PlanStatus; createdAt: string };
 const STORAGE_KEY = 'teacher-training-plans';
 const resourceOptions = ['Pre-training survey', 'Pre-assessment', 'Daily assessment', 'Feedback form', 'Post-assessment', 'Post-training survey'];
 const learningResources = [
@@ -39,6 +40,7 @@ export default function TrainingPlanPage() {
   const [beneficiaries, setBeneficiaries] = useState<string[]>([]);
   const [learningResourceIds, setLearningResourceIds] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<ResourceAssignment[]>([]);
+  const [completionCriteria, setCompletionCriteria] = useState<CompletionCriteria>({ minimumAttendancePercent: 0, mandatoryTrainingDays: [], requireAssessments: false, minimumAssessmentMarks: null, requireFeedback: false, requireExternalCourse: false });
   const [status, setStatus] = useState<PlanStatus>('Draft');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -63,19 +65,20 @@ export default function TrainingPlanPage() {
     if (!Number.isInteger(duration) || duration < 1 || duration > 365) { setNotice('Training duration must be between 1 and 365 days.'); return; }
     if (assignments.some(item => !item.resource || item.fromDay < 1 || item.fromDay > duration || item.toDay < item.fromDay || item.toDay > duration)) { setNotice('Each resource must have a valid training day range within the plan duration.'); return; }
     const existing = editingId ? plans.find(item => item.id === editingId) : undefined;
-    const record: TrainingPlan = { ...existing, id: existing?.id ?? crypto.randomUUID(), code: existing?.code ?? nextCode(plans), name: name.trim(), type, description: description.trim(), days: duration, beneficiaries, resources: existing?.resources ?? [], learningResourceIds, resourceAssignments: assignments.map(item => ({ ...item })), status, createdAt: existing?.createdAt ?? new Date().toISOString() };
+    const record: TrainingPlan = { ...existing, id: existing?.id ?? crypto.randomUUID(), code: existing?.code ?? nextCode(plans), name: name.trim(), type, description: description.trim(), days: duration, beneficiaries, resources: existing?.resources ?? [], learningResourceIds, resourceAssignments: assignments.map(item => ({ ...item })), completionCriteria: { ...completionCriteria, mandatoryTrainingDays: [...completionCriteria.mandatoryTrainingDays] }, status, createdAt: existing?.createdAt ?? new Date().toISOString() };
     const updated = existing ? plans.map(item => item.id === existing.id ? record : item) : [record, ...plans];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setPlans(updated); setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setLearningResourceIds([]); setAssignments([]); setStatus('Draft');
+    setPlans(updated); setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setLearningResourceIds([]); setAssignments([]); setCompletionCriteria({ minimumAttendancePercent: 0, mandatoryTrainingDays: [], requireAssessments: false, minimumAssessmentMarks: null, requireFeedback: false, requireExternalCourse: false }); setStatus('Draft');
     setNotice(`${record.code} ${existing ? 'updated' : 'created'} successfully. Existing attendance and assessment records were left unchanged.`);
   }
   function editPlan(plan: TrainingPlan) {
     setEditingId(plan.id); setName(plan.name); setType(plan.type); setDescription(plan.description); setDays(String(plan.days)); setBeneficiaries([...plan.beneficiaries]); setLearningResourceIds([...(plan.learningResourceIds ?? [])]);
     setAssignments((plan.resourceAssignments ?? []).map(item => ({ ...item }))); setStatus(plan.status);
+    setCompletionCriteria({ minimumAttendancePercent: 0, mandatoryTrainingDays: [], requireAssessments: false, minimumAssessmentMarks: null, requireFeedback: false, requireExternalCourse: false, ...(plan.completionCriteria ?? {}) });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function cancelEdit() {
-    setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setLearningResourceIds([]); setAssignments([]); setStatus('Draft');
+    setEditingId(null); setName(''); setType('Classroom'); setDescription(''); setDays('1'); setBeneficiaries([]); setLearningResourceIds([]); setAssignments([]); setCompletionCriteria({ minimumAttendancePercent: 0, mandatoryTrainingDays: [], requireAssessments: false, minimumAssessmentMarks: null, requireFeedback: false, requireExternalCourse: false }); setStatus('Draft');
   }
 
   return <div className="app"><Sidebar activePage="Training Plans" /><main className="main"><Topbar title="Training Plans" description="Create and manage structured learning programs." />
@@ -107,6 +110,18 @@ export default function TrainingPlanPage() {
                 <FormControlLabel sx={{ gridColumn: '1 / -1', m: 0 }} control={<Checkbox size="small" checked={item.throughProjectEnd} onChange={e => updateAssignment(item.id, { throughProjectEnd: e.target.checked, toDay: e.target.checked ? dayCount : item.fromDay })} />} label={<Typography variant="caption">Keep available through the end of the project (Day {dayCount})</Typography>} />
               </Box>)}</Stack>
               {assignments.some(item => item.fromDay > dayCount || item.toDay > dayCount || item.toDay < item.fromDay) && <Alert severity="error" sx={{ mt: 1.5 }}>Resource day ranges must remain within Day 1 through Day {dayCount}, and To day cannot come before From day.</Alert>}
+            </Box>
+            <Box sx={{ gridColumn: { md: '1 / -1' }, p: 2, border: '1px solid #dce9f3', borderRadius: 2, bgcolor: '#f8fbfe' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 750 }}>Completion rules</Typography>
+              <Typography variant="caption" color="text.secondary">Completion is calculated from saved trainee records. Configure the rules required for this plan.</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,minmax(0,1fr))' }, gap: 1, mt: 1 }}>
+                <TextField type="number" label="Minimum attendance (%)" value={completionCriteria.minimumAttendancePercent} onChange={e => setCompletionCriteria(current => ({ ...current, minimumAttendancePercent: Math.max(0, Math.min(100, Number(e.target.value))) }))} inputProps={{ min: 0, max: 100 }} />
+                <TextField label="Mandatory training days" value={completionCriteria.mandatoryTrainingDays.join(', ')} onChange={e => setCompletionCriteria(current => ({ ...current, mandatoryTrainingDays: [...new Set(e.target.value.split(',').map(value => Number(value.trim())).filter(value => Number.isInteger(value) && value >= 1 && value <= dayCount))] }))} helperText={`Comma-separated day numbers from 1 to ${dayCount}`} />
+                <FormControlLabel control={<Checkbox checked={completionCriteria.requireAssessments} onChange={e => setCompletionCriteria(current => ({ ...current, requireAssessments: e.target.checked }))} />} label="Require completion of assessments" />
+                <TextField type="number" label="Minimum assessment marks (%)" value={completionCriteria.minimumAssessmentMarks ?? ''} onChange={e => setCompletionCriteria(current => ({ ...current, minimumAssessmentMarks: e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value))) }))} inputProps={{ min: 0, max: 100 }} helperText="Leave blank to require completion only" />
+                <FormControlLabel control={<Checkbox checked={completionCriteria.requireFeedback} onChange={e => setCompletionCriteria(current => ({ ...current, requireFeedback: e.target.checked }))} />} label="Require mandatory feedback submission" />
+                <FormControlLabel control={<Checkbox checked={completionCriteria.requireExternalCourse} onChange={e => setCompletionCriteria(current => ({ ...current, requireExternalCourse: e.target.checked }))} />} label="Require linked external course completion" />
+              </Box>
             </Box>
             <TextField fullWidth multiline minRows={3} label="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} inputProps={{ maxLength: 1000 }} sx={{ gridColumn: { md: '1 / -1' } }} placeholder="Describe the learning objectives or intended outcomes." />
             <FormControl fullWidth><InputLabel>Status</InputLabel><Select label="Status" value={status} onChange={e => setStatus(e.target.value as PlanStatus)}>{(['Draft', 'Active', 'Inactive'] as const).map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl>

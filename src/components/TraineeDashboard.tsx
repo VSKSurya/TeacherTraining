@@ -6,8 +6,8 @@ import { formatDate } from '../dateFormat';
 
 type Row = Record<string, unknown>;
 type Batch = Row & { id: string; batchCode?: string; name?: string; projectId?: string; projectPlanAssociationId?: string; trainingPlanCode?: string; trainingDates?: string[]; trainingStartDate?: string; trainingEndAuto?: string; trainingStartTime?: string; trainingEndTime?: string; status?: string; venue?: string; schoolUdiseVenue?: string; meetingUrl?: string; meetingLink?: string; meetingDetails?: string; trainingPlanName?: string; resources?: string[]; assignedResources?: unknown[] };
-type Plan = Row & { id: string; code?: string; name?: string; resources?: string[]; resourceAssignments?: { id?: string; resource: string; fromDay?: number; toDay?: number; throughProjectEnd?: boolean }[] };
-const KEYS = { registrations: 'teacher-training-registrations', batches: 'teacher-training-batch-plan-uses', attendance: 'teacher-training-attendance-records', assessments: 'teacher-training-assessment-records', feedback: 'teacher-training-feedback-records', certificates: 'teacher-training-certificates', plans: 'teacher-training-plans', associations: 'teacher-training-project-plan-associations', forms: 'teacher-training-assessment-form-master' };
+type Plan = Row & { id: string; code?: string; name?: string; resources?: string[]; completionCriteria?: { minimumAttendancePercent?: number; mandatoryTrainingDays?: number[]; requireAssessments?: boolean; minimumAssessmentMarks?: number | null; requireFeedback?: boolean; requireExternalCourse?: boolean }; resourceAssignments?: { id?: string; resource: string; fromDay?: number; toDay?: number; throughProjectEnd?: boolean }[] };
+const KEYS = { registrations: 'teacher-training-registrations', batches: 'teacher-training-batch-plan-uses', attendance: 'teacher-training-attendance-records', assessments: 'teacher-training-assessment-records', feedback: 'teacher-training-feedback-records', external: 'teacher-training-external-course-records', certificates: 'teacher-training-certificates', plans: 'teacher-training-plans', associations: 'teacher-training-project-plan-associations', forms: 'teacher-training-assessment-form-master' };
 function readRows<T extends Row>(key: string): T[] { try { const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value.filter(row => row && typeof row === 'object') as T[] : []; } catch { return []; } }
 function text(value: unknown) { return typeof value === 'string' ? value : ''; }
 function date(value: unknown) { return text(value).slice(0, 10); }
@@ -33,6 +33,7 @@ export default function TraineeDashboard() {
   const attendance = useMemo(() => readRows<Row>(KEYS.attendance), []);
   const assessments = useMemo(() => readRows<Row>(KEYS.assessments), []);
   const feedback = useMemo(() => readRows<Row>(KEYS.feedback), []);
+  const externalCourses = useMemo(() => readRows<Row>(KEYS.external), []);
   const certificates = useMemo(() => readRows<Row>(KEYS.certificates), []);
   const plans = useMemo(() => readRows<Plan>(KEYS.plans), []);
   const assessmentForms = useMemo(() => readRows<Row>(KEYS.forms), []);
@@ -76,7 +77,25 @@ export default function TraineeDashboard() {
     const requiredForms = assessmentForms.filter(form => form.mandatory === true && (text(form.planCode) === '*' || text(form.planCode) === planCode));
     return requiredForms.every(form => [...ownAssessments, ...ownFeedback].some(result => text(result.formId) === text(form.id) && batchIds(batch).has(rowBatch(result)) && (result.completed === true || ['submitted', 'completed', 'complete', 'graded', 'passed'].includes(text(result.status).toLowerCase()))));
   };
-  const registrationComplete = (row: Row) => (completed(row) || ownBatches.some(batch => batchIds(batch).has(rowBatch(row)) && text(batch.status).toLowerCase() === 'completed')) && mandatoryFormsComplete(row);
+  const registrationComplete = (row: Row) => {
+    const batch = batchById.get(rowBatch(row));
+    if (!batch) return false;
+    const association = associations.find(item => text(item.id) === text(batch.projectPlanAssociationId));
+    const plan = plans.find(item => item.id === text(association?.trainingPlanId) || item.code === batch.trainingPlanCode);
+    const criteria = plan?.completionCriteria ?? {};
+    const matchesBatch = (record: Row) => batchIds(batch).has(rowBatch(record));
+    const traineeAttendance = attendance.filter(record => isOwnRecord(record) && matchesBatch(record));
+    const presentDates = new Set(traineeAttendance.filter(present).map(record => date(record.trainingDate ?? record.attendanceDate ?? record.date)));
+    const sessionDates = Array.isArray(batch.trainingDates) ? batch.trainingDates.map(String) : [date(batch.trainingStartDate)].filter(Boolean);
+    const attendanceOk = criteria.minimumAttendancePercent === undefined || !criteria.minimumAttendancePercent || (sessionDates.length > 0 && presentDates.size / sessionDates.length * 100 >= criteria.minimumAttendancePercent);
+    const mandatoryDaysOk = (criteria.mandatoryTrainingDays ?? []).every(dayNumber => { const sessionDate = sessionDates[dayNumber - 1]; return Boolean(sessionDate && presentDates.has(sessionDate)); });
+    const traineeAssessments = assessments.filter(record => isOwnRecord(record) && matchesBatch(record) && completed(record));
+    const assessmentOk = !criteria.requireAssessments || traineeAssessments.length > 0;
+    const marksOk = criteria.minimumAssessmentMarks == null || traineeAssessments.some(record => typeof record.score === 'number' && typeof record.maxMarks === 'number' && record.maxMarks > 0 && record.score / record.maxMarks * 100 >= criteria.minimumAssessmentMarks!);
+    const feedbackOk = !criteria.requireFeedback || feedback.some(record => isOwnRecord(record) && matchesBatch(record) && (record.submitted === true || record.completed === true || ['submitted', 'completed', 'complete', 'received'].includes(text(record.status).toLowerCase())));
+    const externalOk = !criteria.requireExternalCourse || externalCourses.some(record => isOwnRecord(record) && matchesBatch(record) && completed(record));
+    return attendanceOk && mandatoryDaysOk && assessmentOk && marksOk && feedbackOk && externalOk && mandatoryFormsComplete(row);
+  };
   const trainingDone = ownRegistrations.filter(registrationComplete).length;
   const completionRate = ownRegistrations.length ? Math.round(trainingDone / ownRegistrations.length * 100) : 0;
   const ownName = text(ownRegistrations[0]?.traineeName ?? ownRegistrations[0]?.participantName ?? ownRegistrations[0]?.name) || traineeId;

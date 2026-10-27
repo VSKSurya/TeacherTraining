@@ -21,6 +21,7 @@ import RegistrationRequests from './components/RegistrationRequests';
 import RecoverTraineeId from './components/RecoverTraineeId';
 import TrainerRepository from './components/TrainerRepository';
 import AssessmentFeedback from './components/AssessmentFeedback';
+import CertificateTemplates from './components/CertificateTemplates';
 import { canAccessRoute, getSession, ROLE_LABELS } from './auth';
 
 const theme = createTheme({
@@ -51,6 +52,7 @@ function AppContent() {
       '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Repository',
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
       '/content-library': 'Learning Library', '/assessments': 'Assessments and Feedback',
+      '/certificates': 'Certificate Templates',
       '/reports/batch-performance': 'Batch Performance', '/reports/training-summary': 'Training Summary',
       '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report',
     };
@@ -83,6 +85,7 @@ function AppContent() {
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
   if (path === '/assessments') return <AssessmentFeedback />;
+  if (path === '/certificates') return <CertificateTemplates />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;
   return <DashboardFrame />;
 }
