@@ -41,8 +41,8 @@ export const ROLES = Object.keys(ROLE_LABELS) as UserRole[];
 
 const ROLE_MENUS: Record<UserRole, readonly MenuKey[]> = {
   'sponsor-admin': ['dashboard', 'projects', 'batches', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
-  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'assessment-feedback', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository'],
-  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessments', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
+  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository'],
+  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
   'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'assessment-feedback', 'mis-reports', 'trainer-repository'],
   'school-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
   trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],

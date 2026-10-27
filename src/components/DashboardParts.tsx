@@ -39,7 +39,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   if (activePage in reportLinks) html = html.replace('<summary class="side-link">', '<summary class="side-link active">');
   const menuByLabel: Record<string, MenuKey> = {
     Dashboard: 'dashboard', Projects: 'projects', 'Training Plans': 'training-plans', Batches: 'batches',
-    Attendance: 'attendance', 'Content Library': 'content-library', Assessments: 'assessment-feedback',
+    Attendance: 'attendance', 'Content Library': 'content-library', Assessments: 'assessments',
     Certificates: 'certificates', 'MIS Reports': 'mis-reports', 'Holiday Master': 'holiday-master', 'Trainer Repository': 'trainer-repository',
   };
   const sidebarDocument = new DOMParser().parseFromString(html, 'text/html');
