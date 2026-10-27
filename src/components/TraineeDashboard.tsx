@@ -3,6 +3,7 @@ import { Box, Button, Chip, LinearProgress, Paper, Stack, Table, TableBody, Tabl
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
 import { formatDate } from '../dateFormat';
+import { isTrainingComplete } from '../completion';
 
 type Row = Record<string, unknown>;
 type Batch = Row & { id: string; batchCode?: string; name?: string; projectId?: string; projectPlanAssociationId?: string; trainingPlanCode?: string; trainingDates?: string[]; trainingStartDate?: string; trainingEndAuto?: string; trainingStartTime?: string; trainingEndTime?: string; status?: string; venue?: string; schoolUdiseVenue?: string; meetingUrl?: string; meetingLink?: string; meetingDetails?: string; trainingPlanName?: string; resources?: string[]; assignedResources?: unknown[] };
@@ -70,31 +71,11 @@ export default function TraineeDashboard() {
   const feedbackResourcesPending = feedbackResources.filter(item => !ownFeedback.some(row => batchIds(item.batch).has(rowBatch(row)) && (row.submitted === true || row.completed === true || ['submitted', 'completed', 'complete', 'received'].includes(text(row.status).toLowerCase()))));
   const assessmentTaskCount = pendingAssessments.length + assessmentResourcesPending.length;
   const feedbackTaskCount = pendingFeedback.length + feedbackResourcesPending.length;
-  const mandatoryFormsComplete = (registration: Row) => {
-    const batch = batchById.get(rowBatch(registration));
-    if (!batch) return true;
-    const planCode = text(batch.trainingPlanCode);
-    const requiredForms = assessmentForms.filter(form => form.mandatory === true && (text(form.planCode) === '*' || text(form.planCode) === planCode));
-    return requiredForms.every(form => [...ownAssessments, ...ownFeedback].some(result => text(result.formId) === text(form.id) && batchIds(batch).has(rowBatch(result)) && (result.completed === true || ['submitted', 'completed', 'complete', 'graded', 'passed'].includes(text(result.status).toLowerCase()))));
-  };
   const registrationComplete = (row: Row) => {
     const batch = batchById.get(rowBatch(row));
-    if (!batch) return false;
-    const association = associations.find(item => text(item.id) === text(batch.projectPlanAssociationId));
-    const plan = plans.find(item => item.id === text(association?.trainingPlanId) || item.code === batch.trainingPlanCode);
-    const criteria = plan?.completionCriteria ?? {};
-    const matchesBatch = (record: Row) => batchIds(batch).has(rowBatch(record));
-    const traineeAttendance = attendance.filter(record => isOwnRecord(record) && matchesBatch(record));
-    const presentDates = new Set(traineeAttendance.filter(present).map(record => date(record.trainingDate ?? record.attendanceDate ?? record.date)));
-    const sessionDates = Array.isArray(batch.trainingDates) ? batch.trainingDates.map(String) : [date(batch.trainingStartDate)].filter(Boolean);
-    const attendanceOk = criteria.minimumAttendancePercent === undefined || !criteria.minimumAttendancePercent || (sessionDates.length > 0 && presentDates.size / sessionDates.length * 100 >= criteria.minimumAttendancePercent);
-    const mandatoryDaysOk = (criteria.mandatoryTrainingDays ?? []).every(dayNumber => { const sessionDate = sessionDates[dayNumber - 1]; return Boolean(sessionDate && presentDates.has(sessionDate)); });
-    const traineeAssessments = assessments.filter(record => isOwnRecord(record) && matchesBatch(record) && completed(record));
-    const assessmentOk = !criteria.requireAssessments || traineeAssessments.length > 0;
-    const marksOk = criteria.minimumAssessmentMarks == null || traineeAssessments.some(record => typeof record.score === 'number' && typeof record.maxMarks === 'number' && record.maxMarks > 0 && record.score / record.maxMarks * 100 >= criteria.minimumAssessmentMarks!);
-    const feedbackOk = !criteria.requireFeedback || feedback.some(record => isOwnRecord(record) && matchesBatch(record) && (record.submitted === true || record.completed === true || ['submitted', 'completed', 'complete', 'received'].includes(text(record.status).toLowerCase())));
-    const externalOk = !criteria.requireExternalCourse || externalCourses.some(record => isOwnRecord(record) && matchesBatch(record) && completed(record));
-    return attendanceOk && mandatoryDaysOk && assessmentOk && marksOk && feedbackOk && externalOk && mandatoryFormsComplete(row);
+    const association = associations.find(item => text(item.id) === text(batch?.projectPlanAssociationId));
+    const plan = plans.find(item => item.id === text(association?.trainingPlanId) || item.code === batch?.trainingPlanCode);
+    return isTrainingComplete({ registration: row, batch, criteria: plan?.completionCriteria, userIds: [...rowIds(row), traineeId], registrationIds: [text(row.id), text(row.registrationId)], attendance, assessments, feedback, externalCourses, assessmentForms });
   };
   const trainingDone = ownRegistrations.filter(registrationComplete).length;
   const completionRate = ownRegistrations.length ? Math.round(trainingDone / ownRegistrations.length * 100) : 0;
