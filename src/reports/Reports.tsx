@@ -124,9 +124,9 @@ function BatchPerformance() {
           <div className="location-head-actions">
             <label className="location-sort-label" htmlFor="batch-performance-sort">Sort by</label>
             <select className="location-sort-select" id="batch-performance-sort" aria-label="Sort batches by" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }}>{columns.map(column => <option key={String(column.key)} value={String(column.key)}>{column.label}</option>)}</select>
-            <div className="location-sort-toggle" role="group" aria-label="Sort direction">
-              <button type="button" className="location-sort-button" aria-pressed={sortDirection === 'ascending'} onClick={() => { setSortDirection('ascending'); setPage(1); }}>Ascending</button>
-              <button type="button" className="location-sort-button" aria-pressed={sortDirection === 'descending'} onClick={() => { setSortDirection('descending'); setPage(1); }}>Descending</button>
+            <div className="batch-performance-sort-toggle" role="group" aria-label="Sort direction">
+              <button type="button" aria-pressed={sortDirection === 'ascending'} onClick={() => { setSortDirection('ascending'); setPage(1); }}>Ascending</button>
+              <button type="button" aria-pressed={sortDirection === 'descending'} onClick={() => { setSortDirection('descending'); setPage(1); }}>Descending</button>
             </div>
           </div>
         </Box>
