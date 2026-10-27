@@ -29,14 +29,29 @@ export function ReportFilterPanel({ fields, values, onChange, onClear, onApply }
 }
 
 export type TableColumn<T> = { key: keyof T | string; label: string; align?: 'left' | 'center' | 'right'; render?: (row: T, index: number) => ReactNode };
+export type ReportPaginationState = { total: number; page: number; pageSize: number; onPageChange: (page: number) => void };
 export function ReportTable<T extends object>({ columns, rows, rowKey, emptyMessage, tableClassName = '', pagination }: {
   columns: TableColumn<T>[]; rows: T[]; rowKey: (row: T, index: number) => string | number; emptyMessage: string; tableClassName?: string;
-  pagination?: { info: string; onPrevious: () => void; onNext: () => void; previousDisabled: boolean; nextDisabled: boolean };
+  pagination?: ReportPaginationState;
 }) {
+  const pageCount = pagination ? Math.ceil(pagination.total / pagination.pageSize) : 0;
+  const currentPage = pagination ? Math.min(pagination.page, pageCount) : 0;
+  const showPagination = Boolean(pagination && pagination.total > pagination.pageSize);
+  const start = pagination && showPagination ? (currentPage - 1) * pagination.pageSize + 1 : 0;
+  const end = pagination && showPagination ? Math.min(currentPage * pagination.pageSize, pagination.total) : 0;
   return <><TableContainer className="table-wrap"><Table className={`report-table ${tableClassName}`} size="small" aria-label="Report results">
     <TableHead><TableRow>{columns.map(column => <TableCell key={String(column.key)} align={column.align}>{column.label}</TableCell>)}</TableRow></TableHead>
     <TableBody>{rows.length ? rows.map((row, index) => <TableRow key={rowKey(row, index)}>{columns.map(column => <TableCell key={String(column.key)} align={column.align}>{column.render ? column.render(row, index) : String((row as Record<string, unknown>)[String(column.key)] ?? '')}</TableCell>)}</TableRow>) : <TableRow className="empty-row"><TableCell colSpan={columns.length}>{emptyMessage}</TableCell></TableRow>}</TableBody>
-  </Table></TableContainer>{pagination && <div className="pagination"><span>{pagination.info}</span><div><button type="button" aria-label="Previous page" disabled={pagination.previousDisabled} onClick={pagination.onPrevious}>Previous</button><button type="button" aria-label="Next page" disabled={pagination.nextDisabled} onClick={pagination.onNext}>Next</button></div></div>}</>;
+  </Table></TableContainer>{showPagination && pagination && <div className="pagination"><span>Showing {start}-{end} of {pagination.total.toLocaleString()}</span><div><button type="button" aria-label="Previous page" disabled={currentPage <= 1} onClick={() => pagination.onPageChange(currentPage - 1)}>Previous</button><span className="pagination-page" aria-live="polite">Page {currentPage} of {pageCount}</span><button type="button" aria-label="Next page" disabled={currentPage >= pageCount} onClick={() => pagination.onPageChange(currentPage + 1)}>Next</button></div></div>}</>;
+}
+
+export function ReportPagination({ total, page, pageSize, onPageChange }: ReportPaginationState) {
+  const pageCount = Math.ceil(total / pageSize);
+  if (total <= pageSize) return null;
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
+  return <div className="pagination"><span>Showing {start}-{end} of {total.toLocaleString()}</span><div><button type="button" aria-label="Previous page" disabled={currentPage <= 1} onClick={() => onPageChange(currentPage - 1)}>Previous</button><span className="pagination-page" aria-live="polite">Page {currentPage} of {pageCount}</span><button type="button" aria-label="Next page" disabled={currentPage >= pageCount} onClick={() => onPageChange(currentPage + 1)}>Next</button></div></div>;
 }
 
 export function ReportPanel({ title, description, count, children }: { title: string; description: string; count: string; children: ReactNode }) {
