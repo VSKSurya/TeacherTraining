@@ -30,7 +30,6 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
   html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Repository' ? ' active' : ''}" href="/trainers"${activePage === 'Trainer Repository' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Repository</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
-  html = html.replace('</nav>', `<a class="side-link${activePage === 'Certificates' ? ' active' : ''}" href="/certificates"${activePage === 'Certificates' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.7"/><path d="M14.5 3.5V8H19M8 12h8m-8 3h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Certificates</span></a></nav>`);
   html = html.replace('href="#effectiveness">Feedback Report</a>', 'href="/reports/assessment-feedback">Assessment &amp; Feedback Report</a>');
   const reportLinks: Record<string, string> = { 'Batch Performance': '/reports/batch-performance', 'Training Summary': '/reports/training-summary', 'Attendance Report': '/reports/attendance-report', 'Assessment & Feedback Report': '/reports/assessment-feedback' };
   for (const [label, href] of Object.entries(reportLinks)) {
@@ -45,6 +44,11 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     Certificates: 'certificates', 'MIS Reports': 'mis-reports', 'Holiday Master': 'holiday-master', 'Trainer Repository': 'trainer-repository',
   };
   const sidebarDocument = new DOMParser().parseFromString(html, 'text/html');
+  const certificatesLink = [...sidebarDocument.querySelectorAll<HTMLAnchorElement>('.side-nav > .side-link')].find(link => link.textContent?.trim() === 'Certificates');
+  if (certificatesLink) {
+    certificatesLink.href = '/certificates';
+    if (activePage === 'Certificates') { certificatesLink.classList.add('active'); certificatesLink.setAttribute('aria-current', 'page'); }
+  }
   const assessmentsLink = [...sidebarDocument.querySelectorAll<HTMLAnchorElement>('.side-nav > .side-link')].find(link => link.textContent?.trim() === 'Assessments');
   if (assessmentsLink) {
     assessmentsLink.href = '/assessments';
