@@ -3,13 +3,15 @@ import { Alert, Box, Chip, FormControl, LinearProgress, MenuItem, Paper, Select,
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession, getUsers } from '../auth';
 import { formatDate } from '../dateFormat';
+import { businessToday, calculateAttendance } from '../attendanceMetrics';
+import { buildTrainingCompletionRows, summarizeTrainingCompletion } from '../completion';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; status?: string; assignedUsers?: string[]; endDate?: string };
 type Plan = Row & { id: string; code?: string; name?: string; status?: string };
 type Association = Row & { id: string; projectId: string; trainingPlanId: string; status?: string };
 type Batch = Row & { id: string; batchCode?: string; projectId?: string; projectPlanAssociationId?: string; status?: string; trainingStartDate?: string; trainingEndAuto?: string; trainerCode?: string; trainingDuration?: number; trainingDates?: string[] };
-const KEYS = { projects: 'teacher-training-projects', plans: 'teacher-training-plans', associations: 'teacher-training-project-plan-associations', batches: 'teacher-training-batch-plan-uses', registrations: 'teacher-training-registrations', attendance: 'teacher-training-attendance-records', assessments: 'teacher-training-assessment-records', feedback: 'teacher-training-feedback-records' };
+const KEYS = { projects: 'teacher-training-projects', plans: 'teacher-training-plans', associations: 'teacher-training-project-plan-associations', batches: 'teacher-training-batch-plan-uses', registrations: 'teacher-training-registrations', attendance: 'teacher-training-attendance-records', exclusions: 'teacher-training-attendance-exclusions', assessments: 'teacher-training-assessment-records', feedback: 'teacher-training-feedback-records', external: 'teacher-training-external-course-records', forms: 'teacher-training-assessment-form-master' };
 function readRows<T extends Row>(key: string): T[] { try { const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(parsed) ? parsed.filter(item => item && typeof item === 'object') as T[] : []; } catch { return []; } }
 function numeric(...values: unknown[]) { for (const value of values) { const number = Number(value); if (Number.isFinite(number) && number >= 0) return number; } return 0; }
 function text(value: unknown) { return typeof value === 'string' ? value : ''; }
@@ -41,8 +43,11 @@ export default function SchoolnetDashboard() {
   const allBatches = useMemo(() => readRows<Batch>(KEYS.batches), []);
   const allRegistrations = useMemo(() => readRows<Row>(KEYS.registrations), []);
   const allAttendance = useMemo(() => readRows<Row>(KEYS.attendance), []);
+  const allExclusions = useMemo(() => readRows<Row>(KEYS.exclusions), []);
   const allAssessments = useMemo(() => readRows<Row>(KEYS.assessments), []);
   const allFeedback = useMemo(() => readRows<Row>(KEYS.feedback), []);
+  const allExternalCourses = useMemo(() => readRows<Row>(KEYS.external), []);
+  const allAssessmentForms = useMemo(() => readRows<Row>(KEYS.forms), []);
   const trainers = useMemo(() => getUsers().filter(user => user.active && user.role === 'trainer'), []);
   const authorizedProjects = useMemo(() => allProjects.filter(project => superAdmin || Boolean(session && project.assignedUsers?.includes(session.userId))), [allProjects, superAdmin, session]);
   const [selectedProject, setSelectedProject] = useState('');
@@ -67,8 +72,9 @@ export default function SchoolnetDashboard() {
   const approved = registrations.length ? registrations.filter(isApproved).length : batches.reduce((sum, batch) => sum + numeric(batch.approvedParticipants, batch.approvedUsers), 0);
   const trainedRecords = new Set(attendance.filter(isPresent).map(row => text(row.participantId ?? row.traineeId ?? row.userId ?? row.registrationId)).filter(Boolean));
   const trained = trainedRecords.size || batches.reduce((sum, batch) => sum + numeric(batch.trainedParticipants, batch.completedUsers), 0);
-  const attendanceRate = attendance.length ? percent(attendance.filter(isPresent).length, attendance.length) : null;
-  const completionRate = plannedParticipants ? percent(trained, plannedParticipants) : percent(statusCounts.Completed, activeBatches.length);
+  const attendanceSummary = calculateAttendance(batches, registrations, attendance, allExclusions);
+  const attendanceRate = attendanceSummary.percentage;
+  const completion = summarizeTrainingCompletion(buildTrainingCompletionRows(registrations, batches, plans, associations), { attendance, assessments, feedback, externalCourses: filterRelated(allExternalCourses), assessmentForms: allAssessmentForms, exclusions: allExclusions, asOf: businessToday() });
   const assessmentCompleted = assessments.filter(isCompleted).length;
   const assessmentPasses = assessments.filter(isPassed).length;
   const assessmentCompletionRate = assessments.length ? percent(assessmentCompleted, assessments.length) : null;
@@ -119,8 +125,8 @@ export default function SchoolnetDashboard() {
         <MetricCard label="Upcoming batches" value={metricValue(upcoming.length)} detail="Scheduled in the future" color="#cf7800" />
         <MetricCard label="Planned participants" value={participantDataPresent ? metricValue(plannedParticipants) : '—'} detail={`${metricValue(registered)} registered`} />
         <MetricCard label="Approved participants" value={participantDataPresent || registrations.length ? metricValue(approved) : '—'} detail={`${metricValue(trained)} trained`} color="#078347" />
-        <MetricCard label="Attendance" value={attendanceRate === null ? '—' : `${attendanceRate}%`} detail={attendance.length ? `${attendance.filter(isPresent).length} present marks from ${attendance.length} records` : 'Attendance records not available'} color="#078347" />
-        <MetricCard label="Training completion" value={batchDataPresent ? pctText(completionRate) : '—'} detail={plannedParticipants ? 'Trained participants / planned participants' : 'Completed batches / active batches'} color="#078347" />
+        <MetricCard label="Attendance" value={attendanceRate === null ? '—' : `${attendanceRate}%`} detail={`${attendanceSummary.present} present / ${attendanceSummary.expected} expected · ${attendanceSummary.pending} pending · ${attendanceSummary.excluded} excluded`} color="#078347" />
+        <MetricCard label="Training completion" value={completion.percentage === null ? '—' : `${completion.percentage}%`} detail={`${completion.completed} completed / ${completion.eligibleConfirmed} due confirmed · ${completion.pending} pending · ${completion.inProgress} in progress · ${completion.notCompleted} not completed · ${completion.notConfigured} not configured`} color="#078347" />
         <MetricCard label="Assessment completion" value={pctText(assessmentCompletionRate)} detail={assessments.length ? `${assessmentCompleted} of ${assessments.length} assessments complete` : 'Assessment records not available'} />
         <MetricCard label="Assessment pass rate" value={pctText(assessmentPassRate)} detail={assessmentCompleted ? `${assessmentPasses} passed of ${assessmentCompleted} completed` : 'Pass results not available'} color="#078347" />
         <MetricCard label="Feedback satisfaction" value={averageRating === null ? '—' : averageRating.toFixed(1)} detail={ratings.length ? `Average rating from ${ratings.length} responses` : 'Feedback records not available'} color="#7858a6" />
@@ -146,13 +152,15 @@ export default function SchoolnetDashboard() {
       </Box>
       <Paper className="panel schoolnet-panel" elevation={0} sx={{ mt: 1.5, p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5, '& .MuiTypography-caption': { fontSize: 10 }, '& .MuiChip-label': { fontSize: 10 } }}>
         <Typography variant="h6" sx={{ mb: 1.3, fontWeight: 750, fontSize: 15, letterSpacing: '-.15px' }}>Project health</Typography>
-        {projects.length ? <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', minWidth: 820, borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 11 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', fontSize: 11 } }}><thead><tr><th>Project</th><th>Status</th><th>Linked plans</th><th>Batches</th><th>Completion</th><th>Risk</th></tr></thead><tbody>{projects.map(project => {
+        {projects.length ? <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', minWidth: 920, borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 11 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', fontSize: 11 } }}><thead><tr><th>Project</th><th>Status</th><th>Linked plans</th><th>Batches</th><th>Attendance</th><th>Completion</th><th>Risk</th></tr></thead><tbody>{projects.map(project => {
           const projectAssociations = associations.filter(item => item.projectId === project.id && item.status === 'Active');
           const projectBatches = batches.filter(batch => batch.projectId === project.id); const projectActive = projectBatches.filter(batch => !['Cancelled', 'Archived'].includes(text(batch.status)));
+          const projectBatchIds = new Set(projectBatches.flatMap(batch => [batch.id, batch.batchCode ?? '', text(batch.uniqueId)]).filter(Boolean));
+          const projectAttendanceSummary = calculateAttendance(projectActive, registrations.filter(row => projectBatchIds.has(text(row.batchId ?? row.batchCode ?? row.batchUniqueId))), attendance.filter(row => projectBatchIds.has(text(row.batchId ?? row.batchCode ?? row.batchUniqueId))), allExclusions);
           const completedBatches = projectBatches.filter(batch => text(batch.status).toLowerCase() === 'completed').length;
           const late = projectActive.filter(batch => text(batch.status).toLowerCase() !== 'completed' && dayValue(batch.trainingEndAuto) && dayValue(batch.trainingEndAuto) < today).length;
           const health = project.endDate && project.endDate < today && text(project.status).toLowerCase() !== 'completed' ? 'Project period elapsed' : late ? `${late} delayed batch(es)` : projectActive.some(batch => !batch.trainerCode) ? 'Trainer unassigned' : 'On track';
-          return <tr key={project.id}><td><strong>{project.name}</strong><Typography variant="caption" display="block" color="text.secondary">{project.code ?? ''}</Typography></td><td>{project.status ?? '—'}</td><td>{projectAssociations.length}</td><td>{projectBatches.length}</td><td>{pctText(percent(completedBatches, projectActive.length))}</td><td><Chip size="small" label={health} color={health === 'On track' ? 'success' : 'warning'} /></td></tr>;
+          return <tr key={project.id}><td><strong>{project.name}</strong><Typography variant="caption" display="block" color="text.secondary">{project.code ?? ''}</Typography></td><td>{project.status ?? '—'}</td><td>{projectAssociations.length}</td><td>{projectBatches.length}</td><td>{projectAttendanceSummary.percentage === null ? '—' : `${projectAttendanceSummary.percentage}%`}<Typography variant="caption" display="block" color="text.secondary">{projectAttendanceSummary.present}/{projectAttendanceSummary.expected} · {projectAttendanceSummary.pending} pending</Typography></td><td>{pctText(percent(completedBatches, projectActive.length))}</td><td><Chip size="small" label={health} color={health === 'On track' ? 'success' : 'warning'} /></td></tr>;
         })}</tbody></Box></Box> : <Typography color="text.secondary">No authorized projects are available.</Typography>}
       </Paper>
       {analyticsPresent && <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#71839a' }}>Participant and learning analytics are calculated from records available in this browser’s dashboard data.</Typography>}

@@ -9,13 +9,14 @@ type Project = Row & { id: string; name: string; code?: string; assignedUsers?: 
 type Batch = Row & { id: string; uniqueId?: string; projectId?: string; batchCode?: string; name?: string; trainerCode?: string; trainingDates?: string[]; trainingStartDate?: string; trainingDuration?: number };
 type Trainee = Row & { id?: string; traineeId?: string; participantId?: string; userId?: string; name?: string; traineeName?: string; participantName?: string; batchId?: string; batchCode?: string; status?: string };
 type Mark = { id: string; projectId: string; batchId: string; batchCode: string; trainingDate: string; traineeId: string; traineeName: string; status: 'Present' | 'Absent'; markedBy: string; markedAt: string; updatedBy?: string; updatedAt?: string };
-type Audit = { id: string; entity: 'attendance'; action: 'mark' | 'amend'; projectId: string; batchId: string; trainingDate: string; traineeId: string; originalValue?: string; revisedValue?: string; previousStatus?: string; newStatus: string; reason?: string; changedBy: string; changedAt: string };
+type Audit = { id: string; entity: 'attendance'; action: 'mark' | 'amend' | 'exclude' | 'reinstate'; projectId: string; batchId: string; trainingDate: string; traineeId: string; originalValue?: string; revisedValue?: string; previousStatus?: string; newStatus: string; reason?: string; changedBy: string; changedAt: string };
 type UploadValue = { batchId: string; trainingDate: string; traineeId: string; status: string };
 type UploadResult = { rowNumber: number; value: UploadValue; batch?: Batch; trainee?: { id: string; name: string }; status?: 'Present' | 'Absent'; errors: string[]; imported?: boolean };
 const PROJECTS_KEY = 'teacher-training-projects';
 const BATCHES_KEY = 'teacher-training-batch-plan-uses';
 const REGISTRATIONS_KEY = 'teacher-training-registrations';
 const ATTENDANCE_KEY = 'teacher-training-attendance-records';
+const EXCLUSIONS_KEY = 'teacher-training-attendance-exclusions';
 const AUDIT_KEY = 'teacher-training-audit';
 const BUSINESS_TIME_ZONE = import.meta.env.VITE_BUSINESS_TIME_ZONE?.trim() || 'Asia/Kolkata';
 const readRows = <T extends Row,>(key: string): T[] => { try { const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value.filter(item => item && typeof item === 'object') as T[] : []; } catch { return []; } };
@@ -103,12 +104,15 @@ export default function Attendance() {
   const batches = useMemo(() => readRows<Batch>(BATCHES_KEY), []);
   const registrations = useMemo(() => readRows<Trainee>(REGISTRATIONS_KEY), []);
   const [records, setRecords] = useState<Mark[]>(() => readRows<Mark>(ATTENDANCE_KEY));
+  const [exclusions, setExclusions] = useState<Row[]>(() => readRows<Row>(EXCLUSIONS_KEY));
   const [audit, setAudit] = useState<Audit[]>(() => readRows<Audit>(AUDIT_KEY));
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [draft, setDraft] = useState<Record<string, 'Present' | 'Absent'>>({});
   const [reason, setReason] = useState('');
+  const [excludeTrainee, setExcludeTrainee] = useState('');
+  const [exclusionReason, setExclusionReason] = useState('');
   const [notice, setNotice] = useState('');
   const [businessToday, setBusinessToday] = useState(businessDateNow);
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
@@ -120,6 +124,7 @@ export default function Attendance() {
   }, []);
   const role = session?.role ?? 'trainee';
   const schoolnetAdmin = role === 'schoolnet-super-admin' || role === 'schoolnet-project-admin';
+  const canApproveExclusion = ['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin'].includes(role);
   const globalAdmin = role === 'schoolnet-super-admin';
   const authorizedProjects = projects.filter(project => globalAdmin || (project.assignedUsers ?? []).includes(session?.userId ?? ''));
   const projectOptions = role === 'trainer' ? projects.filter(project => batches.some(batch => batch.projectId === project.id && text(batch.trainerCode).toLowerCase() === session?.userId.toLowerCase())) : authorizedProjects;
@@ -129,22 +134,47 @@ export default function Attendance() {
   const trainingDates = batch ? datesFor(batch) : [];
   const trainees = useMemo(() => {
     if (!batch) return [];
-    const rows = registrations.filter(row => (text(row.batchId) === batch.id || text(row.batchCode) === batch.batchCode) && !['cancelled', 'rejected', 'withdrawn'].includes(text(row.status).toLowerCase()));
+    const rows = registrations.filter(row => (text(row.batchId) === batch.id || text(row.batchCode) === batch.batchCode) && (row.approved === true || ['approved', 'confirmed', 'enrolled'].includes(text(row.status ?? row.registrationStatus ?? row.approvalStatus).toLowerCase())));
     const seen = new Set<string>();
     return rows.filter(row => { const id = idFor(row); if (!id || seen.has(id)) return false; seen.add(id); return true; }).map(row => ({ id: idFor(row), name: nameFor(row) }));
   }, [batch, registrations]);
   const existingByTrainee = new Map(records.filter(row => row.batchId === batch?.id && row.trainingDate === selectedDate).map(row => [row.traineeId, row]));
   const savedForDate = records.filter(row => row.batchId === batch?.id && row.trainingDate === selectedDate);
+  const exclusionsForDate = exclusions.filter(row => text(row.batchId) === batch?.id && text(row.trainingDate) === selectedDate && row.approved === true);
   const canMarkBatch = (target: Batch) => Boolean(session && (role === 'schoolnet-super-admin' || (['schoolnet-project-admin', 'state-admin', 'school-admin'].includes(role) && (projects.find(project => project.id === target.projectId)?.assignedUsers ?? []).includes(session.userId)) || (role === 'trainer' && text(target.trainerCode).toLowerCase() === session.userId.toLowerCase())));
   const canEnter = Boolean(batch && canMarkBatch(batch));
   const canUpload = Boolean(session && batches.some(canMarkBatch));
-  const isAmendment = (traineeId: string) => Boolean(existingByTrainee.has(traineeId) && draft[traineeId] && draft[traineeId] !== existingByTrainee.get(traineeId)?.status);
+  const excludedIds = new Set(exclusionsForDate.map(row => text(row.traineeId)));
+  const isAmendment = (traineeId: string) => Boolean(!excludedIds.has(traineeId) && existingByTrainee.has(traineeId) && draft[traineeId] && draft[traineeId] !== existingByTrainee.get(traineeId)?.status);
   const amendmentsPending = trainees.some(trainee => isAmendment(trainee.id));
   const completedCount = trainees.filter(trainee => existingByTrainee.has(trainee.id)).length;
-  const missingCount = Math.max(0, trainees.length - completedCount);
-  const presentCount = savedForDate.filter(row => row.status.toLowerCase() === 'present').length;
-  const absentCount = savedForDate.filter(row => row.status.toLowerCase() === 'absent').length;
+  const excludedCount = trainees.filter(trainee => excludedIds.has(trainee.id)).length;
+  const missingCount = Math.max(0, trainees.length - completedCount - excludedCount);
+  const presentCount = savedForDate.filter(row => row.status.toLowerCase() === 'present' && !excludedIds.has(row.traineeId)).length;
+  const absentCount = savedForDate.filter(row => row.status.toLowerCase() === 'absent' && !excludedIds.has(row.traineeId)).length;
   const importableCount = uploadResults.filter(item => !item.imported && item.errors.length === 0).length;
+
+  function approveExclusion() {
+    if (!session || !batch || !selectedDate || !canApproveExclusion || !exclusionReason.trim()) return;
+    const trainee = trainees.find(item => item.id === excludeTrainee);
+    if (!trainee || exclusionsForDate.some(item => text(item.traineeId) === trainee.id)) return;
+    const now = new Date().toISOString();
+    const exclusion = { id: crypto.randomUUID(), projectId: batch.projectId, batchId: batch.id, batchCode: batch.batchCode, trainingDate: selectedDate, traineeId: trainee.id, traineeName: trainee.name, approved: true, excluded: true, status: 'Approved', reason: exclusionReason.trim(), approvedBy: session.userId, approvedAt: now };
+    const updated = [...exclusions, exclusion]; localStorage.setItem(EXCLUSIONS_KEY, JSON.stringify(updated)); setExclusions(updated);
+    const nextAudit = [...audit, { id: crypto.randomUUID(), entity: 'attendance' as const, action: 'exclude' as const, projectId: batch.projectId ?? '', batchId: batch.id, trainingDate: selectedDate, traineeId: trainee.id, newStatus: 'Approved exclusion', reason: exclusionReason.trim(), changedBy: session.userId, changedAt: now }]; localStorage.setItem(AUDIT_KEY, JSON.stringify(nextAudit)); setAudit(nextAudit);
+    setExcludeTrainee(''); setExclusionReason(''); setNotice(`${trainee.name} was approved as excluded from this training-day attendance denominator.`);
+  }
+  function reinstateAttendance(traineeId: string) {
+    if (!session || !batch || !selectedDate || !canApproveExclusion) return;
+    const current = exclusionsForDate.find(item => text(item.traineeId) === traineeId);
+    if (!current) return;
+    const why = window.prompt(`Reason for reinstating attendance for ${text(current.traineeName) || traineeId}:`);
+    if (!why?.trim()) return;
+    const now = new Date().toISOString();
+    const updated = exclusions.map(item => item.id === current.id ? { ...item, approved: false, revokedBy: session.userId, revokedAt: now, revocationReason: why.trim() } : item); localStorage.setItem(EXCLUSIONS_KEY, JSON.stringify(updated)); setExclusions(updated);
+    const nextAudit = [...audit, { id: crypto.randomUUID(), entity: 'attendance' as const, action: 'reinstate' as const, projectId: batch.projectId ?? '', batchId: batch.id, trainingDate: selectedDate, traineeId, newStatus: 'Exclusion revoked', reason: why.trim(), changedBy: session.userId, changedAt: now }]; localStorage.setItem(AUDIT_KEY, JSON.stringify(nextAudit)); setAudit(nextAudit);
+    setNotice('Approved attendance exclusion revoked. This trainee-day is expected again.');
+  }
 
   function changeProject(value: string) { setSelectedProject(value); setSelectedBatch(''); setSelectedDate(''); setDraft({}); setNotice(''); }
   function changeBatch(value: string) { setSelectedBatch(value); setSelectedDate(''); setDraft({}); setReason(''); setNotice(''); }
@@ -158,12 +188,13 @@ export default function Attendance() {
     if (!session || !batch || !selectedDate || !canEnter) return;
     const currentBusinessDate = businessDateNow();
     if (selectedDate > currentBusinessDate) { setNotice(`Future attendance is not allowed. Today's business date is ${fmtDate(currentBusinessDate)} (${BUSINESS_TIME_ZONE}).`); return; }
-    if (trainees.some(trainee => !draft[trainee.id] && !existingByTrainee.has(trainee.id))) { setNotice('Mark every trainee Present or Absent before saving.'); return; }
+    if (trainees.some(trainee => !excludedIds.has(trainee.id) && !draft[trainee.id] && !existingByTrainee.has(trainee.id))) { setNotice('Mark every expected trainee Present or Absent before saving.'); return; }
     if (amendmentsPending && (!schoolnetAdmin || !reason.trim())) { setNotice('A Schoolnet Admin must provide an amendment reason to change saved attendance.'); return; }
     const timestamp = new Date().toISOString();
     const nextRecords = [...records];
     const nextAudit = [...audit];
     for (const trainee of trainees) {
+      if (excludedIds.has(trainee.id)) continue;
       const nextStatus = draft[trainee.id];
       if (!nextStatus) continue;
       const index = nextRecords.findIndex(row => row.batchId === batch.id && row.trainingDate === selectedDate && row.traineeId === trainee.id);
@@ -272,6 +303,7 @@ export default function Attendance() {
         {batch && trainingDates.length === 0 && <Alert severity="warning" sx={{ mt: 2 }}>This batch has no scheduled training dates. Add training dates to the batch before recording attendance.</Alert>}
         {batch && !canEnter && <Alert severity="error" sx={{ mt: 2 }}>You are not authorized to mark attendance for this batch. Only its assigned trainer or an authorized project user may record attendance.</Alert>}
       </Paper>
+      {canApproveExclusion && batch && selectedDate && <Paper elevation={0} sx={{ p: 1.5, mb: 2, border: '1px solid #e3ebf3', borderRadius: 2, bgcolor: '#fbfdff' }}><Typography variant="subtitle2" fontWeight={750}>Approved attendance exclusions</Typography><Typography variant="caption" color="text.secondary">An authorized administrator can exclude a confirmed trainee-day with a reason. Approved exclusions are removed from expected records and retained in the audit history.</Typography><Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1.25 }}><TextField select size="small" label="Trainee to exclude" value={excludeTrainee} onChange={event => setExcludeTrainee(event.target.value)} sx={{ minWidth: 240 }}><MenuItem value="">Select trainee</MenuItem>{trainees.filter(trainee => !excludedIds.has(trainee.id)).map(trainee => <MenuItem key={trainee.id} value={trainee.id}>{trainee.name}</MenuItem>)}</TextField><TextField size="small" fullWidth label="Exclusion reason" value={exclusionReason} onChange={event => setExclusionReason(event.target.value)} inputProps={{ maxLength: 500 }} /><Button variant="outlined" onClick={approveExclusion} disabled={!excludeTrainee || !exclusionReason.trim()}>Approve exclusion</Button></Stack>{exclusionsForDate.length > 0 && <Stack direction="row" spacing={.75} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>{exclusionsForDate.map(item => <Chip key={text(item.id)} size="small" color="warning" label={`${text(item.traineeName) || text(item.traineeId)} · excluded`} onDelete={canApproveExclusion ? () => reinstateAttendance(text(item.traineeId)) : undefined} />)}</Stack>}</Paper>}
       {canUpload && <Paper elevation={0} sx={{ p: { xs: 2, md: 2.5 }, border: '1px solid #e3ebf3', borderRadius: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1.5}>
           <Box><Typography variant="h6" sx={{ fontWeight: 750 }}>Upload attendance through Excel</Typography><Typography variant="body2" color="text.secondary">Use Batch_ID, Training_Date, Trainee_ID, and Attendance_Status. Dates must be scheduled for the batch and cannot be future dates.</Typography></Box>
@@ -286,7 +318,7 @@ export default function Attendance() {
       </Paper>}
       {batch && selectedDate && canEnter && <>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mb: 2 }}>
-          <Paper elevation={0} sx={{ p: 1.5, flex: 1, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="caption" color="text.secondary">Trainees</Typography><Typography variant="h5" sx={{ fontWeight: 800 }}>{trainees.length}</Typography></Paper>
+          <Paper elevation={0} sx={{ p: 1.5, flex: 1, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="caption" color="text.secondary">Expected records</Typography><Typography variant="h5" sx={{ fontWeight: 800 }}>{Math.max(0, trainees.length - excludedCount)}</Typography></Paper>
           <Paper elevation={0} sx={{ p: 1.5, flex: 1, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="caption" color="text.secondary">Saved records</Typography><Typography variant="h5" sx={{ fontWeight: 800, color: '#078347' }}>{completedCount}</Typography></Paper>
           <Paper elevation={0} sx={{ p: 1.5, flex: 1, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="caption" color="text.secondary">Present</Typography><Typography variant="h5" sx={{ fontWeight: 800, color: '#078347' }}>{presentCount}</Typography></Paper>
           <Paper elevation={0} sx={{ p: 1.5, flex: 1, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="caption" color="text.secondary">Absent</Typography><Typography variant="h5" sx={{ fontWeight: 800, color: '#b54735' }}>{absentCount}</Typography></Paper>
@@ -297,16 +329,16 @@ export default function Attendance() {
           {trainees.length ? <TableContainer sx={{ maxHeight: 580 }}><Table stickyHeader size="small"><TableHead><TableRow><TableCell sx={{ fontWeight: 750 }}>Trainee</TableCell><TableCell sx={{ fontWeight: 750 }}>Trainee ID</TableCell><TableCell sx={{ fontWeight: 750 }}>Attendance</TableCell><TableCell sx={{ fontWeight: 750 }}>Record status</TableCell></TableRow></TableHead><TableBody>{trainees.map(trainee => {
             const saved = existingByTrainee.get(trainee.id);
             const value = draft[trainee.id] ?? saved?.status ?? '';
-            const canChange = !saved || (schoolnetAdmin && Boolean(draft[trainee.id]));
+            const canChange = !excludedIds.has(trainee.id) && (!saved || (schoolnetAdmin && Boolean(draft[trainee.id])));
             return <TableRow key={trainee.id} hover><TableCell sx={{ fontWeight: 650 }}>{trainee.name}</TableCell><TableCell>{trainee.id}</TableCell><TableCell><Stack direction="row" spacing={.75}><Button size="small" variant={value === 'Present' ? 'contained' : 'outlined'} color="success" disabled={!canChange} onClick={() => setDraft(current => ({ ...current, [trainee.id]: 'Present' }))}>Present</Button><Button size="small" variant={value === 'Absent' ? 'contained' : 'outlined'} color="error" disabled={!canChange} onClick={() => setDraft(current => ({ ...current, [trainee.id]: 'Absent' }))}>Absent</Button></Stack></TableCell><TableCell>{saved ? <Chip size="small" color={isAmendment(trainee.id) ? 'warning' : 'success'} label={isAmendment(trainee.id) ? `Amend ${saved.status} → ${draft[trainee.id]}` : `Saved ${saved.status}`} /> : <Chip size="small" variant="outlined" label="Not saved" />}</TableCell></TableRow>;
           })}</TableBody></Table></TableContainer> : <Alert severity="info" sx={{ m: 2 }}>No active trainee registrations were found for this batch. Add trainees to the batch before marking attendance.</Alert>}
           {amendmentsPending && schoolnetAdmin && <Box sx={{ p: 2, borderTop: '1px solid #e8eef4' }}><TextField label="Amendment reason (required)" value={reason} onChange={event => setReason(event.target.value)} fullWidth multiline minRows={2} inputProps={{ maxLength: 500 }} helperText="The previous value, new value, user, time, and reason are retained in the audit history." /></Box>}
-          <Box sx={{ p: 2, borderTop: '1px solid #e8eef4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}><Typography variant="caption" color="text.secondary">Saved records remain linked to this trainee, batch, and date.</Typography><Button variant="contained" onClick={saveAttendance} disabled={!trainees.length || trainees.some(item => !draft[item.id] && !existingByTrainee.has(item.id)) || (amendmentsPending && (!schoolnetAdmin || !reason.trim()))}>Save attendance</Button></Box>
+          <Box sx={{ p: 2, borderTop: '1px solid #e8eef4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}><Typography variant="caption" color="text.secondary">Saved records remain linked to this trainee, batch, and date.</Typography><Button variant="contained" onClick={saveAttendance} disabled={!trainees.length || trainees.some(item => !excludedIds.has(item.id) && !draft[item.id] && !existingByTrainee.has(item.id)) || (amendmentsPending && (!schoolnetAdmin || !reason.trim()))}>Save attendance</Button></Box>
         </Paper>
       </>}
       {notice && <Alert severity={notice.startsWith('Attendance saved') ? 'success' : 'warning'} sx={{ mt: 2 }} onClose={() => setNotice('')}>{notice}</Alert>}
-      {selectedBatch && selectedDate && batch && canEnter && <Paper elevation={0} sx={{ p: 2, mt: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="subtitle1" sx={{ fontWeight: 750, mb: 1 }}>Saved attendance review</Typography>{records.filter(item => item.batchId === batch.id && item.trainingDate === selectedDate).length ? <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">{records.filter(item => item.batchId === batch.id && item.trainingDate === selectedDate).map(item => <Chip key={item.id} size="small" variant="outlined" color={item.status === 'Present' ? 'success' : 'default'} label={`${item.traineeName}: ${item.status}`} />)}</Stack> : <Typography variant="body2" color="text.secondary">No saved attendance for this date yet.</Typography>}{missingCount > 0 && <Alert severity="warning" sx={{ mt: 1.5 }}>{missingCount} trainee(s) have no saved attendance: {trainees.filter(item => !existingByTrainee.has(item.id)).map(item => item.name).join(', ')}.</Alert>}
-        {schoolnetAdmin && audit.filter(item => item.entity === 'attendance' && item.batchId === batch.id && item.trainingDate === selectedDate).length > 0 && <Box sx={{ mt: 2 }}><Typography variant="subtitle2" sx={{ fontWeight: 750, mb: 1 }}>Attendance audit history</Typography><Stack spacing={.75}>{audit.filter(item => item.entity === 'attendance' && item.batchId === batch.id && item.trainingDate === selectedDate).slice().reverse().map(item => { const original = item.originalValue ?? item.previousStatus; const revised = item.revisedValue ?? item.newStatus; return <Typography key={item.id} variant="caption" color="text.secondary">{item.action === 'amend' ? 'Amended' : 'Marked'} {trainees.find(person => person.id === item.traineeId)?.name ?? item.traineeId}: {original ? `${original} → ` : ''}{revised} by {item.changedBy} · {formatDateTime(item.changedAt)}{item.reason ? ` · Reason: ${item.reason}` : ''}</Typography>; })}</Stack></Box>}
+      {selectedBatch && selectedDate && batch && canEnter && <Paper elevation={0} sx={{ p: 2, mt: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="subtitle1" sx={{ fontWeight: 750, mb: 1 }}>Saved attendance review</Typography>{records.filter(item => item.batchId === batch.id && item.trainingDate === selectedDate).length ? <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">{records.filter(item => item.batchId === batch.id && item.trainingDate === selectedDate).map(item => <Chip key={item.id} size="small" variant="outlined" color={item.status === 'Present' ? 'success' : 'default'} label={`${item.traineeName}: ${item.status}`} />)}</Stack> : <Typography variant="body2" color="text.secondary">No saved attendance for this date yet.</Typography>}{missingCount > 0 && <Alert severity="warning" sx={{ mt: 1.5 }}>{missingCount} expected attendance record(s) are pending: {trainees.filter(item => !excludedIds.has(item.id) && !existingByTrainee.has(item.id)).map(item => item.name).join(', ')}.</Alert>}
+        {audit.filter(item => item.entity === 'attendance' && item.batchId === batch.id && item.trainingDate === selectedDate).length > 0 && <Box sx={{ mt: 2 }}><Typography variant="subtitle2" sx={{ fontWeight: 750, mb: 1 }}>Attendance audit history</Typography><Stack spacing={.75}>{audit.filter(item => item.entity === 'attendance' && item.batchId === batch.id && item.trainingDate === selectedDate).slice().reverse().map(item => { const original = item.originalValue ?? item.previousStatus; const revised = item.revisedValue ?? item.newStatus; const action = item.action === 'amend' ? 'Amended' : item.action === 'exclude' ? 'Excluded' : item.action === 'reinstate' ? 'Reinstated' : 'Marked'; return <Typography key={item.id} variant="caption" color="text.secondary">{action} {trainees.find(person => person.id === item.traineeId)?.name ?? item.traineeId}: {original ? `${original} → ` : ''}{revised} by {item.changedBy} · {formatDateTime(item.changedAt)}{item.reason ? ` · Reason: ${item.reason}` : ''}</Typography>; })}</Stack></Box>}
       </Paper>}
     </Box><Footer /></main></div>;
 }

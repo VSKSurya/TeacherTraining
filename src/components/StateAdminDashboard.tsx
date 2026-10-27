@@ -5,6 +5,8 @@ import { getSession } from '../auth';
 import { kgbvSchools, type KgbvSchool } from '../data/kgbvSchools';
 import { locations } from '../data/locations';
 import { formatDate } from '../dateFormat';
+import { businessToday, calculateAttendance } from '../attendanceMetrics';
+import { buildTrainingCompletionRows, summarizeTrainingCompletion } from '../completion';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; states?: string[]; assignedUsers?: string[] };
@@ -17,6 +19,7 @@ const BATCHES_KEY = 'teacher-training-batch-plan-uses';
 const CLUSTERS_KEY = 'teacher-training-cluster-master';
 const REGISTRATIONS_KEY = 'teacher-training-registrations';
 const ATTENDANCE_KEY = 'teacher-training-attendance-records';
+const EXCLUSIONS_KEY = 'teacher-training-attendance-exclusions';
 const ASSESSMENTS_KEY = 'teacher-training-assessment-records';
 const EMPTY_PATH: Path = { state: '', district: '', block: '', cluster: '', schoolUdise: '' };
 function readRows<T extends Row>(key: string): T[] { try { const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value.filter(item => item && typeof item === 'object') as T[] : []; } catch { return []; } }
@@ -44,7 +47,13 @@ export default function StateAdminDashboard() {
   const batches = useMemo(() => readRows<Batch>(BATCHES_KEY), []);
   const registrations = useMemo(() => readRows<Row>(REGISTRATIONS_KEY), []);
   const attendance = useMemo(() => readRows<Row>(ATTENDANCE_KEY), []);
+  const exclusions = useMemo(() => readRows<Row>(EXCLUSIONS_KEY), []);
   const assessments = useMemo(() => readRows<Row>(ASSESSMENTS_KEY), []);
+  const plans = useMemo(() => readRows<Row>('teacher-training-plans'), []);
+  const associations = useMemo(() => readRows<Row>('teacher-training-project-plan-associations'), []);
+  const feedbackRecords = useMemo(() => readRows<Row>('teacher-training-feedback-records'), []);
+  const externalCourses = useMemo(() => readRows<Row>('teacher-training-external-course-records'), []);
+  const assessmentForms = useMemo(() => readRows<Row>('teacher-training-assessment-form-master'), []);
   const clusterLinks = useMemo(() => readRows<ClusterLink>(CLUSTERS_KEY), []);
   const projectScope = projects.filter(item => item.assignedUsers?.includes(session?.userId ?? ''));
   const explicitScope = (() => { try { const saved: unknown = JSON.parse(localStorage.getItem('teacher-training-state-access') ?? 'null'); if (saved && typeof saved === 'object' && Array.isArray((saved as Record<string, unknown>)[session?.userId ?? ''])) return (saved as Record<string, string[]>)[session?.userId ?? '']; } catch { /* use project scope */ } return null; })();
@@ -67,12 +76,15 @@ export default function StateAdminDashboard() {
     const ids = new Set(rows.flatMap(batch => [batch.id, batch.batchCode ?? '', str(batch.uniqueId)]).filter(Boolean));
     const rowRegistrations = registrationsInScope.filter(row => ids.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
     const rowAttendance = attendanceInScope.filter(row => ids.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
-    return metricLabel(rows, rowRegistrations, rowAttendance);
+    const summary = calculateAttendance(rows, rowRegistrations, rowAttendance, exclusions);
+    return { ...metricLabel(rows, rowRegistrations, rowAttendance), attendance: summary.percentage, present: summary.present, expected: summary.expected, pending: summary.pending };
   };
-  const attendanceRate = attendanceInScope.length ? pct(attendanceInScope.filter(present).length, attendanceInScope.length) : null;
+  const attendanceSummary = calculateAttendance(visibleBatches, registrationsInScope, attendanceInScope, exclusions);
+  const attendanceRate = attendanceSummary.percentage;
   const assessmentDone = assessmentsInScope.filter(completed).length;
   const assessmentPass = assessmentsInScope.filter(passed).length;
-  const completionRate = metrics.planned ? pct(metrics.trained, metrics.planned) : pct(visibleBatches.filter(row => str(row.status).toLowerCase() === 'completed').length, visibleBatches.length);
+  const completion = summarizeTrainingCompletion(buildTrainingCompletionRows(registrationsInScope, visibleBatches, plans, associations), { attendance: attendanceInScope, assessments: assessmentsInScope, feedback: feedbackRecords, externalCourses, assessmentForms, exclusions, asOf: businessToday() });
+  const completionRate = completion.percentage;
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = visibleBatches.filter(batch => date(batch.trainingStartDate) >= today).sort((a, b) => date(a.trainingStartDate).localeCompare(date(b.trainingStartDate))).slice(0, 5);
   const interventions = visibleBatches.filter(batch => {
@@ -103,7 +115,7 @@ export default function StateAdminDashboard() {
   const scopeSchoolData = Boolean(firstRow?.schoolUdiseVenue);
 
   let tableTitle = 'States';
-  let tableRows: { key: string; name: string; detail: string; schools: number; batches: number; planned: number; registered: number; trained: number; onOpen: () => void }[] = [];
+  let tableRows: { key: string; name: string; detail: string; schools: number; batches: number; planned: number; registered: number; trained: number; attendance: number | null; present: number; expected: number; pending: number; onOpen: () => void }[] = [];
   if (level === 'state') {
     tableRows = states.map(state => { const schools = kgbvSchools.filter(item => item.state === state); const rows = visibleBatches.filter(batch => str(batch.state) === state || schoolFromBatch(batch)?.state === state); const counts = metricsFor(rows); return { key: state, name: state, detail: `${new Set(rows.map(batch => str(batch.district)).filter(Boolean)).size} districts`, schools: schools.length, batches: rows.length, ...counts, onOpen: () => drill('district', { state }) }; });
   } else if (level === 'district') {
@@ -139,8 +151,8 @@ export default function StateAdminDashboard() {
         <StatCard label="Schools covered" value={`${coveredSchools} / ${currentSchools.length}`} sub={`${pctLabel(schoolCoverage)} of UDISE schools`} />
         <StatCard label="Training cycles" value={cycleNames.length ? `${cyclesCompleted} / ${cycleNames.length}` : '—'} sub={cycleNames.length ? `${cyclesPending} pending` : 'Cycle not tagged on batches'} />
         <StatCard label="Participants" value={metrics.planned ? metrics.planned.toLocaleString() : '—'} sub={`${metrics.registered.toLocaleString()} registered · ${metrics.trained.toLocaleString()} trained`} />
-        <StatCard label="Attendance" value={pctLabel(attendanceRate)} sub={attendanceInScope.length ? `${attendanceInScope.filter(present).length} present marks` : 'Attendance data unavailable'} />
-        <StatCard label="Training completion" value={pctLabel(completionRate)} sub={metrics.planned ? 'Trained / planned participants' : 'Completed / total batches'} />
+        <StatCard label="Attendance" value={pctLabel(attendanceRate)} sub={`${attendanceSummary.present} present / ${attendanceSummary.expected} expected · ${attendanceSummary.pending} pending · ${attendanceSummary.excluded} excluded`} />
+        <StatCard label="Training completion" value={completionRate === null ? '—' : `${completionRate}%`} sub={`${completion.confirmed} confirmed · ${completion.completed} completed / ${completion.eligibleConfirmed} due confirmed · ${completion.pending} pending · ${completion.inProgress} in progress · ${completion.notCompleted} not completed · ${completion.notConfigured} not configured`} />
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 1.5, mb: 1.5 }}>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750, fontSize: 15, letterSpacing: '-.15px', mb: 1 }}>Assessment outcomes</Typography><Stack direction="row" spacing={1} useFlexGap flexWrap="wrap"><Chip label={`Completed: ${assessmentsInScope.filter(completed).length}`} color="primary" variant="outlined" /><Chip label={`Passed: ${assessmentsInScope.filter(passed).length}`} color="success" variant="outlined" /><Chip label={`Pass rate: ${pctLabel(assessmentDone ? pct(assessmentPass, assessmentDone) : null)}`} /></Stack>{!assessmentsInScope.length && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>Assessment records are not available for this scope.</Typography>}</Paper>
@@ -153,7 +165,7 @@ export default function StateAdminDashboard() {
         </Stack>
         {level === 'state' && projectScope.length > 0 && projectStates.length === 0 && <Alert severity="warning" sx={{ mb: 1.5 }}>Assigned projects have no state scope configured; the dashboard is showing all available UDISE states.</Alert>}
         {level === 'cluster' && clusterLinks.length === 0 && <Alert severity="info" sx={{ mb: 1.5 }}>Cluster master data is not available. The drilldown keeps the Cluster step and groups this block’s schools under an unmapped cluster until cluster records are added.</Alert>}
-        <TableContainer><Table size="small"><TableHead><TableRow><TableCell>{level === 'state' ? 'State' : level === 'district' ? 'District' : level === 'block' ? 'Block' : level === 'cluster' ? 'Cluster' : level === 'school' ? 'School / UDISE' : 'Batch'}</TableCell><TableCell>Hierarchy / cycle</TableCell><TableCell align="right">Schools</TableCell><TableCell align="right">Batches</TableCell><TableCell align="right">Planned</TableCell><TableCell align="right">Registered</TableCell><TableCell align="right">Trained</TableCell><TableCell>Drill down</TableCell></TableRow></TableHead><TableBody>{tableRows.map(row => <TableRow key={row.key} hover><TableCell sx={{ fontWeight: 700 }}>{row.name}</TableCell><TableCell>{row.detail}</TableCell><TableCell align="right">{row.schools}</TableCell><TableCell align="right">{row.batches}</TableCell><TableCell align="right">{row.planned || '—'}</TableCell><TableCell align="right">{row.registered || '—'}</TableCell><TableCell align="right">{row.trained || '—'}</TableCell><TableCell><Button size="small" onClick={row.onOpen} disabled={level === 'batch'} sx={{ textTransform: 'none' }}>{level === 'batch' ? 'Current level' : 'Open'}</Button></TableCell></TableRow>)}{!tableRows.length && <TableRow><TableCell colSpan={8} align="center">No rows at this level.</TableCell></TableRow>}</TableBody></Table></TableContainer>
+        <TableContainer><Table size="small"><TableHead><TableRow><TableCell>{level === 'state' ? 'State' : level === 'district' ? 'District' : level === 'block' ? 'Block' : level === 'cluster' ? 'Cluster' : level === 'school' ? 'School / UDISE' : 'Batch'}</TableCell><TableCell>Hierarchy / cycle</TableCell><TableCell align="right">Schools</TableCell><TableCell align="right">Batches</TableCell><TableCell align="right">Planned</TableCell><TableCell align="right">Registered</TableCell><TableCell align="right">Trained</TableCell><TableCell>Attendance</TableCell><TableCell>Drill down</TableCell></TableRow></TableHead><TableBody>{tableRows.map(row => <TableRow key={row.key} hover><TableCell sx={{ fontWeight: 700 }}>{row.name}</TableCell><TableCell>{row.detail}</TableCell><TableCell align="right">{row.schools}</TableCell><TableCell align="right">{row.batches}</TableCell><TableCell align="right">{row.planned || '—'}</TableCell><TableCell align="right">{row.registered || '—'}</TableCell><TableCell align="right">{row.trained || '—'}</TableCell><TableCell>{row.attendance === null ? '—' : `${row.attendance}%`}<Typography variant="caption" display="block" color="text.secondary">{row.present}/{row.expected} present · {row.pending} pending</Typography></TableCell><TableCell><Button size="small" onClick={row.onOpen} disabled={level === 'batch'} sx={{ textTransform: 'none' }}>{level === 'batch' ? 'Current level' : 'Open'}</Button></TableCell></TableRow>)}{!tableRows.length && <TableRow><TableCell colSpan={9} align="center">No rows at this level.</TableCell></TableRow>}</TableBody></Table></TableContainer>
       </Paper>
       <Paper elevation={0} sx={{ mt: 1.5, p: 2, border: '1px solid #e3ebf3', borderRadius: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750, fontSize: 15, letterSpacing: '-.15px', mb: 1 }}>Schools and batches requiring intervention</Typography>{interventions.length ? <Stack spacing={.75}>{interventions.slice(0, 10).map(batch => { const school = schoolFromBatch(batch); const reason = date(batch.trainingEndAuto) && date(batch.trainingEndAuto) < today ? 'Past planned end date' : 'Trainer not assigned'; return <Box key={batch.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, py: .7, borderTop: '1px solid #edf1f5' }}><Typography variant="body2"><strong>{str(batch.batchCode) || 'Batch'}</strong> · {(school?.school ?? str(batch.schoolUdiseVenue)) || 'School not linked'}</Typography><Chip size="small" color="warning" label={reason} /></Box>; })}</Stack> : <Typography variant="body2" color="text.secondary">No delayed or unassigned-trainer batches are flagged in this state scope.</Typography>}</Paper>
       {!scopeSchoolData && visibleBatches.length > 0 && <Typography variant="caption" sx={{ mt: 1, display: 'block', color: '#71839a' }}>Some uploaded batches lack a UDISE school reference and are counted by their state/district fields.</Typography>}
