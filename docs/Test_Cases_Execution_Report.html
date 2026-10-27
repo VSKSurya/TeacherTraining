@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Test Cases Execution Report</title>
+  <style>
+    :root{--bg:#000;--surface:#0a0a0a;--surface2:#111;--border:#292929;--border2:#444;--text:#f2f2f2;--dim:#b4b4b4;--faint:#8f8f8f;--mono:"SF Mono","JetBrains Mono",ui-monospace,Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:1020px;margin:auto;padding:64px 30px 100px}
+    .eyebrow,.meta,.section-label,.tag,.badge,.toc-label,.toc-num,th,footer,.walk-stage,.walk-count,.walk-btn{font-family:var(--mono)}
+    .eyebrow{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);margin-bottom:16px}
+    h1{font-size:40px;line-height:1.12;font-weight:600;letter-spacing:-.02em;margin:0 0 20px;background:linear-gradient(180deg,#fff,#999);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .lede{font-size:20px;line-height:1.6;color:#e2e2e2;border-left:2px solid #777;padding-left:18px;margin:0 0 24px}
+    .meta{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:38px}
+    .meta span{border:1px solid var(--border);border-radius:20px;padding:4px 10px;color:var(--dim);font-size:12px}
+    section{margin:48px 0;scroll-margin-top:24px}
+    .section-label{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);padding-bottom:12px;border-bottom:1px solid var(--border);margin:0 0 20px}
+    .section-label b{color:#fff;font-weight:600;margin-right:9px}
+    h3{font-size:20px;line-height:1.3;font-weight:600;letter-spacing:-.01em;margin:26px 0 12px}
+    p,li{color:#eaeaea}
+    .callout{border:1px solid var(--border2);border-left:3px solid #777;border-radius:10px;padding:17px 20px;background:var(--surface);margin:20px 0}
+    .tag{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+    .callout p{margin:0}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+    .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+    .stat strong{display:block;font-size:25px;font-weight:600;line-height:1.2}
+    .stat span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+    .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:18px 0}
+    table{width:100%;border-collapse:collapse;min-width:650px;background:#050505}
+    th{font-size:11px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;text-align:left;color:var(--dim);background:#101010}
+    th,td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+    td{font-size:15px;line-height:1.55;color:#eaeaea}
+    tr:last-child td{border-bottom:0}
+    code{font-family:var(--mono);font-size:.88em;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:#f2f2f2}
+    .badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border:1px solid #555;border-radius:5px;background:#1b1b1b;color:#fff;white-space:nowrap}
+    .badge.warn{border-style:dashed;color:#d0d0d0;background:#111}
+    .note{font-size:15px;color:#d7d7d7}
+    a{color:#f2f2f2;text-decoration:none;border-bottom:1px solid #555}
+    a:hover{border-color:#fff}
+    .walk{border:1px solid var(--border);border-radius:14px;background:radial-gradient(700px 220px at 50% 0,#171717,transparent 70%),var(--surface);padding:24px;margin:20px 0}
+    .walk-track{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+    .walk-node{min-width:130px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--dim);cursor:pointer;font:600 14px var(--sans);opacity:.65}
+    .walk-node.active{opacity:1;color:#fff;border-color:#999;background:#1b1b1b}
+    .walk-node.done{opacity:.85;border-color:#555}
+    .walk-num{display:block;font:11px var(--mono);color:#aaa;margin-bottom:4px}
+    .walk-arrow{color:#888;font-family:var(--mono)}
+    .walk-detail{border:1px solid var(--border);background:#000;border-radius:9px;margin-top:18px;padding:15px 18px;min-height:94px}
+    .walk-stage{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+    .walk-detail p{font-size:16px;margin:0}
+    .walk-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:15px}
+    .walk-btn{font-size:12px;color:#fff;background:#151515;border:1px solid #444;border-radius:7px;padding:8px 14px;cursor:pointer}
+    .walk-btn:disabled{opacity:.35;cursor:not-allowed}
+    .walk-count{font-size:12px;color:#bbb}
+    footer{border-top:1px solid var(--border);padding-top:18px;margin-top:60px;text-align:center;font-size:11px;color:var(--faint)}
+    .toc{display:none}
+    @media(min-width:1181px){body{padding-left:230px}.toc{position:fixed;display:block;top:0;left:0;width:230px;height:100vh;overflow:auto;padding:55px 20px;border-right:1px solid var(--border);background:#000}.toc-label{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-bottom:15px}.toc a{display:flex;gap:9px;padding:7px 0;border:0;color:var(--dim);font-size:13px;line-height:1.4}.toc a.active{color:#fff}.toc-num{color:var(--faint);font-size:11px}}
+    @media(max-width:680px){.wrap{padding:40px 18px 70px}h1{font-size:32px}.lede{font-size:18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.walk{padding:16px}.walk-node{min-width:105px;flex:1}.walk-arrow{display:none}}
+    @media print{body{background:#fff;color:#111;padding:0}.wrap{max-width:none;padding:16px}.toc,.walk-nav{display:none!important}h1{-webkit-text-fill-color:#111;background:none}.lede,p,li,td{color:#111}.table-wrap,table,.stat,.callout,.walk,.walk-detail{background:#fff;border-color:#aaa}th{background:#eee;color:#111}td,th{border-color:#ccc}.badge{color:#111;background:#eee;border-color:#777}a{color:#111}}
+  </style>
+</head>
+<body>
+  <nav class="toc" aria-label="Contents">
+    <div class="toc-label">Contents</div>
+    <a href="#s01" data-toc="s01"><span class="toc-num">01</span>Run details</a>
+    <a href="#s02" data-toc="s02"><span class="toc-num">02</span>Summary</a>
+    <a href="#s03" data-toc="s03"><span class="toc-num">03</span>Executed cases</a>
+    <a href="#s04" data-toc="s04"><span class="toc-num">04</span>Not run</a>
+    <a href="#s05" data-toc="s05"><span class="toc-num">05</span>Build note</a>
+    <a href="#s06" data-toc="s06"><span class="toc-num">06</span>Assessment</a>
+  </nav>
+  <main class="wrap">
+    <header>
+      <div class="eyebrow">Quality Assurance / Local Execution</div>
+      <h1>Test Cases Execution Report</h1>
+      <p class="lede">A record of the production build and manual checks completed against the Teacher Training Dashboard using an isolated local preview.</p>
+      <div class="meta"><span>2026-10-27</span><span>Local preview</span><span>Revision 0fd0aef</span><span>Manual UI checks</span></div>
+    </header>
+
+    <section id="s01">
+      <h2 class="section-label"><b>01</b> Run details</h2>
+      <div class="table-wrap"><table><tbody>
+        <tr><th scope="row">Execution date</th><td>2026-10-27 (Asia/Kolkata)</td></tr>
+        <tr><th scope="row">Application</th><td>Teacher Training Dashboard</td></tr>
+        <tr><th scope="row">Source revision</th><td><code>0fd0aef</code> with working-tree changes present during the run</td></tr>
+        <tr><th scope="row">Environment</th><td>Local Vite production preview at <code>http://127.0.0.1:4173/TeacherTraining/</code>, Microsoft Edge InPrivate</td></tr>
+        <tr><th scope="row">Data</th><td>Existing demo data and synthetic invalid inputs only</td></tr>
+        <tr><th scope="row">Execution type</th><td>Production build plus manual, read-only UI checks and negative-input checks</td></tr>
+      </tbody></table></div>
+      <h3>Execution path</h3>
+      <div class="walk" data-walk tabindex="0" aria-label="Execution path. Use left and right arrow keys to move through the steps.">
+        <div class="walk-track">
+          <button class="walk-node" data-i="0"><span class="walk-num">STEP 01</span>Build</button><span class="walk-arrow" aria-hidden="true">→</span>
+          <button class="walk-node" data-i="1"><span class="walk-num">STEP 02</span>Sign in</button><span class="walk-arrow" aria-hidden="true">→</span>
+          <button class="walk-node" data-i="2"><span class="walk-num">STEP 03</span>Check screens</button><span class="walk-arrow" aria-hidden="true">→</span>
+          <button class="walk-node" data-i="3"><span class="walk-num">STEP 04</span>Record scope</button>
+        </div>
+        <div class="walk-detail">
+          <div class="walk-stage" data-detail="0">Step 1 / Build</div><p data-detail="0">The configured production build completed successfully. Vite emitted a bundle size advisory.</p>
+          <div class="walk-stage" data-detail="1" hidden>Step 2 / Sign in</div><p data-detail="1" hidden>Use the demo account in the isolated InPrivate session and confirm the dashboard loads.</p>
+          <div class="walk-stage" data-detail="2" hidden>Step 3 / Check screens</div><p data-detail="2" hidden>Open Projects, all four reports, trainee recovery, registration, and a role-restricted route. Use synthetic invalid inputs only where needed.</p>
+          <div class="walk-stage" data-detail="3" hidden>Step 4 / Record scope</div><p data-detail="3" hidden>Document the observed results and identify checks that require automated infrastructure, a backend, or an authorized staging environment.</p>
+        </div>
+        <div class="walk-nav"><button class="walk-btn wprev" type="button">← Back</button><span class="walk-count"><b>1</b> / 4</span><button class="walk-btn wnext" type="button">Next →</button></div>
+      </div>
+    </section>
+
+    <section id="s02">
+      <h2 class="section-label"><b>02</b> Summary</h2>
+      <div class="grid" aria-label="Execution totals">
+        <div class="stat"><strong>9</strong><span>Application cases passed</span></div>
+        <div class="stat"><strong>0</strong><span>Failures observed</span></div>
+        <div class="stat"><strong>0</strong><span>Automated suite runs</span></div>
+        <div class="stat"><strong>Not run</strong><span>Remaining VAPT cases</span></div>
+      </div>
+      <div class="callout"><div class="tag">Scope note</div><p>“Passed” applies only to the specific local behavior listed in this report. It does not mean the whole test plan or a penetration test passed.</p></div>
+    </section>
+
+    <section id="s03">
+      <h2 class="section-label"><b>03</b> Executed cases</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Run ID</th><th>Test case</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>RUN-001</td><td>Production build</td><td><span class="badge">PASS</span></td><td><code>npm run build</code> completed successfully, including TypeScript and Vite production compilation.</td></tr>
+          <tr><td>RUN-002</td><td>LGN-003: Sign in with Demo1</td><td><span class="badge">PASS</span></td><td>Prefilled demo credentials opened the Sponsor Admin dashboard. The session remained active while navigating routes.</td></tr>
+          <tr><td>RUN-003</td><td>PRJ-001: Open Projects</td><td><span class="badge">PASS</span></td><td>Projects screen rendered with the seeded project record. No data was edited.</td></tr>
+          <tr><td>RUN-004</td><td>RPT-001: Batch Performance Report</td><td><span class="badge">PASS</span></td><td>Report, filters, and table rendered. It showed 750 records, 10 rows on page one, and page 1 of 75 with Next available.</td></tr>
+          <tr><td>RUN-005</td><td>RPT-001: Attendance Report</td><td><span class="badge">PASS</span></td><td>Report, filters, and table rendered. It showed 62,700 records, 10 rows on page one, and page 1 of 6,270 with Next available.</td></tr>
+          <tr><td>RUN-006</td><td>RPT-001 / pagination: Assessment &amp; Feedback Report</td><td><span class="badge">PASS</span></td><td>Screen and Result type filter rendered with 3 submissions. Pagination was absent for this result set of 10 or fewer. Removed introductory copy was not present in accessible page content. Right alignment of Result type was not reliably verifiable.</td></tr>
+          <tr><td>RUN-007</td><td>RPT-001 / pagination: Training Summary</td><td><span class="badge">PASS</span></td><td>Screen rendered with 5 plans and no pagination for this result set of 10 or fewer.</td></tr>
+          <tr><td>RUN-008</td><td>REC-002: Recovery API not configured</td><td><span class="badge">PASS</span></td><td>Using synthetic <code>vapt-test@example.invalid</code>, the page displayed administrator guidance and did not enter an OTP step.</td></tr>
+          <tr><td>RUN-009</td><td>OPN-004: Unknown registration batch code</td><td><span class="badge">PASS</span></td><td>Synthetic <code>INVALID-VAPT-CODE</code> produced the expected no-match warning. No request was submitted.</td></tr>
+          <tr><td>RUN-010</td><td>ACL-009 / SEC-002: Demo1 directly opens <code>/attendance</code></td><td><span class="badge warn">PASS, UI GATE ONLY</span></td><td>Attendance page did not render; dashboard content appeared instead. This checks client-side route behavior only and does not prove server-side authorization.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">The summary count excludes the build row: nine application cases were checked. RUN-006 and RUN-007 observed pagination behavior for result sets below 11 rows. The two large reports demonstrated pagination above 10 rows.</p>
+    </section>
+
+    <section id="s04">
+      <h2 class="section-label"><b>04</b> Not run</h2>
+      <ul>
+        <li>The project has no <code>npm test</code> script or configured automated test framework, so there was no automated case suite to execute.</li>
+        <li>Most cases in the test plan require role-by-role sessions, controlled mutations, dedicated fixtures, import files, or configured backend services. They were not exercised.</li>
+        <li>VAPT page-level cases SEC-001 through SEC-016 and code-level CODE-* cases were not performed as a full assessment. Only the limited route-gate observation in RUN-010 was checked.</li>
+        <li>Recovery OTP success, expiry, replay, enumeration, and throttling need a controlled recovery service. None was configured.</li>
+        <li>Server-side access control, API authorization, deployed TLS and response headers, rate limiting, and production behavior cannot be established from this local browser run.</li>
+        <li>Result type visual alignment could not be confirmed reliably at the available browser viewport; this item remains unverified.</li>
+      </ul>
+    </section>
+
+    <section id="s05">
+      <h2 class="section-label"><b>05</b> Build note</h2>
+      <div class="callout"><div class="tag">Performance advisory</div><p>Vite reported that the generated JavaScript bundle is larger than its 500 kB advisory threshold. The largest generated JavaScript asset was approximately 1,021.58 kB. This was a warning; the build succeeded. Code splitting or lazy-loading report routes may reduce the initial bundle size.</p></div>
+    </section>
+
+    <section id="s06">
+      <h2 class="section-label"><b>06</b> Overall assessment</h2>
+      <p>The build and nine listed local checks passed. No failure was observed in those checks. This result is not a VAPT clearance and does not supersede the static security finding documented in the test plan: client-side demo authentication and route checks are not a trusted security boundary for real or shared records.</p>
+      <p>Complete the marked security cases against a properly configured, authorized staging environment before treating security as verified.</p>
+      <div class="callout"><div class="tag">Related files</div><p><a href="../Test_Cases.md">Test_Cases.md, source test cases and VAPT plan</a><br><a href="Test_Cases.html">HTML test-case copy</a></p></div>
+    </section>
+    <footer>Test_Cases_Execution_Report.html · Standalone monochrome report · Suitable for offline viewing and printing</footer>
+  </main>
+  <script>
+    document.querySelectorAll('[data-walk]').forEach(function(walk){
+      var nodes=walk.querySelectorAll('.walk-node');
+      var details=walk.querySelectorAll('[data-detail]');
+      var prev=walk.querySelector('.wprev');
+      var next=walk.querySelector('.wnext');
+      var count=walk.querySelector('.walk-count b');
+      var index=0;
+      function render(){
+        nodes.forEach(function(node,i){node.classList.toggle('active',i===index);node.classList.toggle('done',i<index);});
+        details.forEach(function(detail){detail.hidden=Number(detail.dataset.detail)!==index;});
+        count.textContent=String(index+1);prev.disabled=index===0;next.disabled=index===nodes.length-1;
+      }
+      prev.addEventListener('click',function(){if(index>0){index--;render();}});
+      next.addEventListener('click',function(){if(index<nodes.length-1){index++;render();}});
+      nodes.forEach(function(node){node.addEventListener('click',function(){index=Number(node.dataset.i);render();});});
+      walk.addEventListener('keydown',function(event){if(event.key==='ArrowRight'&&index<nodes.length-1){index++;render();}if(event.key==='ArrowLeft'&&index>0){index--;render();}});
+      render();
+    });
+    (function(){
+      var links={};document.querySelectorAll('.toc a[data-toc]').forEach(function(link){links[link.dataset.toc]=link;});
+      if(!('IntersectionObserver' in window))return;
+      var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){Object.keys(links).forEach(function(key){links[key].classList.remove('active');});if(links[entry.target.id])links[entry.target.id].classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+      document.querySelectorAll('section[id]').forEach(function(section){observer.observe(section);});
+    })();
+  </script>
+</body>
+</html>

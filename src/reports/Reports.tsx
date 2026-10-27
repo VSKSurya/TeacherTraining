@@ -5,31 +5,37 @@ import { Sidebar, Topbar, Footer, type AppPage } from '../components/DashboardPa
 import { ReportFilterPanel, ReportPanel, ReportTable, type FilterSpec, type ReportFilters, type TableColumn } from './ReportComponents';
 import AssessmentFeedbackReport from './AssessmentFeedbackReport';
 import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportCharts';
+import { formatDate } from '../dateFormat';
 
 const reportMeta = {
-  'batch-performance': { page: 'Batch Performance' as AppPage, title: 'Batch Performance', description: 'Review scheduled batches, attendance, and completion across the training plan.', heading: 'Batch performance details', note: '750 batch records from the Phasewise Dashboard. UDISE codes and end dates are not provided in that data.' },
-  'training-summary': { page: 'Training Summary' as AppPage, title: 'Training Summary', description: 'Review trainee progress across training plans and locations.', heading: 'Training summary details', note: 'Figures use the 750 Phasewise Dashboard batches. Certified trainee data is not provided and is shown as -.' },
+  'batch-performance': { page: 'Batch Performance' as AppPage, title: 'Batch Performance', description: 'Review scheduled batches, attendance, and completion across the training plan.', heading: 'Batch performance details', note: '750 generated batch records aligned to the dashboard phases. End dates use the last calendar day of each phase month.' },
+  'training-summary': { page: 'Training Summary' as AppPage, title: 'Training Summary', description: 'Review trainee progress across training plans and locations.', heading: 'Training summary details', note: '' },
   'attendance-report': { page: 'Attendance Report' as AppPage, title: 'Attendance Report', description: 'Review participant attendance records across batches, locations, and training plans.', heading: 'Attendance details', note: 'Sample participant attendance entries are generated from Phasewise Dashboard rates for ongoing and completed batches; one training date is available per batch.' },
 };
 type ReportKey = keyof typeof reportMeta;
 const REPORT_PAGE_SIZE = 10;
-const emptyBatchFilters = { batch: '', udise: '', state: '', district: '', trainer: '', start: '', end: '', status: '', attendance: '' };
-const emptySummaryFilters = { plan: '', state: '', district: '', trainer: '', start: '', to: '', status: '', attendance: '' };
+const emptyBatchFilters = { batch: '', udise: '', state: '', district: '', phase: '', plan: '', participant: 'All', trainer: '', start: '', end: '', status: '', attendance: '' };
+const emptySummaryFilters = { plan: '', state: '', district: '', trainer: '', start: '', to: '', participant: 'All', status: '', attendance: '' };
 const emptyAttendanceFilters = { plan: '', state: '', district: '', trainer: '', start: '', end: '', attendance: '' };
 const stateOptions = locations.map(location => ({ label: location.name, value: location.name }));
 const trainerOptions = trainers.map(name => ({ label: name, value: name }));
 const statusOptions = statusNames.map(name => ({ label: name, value: name }));
-const planOptions = uniqueSorted(batchRecords.map(row => row.plan)).map(plan => ({ label: plan, value: plan }));
+const batchPhaseOptions = uniqueSorted(batchRecords.map(row => row.phase)).map(phase => ({ label: phase, value: phase }));
+const batchTrainingPlanOptions = uniqueSorted(batchRecords.map(row => row.trainingPlan)).map(plan => ({ label: plan, value: plan }));
 const batchFilters: FilterSpec[] = [
   { key: 'batch', label: 'Batch ID', type: 'search', placeholder: 'Search batch ID' }, { key: 'udise', label: 'School UDISE', type: 'search', placeholder: 'Search UDISE' },
   { key: 'state', label: 'State', type: 'select', placeholder: 'All states', options: stateOptions }, { key: 'district', label: 'District', type: 'select', placeholder: 'All districts' },
-  { key: 'trainer', label: 'Trainer Name', type: 'select', placeholder: 'All trainers', options: trainerOptions }, { key: 'start', label: 'Start Date', type: 'date' }, { key: 'end', label: 'End Date', type: 'date' },
+  { key: 'phase', label: 'Phase wise', type: 'select', placeholder: 'All phases', options: batchPhaseOptions }, { key: 'plan', label: 'Training Plan', type: 'select', placeholder: 'All training plans', options: batchTrainingPlanOptions },
+  { key: 'participant', label: 'Participant', type: 'select', options: [{ label: 'All', value: 'All' }, { label: 'Teacher', value: 'Teacher' }, { label: 'Student', value: 'Student' }] },
+  { key: 'trainer', label: 'Trainer Name', type: 'select', placeholder: 'All trainers', options: trainerOptions }, { key: 'start', label: 'From Start Date', type: 'date' }, { key: 'end', label: 'To Start Date', type: 'date' },
   { key: 'status', label: 'Status', type: 'select', placeholder: 'All statuses', options: statusOptions }, { key: 'attendance', label: 'Attendance', type: 'select', placeholder: 'Any attendance', options: [{ label: 'Less than 50%', value: 'lt-50' }, { label: 'Less than 75%', value: 'lt-75' }, { label: 'Less than 90%', value: 'lt-90' }, { label: '50% or higher', value: 'gte-50' }, { label: '75% or higher', value: 'gte-75' }, { label: '90% or higher', value: 'gte-90' }] },
 ];
 const summaryFilters: FilterSpec[] = [
   { key: 'plan', label: 'Training Plan', type: 'select', placeholder: 'All training plans', options: uniqueSorted(batchRecords.map(row => row.plan.replace(' · ', ' - '))).map(v => ({ label: v, value: v })) },
   { key: 'state', label: 'State', type: 'select', placeholder: 'All states', options: stateOptions }, { key: 'district', label: 'District', type: 'select', placeholder: 'All districts' }, { key: 'trainer', label: 'Trainer Name', type: 'select', placeholder: 'All trainers', options: trainerOptions },
-  { key: 'start', label: 'Start Date', type: 'date' }, { key: 'to', label: 'To Date', type: 'date' }, { key: 'status', label: 'Status', type: 'select', placeholder: 'All statuses', options: statusOptions },
+  { key: 'start', label: 'From Start Date', type: 'date' }, { key: 'to', label: 'To Start Date', type: 'date' },
+  { key: 'participant', label: 'Participant', type: 'select', options: [{ label: 'All', value: 'All' }, { label: 'Students', value: 'Students' }, { label: 'Teachers', value: 'Teachers' }] },
+  { key: 'status', label: 'Status', type: 'select', placeholder: 'All statuses', options: statusOptions },
   { key: 'attendance', label: 'Attendance', type: 'select', placeholder: 'Any attendance', options: [{ label: 'Less than 50%', value: 'lt-50' }, { label: 'Less than 75%', value: 'lt-75' }, { label: 'Less than 90%', value: 'lt-90' }, { label: '50% or higher', value: 'gte-50' }, { label: '75% or higher', value: 'gte-75' }, { label: '90% or higher', value: 'gte-90' }] },
 ];
 const attendanceFilters: FilterSpec[] = [
@@ -66,24 +72,37 @@ function BatchPerformance() {
   const [filters, setFilters] = useState<ReportFilters>(emptyBatchFilters);
   const [view, setView] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('batch');
+  const [sortDirection, setSortDirection] = useState<'ascending' | 'descending'>('ascending');
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const rows = useMemo(() => batchRecords.filter(row => {
     if (filters.batch && !row.batch.toLowerCase().includes(filters.batch.trim().toLowerCase())) return false;
     if (filters.udise && !row.udise.toLowerCase().includes(filters.udise.trim().toLowerCase())) return false;
     if (filters.state && row.state !== filters.state) return false;
     if (filters.district && row.district !== filters.district) return false;
+    if (filters.phase && row.phase !== filters.phase) return false;
+    if (filters.plan && row.trainingPlan !== filters.plan) return false;
+    if (filters.participant !== 'All' && filters.participant && row.participant !== filters.participant) return false;
     if (filters.trainer && row.trainer !== filters.trainer) return false;
     if (filters.start && row.startDate < new Date(`${filters.start}T00:00:00`)) return false;
-    if (filters.end && (!row.endDate || row.endDate > new Date(`${filters.end}T23:59:59`))) return false;
+    if (filters.end && row.startDate > new Date(`${filters.end}T23:59:59`)) return false;
     if (filters.status && row.status !== filters.status) return false;
     return attendanceMatch(row.attendance, filters.attendance);
   }), [filters]);
-  const pages = Math.max(1, Math.ceil(rows.length / REPORT_PAGE_SIZE));
-  const currentPage = Math.min(page, pages);
-  const pageRows = rows.slice((currentPage - 1) * REPORT_PAGE_SIZE, currentPage * REPORT_PAGE_SIZE);
   const columns: TableColumn<BatchRecord>[] = [
-    { key: 'batch', label: 'Batch ID' }, { key: 'udise', label: 'School UDISE' }, { key: 'school', label: 'School Name' }, { key: 'state', label: 'State' }, { key: 'district', label: 'District' }, { key: 'plan', label: 'Training Plan' }, { key: 'trainer', label: 'Trainer Name' }, { key: 'dateText', label: 'Start Date' }, { key: 'endDate', label: 'End Date', render: () => '—' }, { key: 'capacity', label: 'Batch Capacity' }, { key: 'registered', label: 'Registered' }, { key: 'attended', label: 'Attended' }, { key: 'completed', label: 'Completed' }, { key: 'attendance', label: 'Attendance %', render: row => `${row.attendance}%` }, { key: 'status', label: 'Status', render: row => <span className={`status ${row.status.toLowerCase()}`}>{row.status}</span> },
+    { key: 'batch', label: 'Batch ID' }, { key: 'udise', label: 'School UDISE' }, { key: 'school', label: 'School Name' }, { key: 'state', label: 'State' }, { key: 'district', label: 'District' }, { key: 'phase', label: 'Phase' }, { key: 'trainingPlan', label: 'Training Plan' }, { key: 'participant', label: 'Participant' }, { key: 'trainer', label: 'Trainer Name' }, { key: 'startDate', label: 'Start Date', render: row => formatDate(row.startDate) }, { key: 'endDate', label: 'End Date', render: row => row.endDate ? formatDate(row.endDate) : '—' }, { key: 'capacity', label: 'Batch Capacity', align: 'right' }, { key: 'registered', label: 'Registered', align: 'right' }, { key: 'attended', label: 'Attended', align: 'right' }, { key: 'completionRate', label: 'Completion %', align: 'right', render: row => `${row.registered ? (row.completed / row.registered * 100).toFixed(1) : '0.0'}%` }, { key: 'attendance', label: 'Attendance %', align: 'right', render: row => `${row.registered ? (row.attended / row.registered * 100).toFixed(1) : '0.0'}%` }, { key: 'status', label: 'Status', render: row => <span className={`status ${row.status.toLowerCase()}`}>{row.status}</span> },
   ];
+  const orderedRows = useMemo(() => [...rows].sort((left, right) => {
+    const value = (row: BatchRecord) => sortBy === 'completionRate' ? (row.registered ? row.completed / row.registered * 100 : 0) : row[sortBy as keyof BatchRecord];
+    const a = value(left), b = value(right);
+    const result = a instanceof Date || b instanceof Date ? (a instanceof Date ? a.getTime() : Number.NEGATIVE_INFINITY) - (b instanceof Date ? b.getTime() : Number.NEGATIVE_INFINITY)
+      : typeof a === 'number' && typeof b === 'number' ? a - b
+      : String(a ?? '').localeCompare(String(b ?? ''), undefined, { numeric: true, sensitivity: 'base' });
+    return sortDirection === 'ascending' ? result : -result;
+  }), [rows, sortBy, sortDirection]);
+  const pages = Math.max(1, Math.ceil(orderedRows.length / REPORT_PAGE_SIZE));
+  const currentPage = Math.min(page, pages);
+  const pageRows = orderedRows.slice((currentPage - 1) * REPORT_PAGE_SIZE, currentPage * REPORT_PAGE_SIZE);
   const setValue = (key: string, value: string) => setFilters(previous => {
     const next = { ...previous, [key]: value };
     if (key === 'state' && next.district && !reportDistrictOptions(value).some(option => option.value === next.district)) next.district = '';
@@ -94,15 +113,60 @@ function BatchPerformance() {
   const statusColors = ['#8295a8', '#2386bd', '#16945b'];
   const statusSeries = statusNames.map((label, index) => ({ label, color: statusColors[index] }));
   const batchStatusRows = [{ label: 'Filtered batches', values: statusNames.map(status => rows.filter(row => row.status === status).length) }];
-  const attendanceByStatus = statusNames.map(status => { const matching = rows.filter(row => row.status === status); return { label: status, values: [matching.length ? matching.reduce((sum, row) => sum + row.attendance, 0) / matching.length : 0] }; });
-  return <ReportPage kind="batch-performance"><ReportFilterPanel fields={batchFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Batch status" description="Filtered batch count by delivery status" series={statusSeries} rows={batchStatusRows} chartType="pie" /><ReportBarChart title="Attendance by status" description="Average attendance percentage in each batch status" series={[{ label: 'Average attendance', color: '#176fba' }]} rows={attendanceByStatus} formatter={value => `${value.toFixed(1)}%`} chartType="cluster" /></Box> : <ReportPanel title="Batch performance details" description={reportMeta['batch-performance'].note} count={`${rows.length.toLocaleString()} of ${batchRecords.length.toLocaleString()} batches`}><ReportTable columns={columns} rows={pageRows} rowKey={row => row.batch} emptyMessage="No batches match these filters." tableClassName="batch-table" pagination={{ total: rows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} /></ReportPanel>}</ReportPage>;
+  const attendanceByStatus = statusNames.map(status => { const matching = rows.filter(row => row.status === status); const registered = matching.reduce((sum, row) => sum + row.registered, 0); const attended = matching.reduce((sum, row) => sum + row.attended, 0); return { label: status, values: [registered ? attended / registered * 100 : 0] }; });
+  return <ReportPage kind="batch-performance">
+    <ReportFilterPanel fields={batchFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} onApply={() => setPage(1)} />
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>
+    {view === 'graph'
+      ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Batch status" description="Filtered batch count by delivery status" series={statusSeries} rows={batchStatusRows} chartType="pie" /><ReportBarChart title="Attendance by status" description="Attendance calculated as total attended divided by total registered in each status" series={[{ label: 'Average attendance', color: '#176fba' }]} rows={attendanceByStatus} formatter={value => `${value.toFixed(1)}%`} chartType="cluster" /></Box>
+      : <ReportPanel title="Batch performance details" description={reportMeta['batch-performance'].note} count={`${rows.length.toLocaleString()} of ${batchRecords.length.toLocaleString()} batches`}>
+        <Box className="summary-report-toolbar" sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 1.25, borderBottom: '1px solid #edf1f5', flexWrap: 'wrap' }}>
+          <div className="location-head-actions">
+            <label className="location-sort-label" htmlFor="batch-performance-sort">Sort by</label>
+            <select className="location-sort-select" id="batch-performance-sort" aria-label="Sort batches by" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }}>{columns.map(column => <option key={String(column.key)} value={String(column.key)}>{column.label}</option>)}</select>
+            <div className="location-sort-toggle" role="group" aria-label="Sort direction">
+              <button type="button" className="location-sort-button" aria-pressed={sortDirection === 'ascending'} onClick={() => { setSortDirection('ascending'); setPage(1); }}>Ascending</button>
+              <button type="button" className="location-sort-button" aria-pressed={sortDirection === 'descending'} onClick={() => { setSortDirection('descending'); setPage(1); }}>Descending</button>
+            </div>
+          </div>
+        </Box>
+        <ReportTable columns={columns} rows={pageRows} rowKey={row => row.batch} emptyMessage="No batches match these filters." tableClassName="batch-table" pagination={{ total: orderedRows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} />
+      </ReportPanel>}
+  </ReportPage>;
 }
 
 type SummaryRow = { plan: string; batches: number; planned: number; registered: number; started: number; completed: number; attendance: number; completion: number };
+type SummarySortKey = keyof SummaryRow | 'certified';
+const summarySortOptions: { label: string; value: SummarySortKey }[] = [
+  { label: 'Training Plan', value: 'plan' }, { label: 'Total Batches', value: 'batches' }, { label: 'Planned Trainees', value: 'planned' },
+  { label: 'Registered', value: 'registered' }, { label: 'Training Started', value: 'started' }, { label: 'Completed', value: 'completed' },
+  { label: 'Certified', value: 'certified' }, { label: 'Attendance %', value: 'attendance' }, { label: 'Completion %', value: 'completion' },
+];
+type SummaryParticipant = 'All' | 'Students' | 'Teachers';
+function dashboardParticipantMetrics(record: BatchRecord, audience: SummaryParticipant) {
+  const metricsFor = (participant: 'Students' | 'Teachers') => {
+    const planned = participant === 'Teachers' ? record.teacherParticipants : record.studentParticipants;
+    const scheduled = record.dashboardStatus === 'Scheduled';
+    const registered = scheduled ? Math.round(planned * (participant === 'Teachers' ? .95 : .91)) : planned;
+    const attendanceRate = scheduled ? 0 : Math.max(0, Math.min(100, record.dashboardAttendance + (participant === 'Teachers' ? 2 : -2)));
+    const completionRate = scheduled ? 0 : record.dashboardStatus === 'Completed' ? 100 : Math.max(0, Math.min(100, record.dashboardCompletion + (participant === 'Teachers' ? 2 : -2)));
+    return { planned, registered, attended: Math.min(registered, Math.round(planned * attendanceRate / 100)), completed: Math.round(planned * completionRate / 100) };
+  };
+  const teacher = audience === 'Students' ? null : metricsFor('Teachers');
+  const student = audience === 'Teachers' ? null : metricsFor('Students');
+  return {
+    planned: (teacher?.planned ?? 0) + (student?.planned ?? 0),
+    registered: (teacher?.registered ?? 0) + (student?.registered ?? 0),
+    attended: (teacher?.attended ?? 0) + (student?.attended ?? 0),
+    completed: (teacher?.completed ?? 0) + (student?.completed ?? 0),
+  };
+}
 function TrainingSummary() {
   const [filters, setFilters] = useState<ReportFilters>(emptySummaryFilters);
   const [view, setView] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SummarySortKey>('plan');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const rows = useMemo(() => {
     const source = batchRecords.filter(row => {
@@ -112,23 +176,34 @@ function TrainingSummary() {
       if (filters.trainer && row.trainer !== filters.trainer) return false;
       if (filters.start && row.startDate < new Date(`${filters.start}T00:00:00`)) return false;
       if (filters.to && row.startDate > new Date(`${filters.to}T23:59:59`)) return false;
-      if (filters.status && row.status !== filters.status) return false;
-      return attendanceMatch(row.attendance, filters.attendance);
+      if (filters.status && row.dashboardStatus !== filters.status) return false;
+      const metrics = dashboardParticipantMetrics(row, filters.participant as SummaryParticipant);
+      const attendance = metrics.registered ? metrics.attended / metrics.registered * 100 : 0;
+      return attendanceMatch(attendance, filters.attendance);
     });
     const grouped = new Map<string, SummaryRow>();
     for (const record of source) {
       const name = asPlanLabel(record.plan);
       const row = grouped.get(name) ?? { plan: name, batches: 0, planned: 0, registered: 0, started: 0, completed: 0, attendance: 0, completion: 0 };
-      row.batches++; row.planned += record.registered; row.registered += record.registered;
-      if (record.status !== 'Scheduled') row.started += record.registered;
-      row.completed += record.completed; row.attendance += record.attended;
+      const metrics = dashboardParticipantMetrics(record, filters.participant as SummaryParticipant);
+      row.batches++; row.planned += metrics.planned; row.registered += metrics.registered;
+      if (record.dashboardStatus !== 'Scheduled') row.started += metrics.registered;
+      row.completed += metrics.completed; row.attendance += metrics.attended;
       grouped.set(name, row);
     }
     return [...grouped.values()].sort((a, b) => a.plan.localeCompare(b.plan)).map(row => ({ ...row, attendance: row.registered ? row.attendance / row.registered * 100 : 0, completion: row.planned ? row.completed / row.planned * 100 : 0 }));
   }, [filters]);
+  const sortedRows = useMemo(() => [...rows].sort((left, right) => {
+    const leftValue = sortBy === 'certified' ? '' : left[sortBy];
+    const rightValue = sortBy === 'certified' ? '' : right[sortBy];
+    const comparison = typeof leftValue === 'number' && typeof rightValue === 'number'
+      ? leftValue - rightValue
+      : String(leftValue).localeCompare(String(rightValue), undefined, { numeric: true, sensitivity: 'base' });
+    return (sortDirection === 'asc' ? comparison : -comparison) || left.plan.localeCompare(right.plan);
+  }), [rows, sortBy, sortDirection]);
   const pages = Math.max(1, Math.ceil(rows.length / REPORT_PAGE_SIZE));
   const currentPage = Math.min(page, pages);
-  const pageRows = rows.slice((currentPage - 1) * REPORT_PAGE_SIZE, currentPage * REPORT_PAGE_SIZE);
+  const pageRows = sortedRows.slice((currentPage - 1) * REPORT_PAGE_SIZE, currentPage * REPORT_PAGE_SIZE);
   const columns: TableColumn<SummaryRow>[] = [
     { key: 'plan', label: 'Training Plan' }, { key: 'batches', label: 'Total Batches' }, { key: 'planned', label: 'Planned Trainees', render: row => row.planned.toLocaleString() }, { key: 'registered', label: 'Registered', render: row => row.registered.toLocaleString() }, { key: 'started', label: 'Training Started', render: row => row.started.toLocaleString() }, { key: 'completed', label: 'Completed', render: row => row.completed.toLocaleString() }, { key: 'certified', label: 'Certified', render: () => '-' }, { key: 'attendance', label: 'Attendance %', render: row => `${row.attendance.toFixed(1)}%` }, { key: 'completion', label: 'Completion %', render: row => `${row.completion.toFixed(1)}%` },
   ];
@@ -139,17 +214,18 @@ function TrainingSummary() {
   });
   const changeFilter = (key: string, value: string) => { setValue(key, value); setPage(1); };
   const clearFilters = () => { setFilters(emptySummaryFilters); setPage(1); };
-  const matchingBatches = batchRecords.filter(row => (!filters.plan || asPlanLabel(row.plan) === filters.plan) && (!filters.state || row.state === filters.state) && (!filters.district || row.district === filters.district) && (!filters.trainer || row.trainer === filters.trainer) && (!filters.start || row.startDate >= new Date(`${filters.start}T00:00:00`)) && (!filters.to || row.startDate <= new Date(`${filters.to}T23:59:59`)) && (!filters.status || row.status === filters.status) && attendanceMatch(row.attendance, filters.attendance)).length;
+  const matchingBatches = sortedRows.reduce((total, row) => total + row.batches, 0);
   const traineeSeries = [{ label: 'Planned', color: '#9bb1c5' }, { label: 'Registered', color: '#2584b9' }, { label: 'Completed', color: '#16945b' }];
-  const traineeRows = rows.map(row => ({ label: row.plan, values: [row.planned, row.registered, row.completed] }));
-  const rateRows = rows.map(row => ({ label: row.plan, values: [row.attendance, row.completion] }));
-  return <ReportPage kind="training-summary"><ReportFilterPanel fields={summaryFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Trainee progress by plan" description="Planned, registered, and completed trainees in the filtered plans" series={traineeSeries} rows={traineeRows} chartType="cluster" /><ReportBarChart title="Training rates by plan" description="Attendance and completion percentages for the filtered plans" series={[{ label: 'Attendance', color: '#2584b9' }, { label: 'Completion', color: '#16945b' }]} rows={rateRows} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title="Training summary details" description={reportMeta['training-summary'].note} count={`${rows.length} training plans from ${matchingBatches.toLocaleString()} batches`}><ReportTable columns={columns} rows={pageRows} rowKey={row => row.plan} emptyMessage="No training plans match these filters." tableClassName="summary-table" pagination={{ total: rows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} /></ReportPanel>}</ReportPage>;
+  const traineeRows = sortedRows.map(row => ({ label: row.plan, values: [row.planned, row.registered, row.completed] }));
+  const rateRows = sortedRows.map(row => ({ label: row.plan, values: [row.attendance, row.completion] }));
+  const sortControls = <div className="summary-sort-controls card-sort-controls"><label htmlFor="training-summary-sort">Sort by</label><select id="training-summary-sort" value={sortBy} onChange={event => { setSortBy(event.target.value as SummarySortKey); setPage(1); }}>{summarySortOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select><div className="summary-sort-direction" role="group" aria-label="Sort direction"><button type="button" aria-pressed={sortDirection === 'asc'} className={sortDirection === 'asc' ? 'active' : ''} onClick={() => { setSortDirection('asc'); setPage(1); }}>Ascending</button><button type="button" aria-pressed={sortDirection === 'desc'} className={sortDirection === 'desc' ? 'active' : ''} onClick={() => { setSortDirection('desc'); setPage(1); }}>Descending</button></div></div>;
+  return <ReportPage kind="training-summary"><ReportFilterPanel fields={summaryFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Trainee progress by plan" description="Planned, registered, and completed trainees in the filtered plans" series={traineeSeries} rows={traineeRows} chartType="cluster" /><ReportBarChart title="Training rates by plan" description="Attendance and completion percentages for the filtered plans" series={[{ label: 'Attendance', color: '#2584b9' }, { label: 'Completion', color: '#16945b' }]} rows={rateRows} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title="Training summary details" description={reportMeta['training-summary'].note} count={`${rows.length} training plans from ${matchingBatches.toLocaleString()} batches`}>{sortControls}<ReportTable columns={columns} rows={pageRows} rowKey={row => row.plan} emptyMessage="No training plans match these filters." tableClassName="summary-table" pagination={{ total: rows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} /></ReportPanel>}</ReportPage>;
 }
 
 type AttendanceRow = { batch: string; batchIndex: number; plan: string; state: string; district: string; trainer: string; date: Date; dateText: string; present: boolean; totalDays: number; daysPresent: number; attendance: number; name: string };
 const firstNames = ['Aarav', 'Aditi', 'Ananya', 'Arjun', 'Divya', 'Farhan', 'Ishita', 'Kiran', 'Lakshmi', 'Manoj', 'Nisha', 'Pavan', 'Priya', 'Rahul', 'Sana', 'Sanjay', 'Sita', 'Varun', 'Vijay', 'Zoya'];
 const lastNames = ['Rao', 'Sharma', 'Kumar', 'Reddy', 'Nair', 'Patel', 'Das', 'Singh', 'Iyer', 'Khan', 'Devi', 'Joshi', 'Menon', 'Gupta', 'Naidu', 'Pillai'];
-const attendanceRows: AttendanceRow[] = batchRecords.filter(batch => batch.status !== 'Scheduled').flatMap(batch => Array.from({ length: 110 }, (_, personIndex) => {
+const attendanceRows: AttendanceRow[] = batchRecords.filter(batch => batch.status !== 'Scheduled').flatMap(batch => Array.from({ length: batch.registered }, (_, personIndex) => {
   const first = firstNames[(batch.index + personIndex * 3) % firstNames.length];
   const last = lastNames[(batch.index * 5 + personIndex * 7) % lastNames.length];
   const present = personIndex < batch.attended;

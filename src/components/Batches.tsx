@@ -162,8 +162,9 @@ export default function Batches() {
   const [editBatch, setEditBatch] = useState<Batch | null>(null);
   const [editError, setEditError] = useState('');
   const canImport = Boolean(session && adminRoles.has(session.role));
+  const sponsorAdmin = session?.role === 'sponsor-admin';
   const canOverrideInactive = session?.role === 'schoolnet-super-admin';
-  const authorizedProjects = projects.filter(project => session?.role === 'schoolnet-super-admin' || project.assignedUsers.includes(session?.userId ?? ''));
+  const authorizedProjects = projects.filter(project => session?.role === 'schoolnet-super-admin' || session?.role === 'sponsor-admin' || project.assignedUsers.includes(session?.userId ?? ''));
 
   function validateRows(rawRows: Record<string, string>[], uploadedHeaders: string[]) {
     const rows: ValidationRow[] = [];
@@ -359,6 +360,7 @@ export default function Batches() {
 
   return <div className="app"><Sidebar activePage="Batches" /><main className="main"><Topbar title="Batches" description="Import, schedule, and maintain project batches." />
     <Box sx={{ width: '100%', maxWidth: 1600, mx: 'auto', pb: 3 }}><Stack spacing={2.5}>
+      {!sponsorAdmin && <>
       <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, border: '1px solid #e3ebf3', borderRadius: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={1.5}>
           <Box><Typography variant="h6" sx={{ fontWeight: 750 }}>Create batches through Excel upload</Typography><Typography variant="body2" color="text.secondary">One row creates one batch. End dates count Monday–Friday training days and skip active national and state holidays.</Typography></Box>
@@ -377,9 +379,10 @@ export default function Batches() {
         {projects.some(project => project.batchImportPolicy === 'all-or-nothing') && <Alert severity="info" sx={{ mt: 1.5 }}>Projects configured for all-or-nothing imports will have all their rows held if any row for that project is invalid.</Alert>}
         <Box sx={{ mt: 2, overflowX: 'auto' }}><Box component="table" sx={{ minWidth: 900, width: '100%', borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 12 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', verticalAlign: 'top', fontSize: 12 } }}><thead><tr><th>Row</th><th>Batch ID</th><th>Project / Plan</th><th>Training dates</th><th>Result</th><th>Validation details</th></tr></thead><tbody>{validation.map(row => <tr key={row.rowNumber}><td>{row.rowNumber}</td><td>{row.values.Batch_UniqueID}</td><td>{row.values.Project_Code} / {row.values.Training_Plan_Code}</td><td>{formatDate(row.values.Training_Start_Date)}{row.batch?.trainingEndAuto ? ` → ${formatDate(row.batch.trainingEndAuto)}` : ''}</td><td><Chip size="small" label={row.errors.length ? 'Invalid' : row.warnings.length ? 'Warning' : 'Valid'} color={row.errors.length ? 'error' : row.warnings.length ? 'warning' : 'success'} /></td><td>{[...row.errors, ...row.warnings].map((text, index) => <Typography key={index} variant="caption" display="block" color={row.errors.length ? 'error.main' : 'warning.dark'}>{text}</Typography>)}</td></tr>)}</tbody></Box></Box>
       </Paper>}
+      </>}
 
       <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, border: '1px solid #e3ebf3', borderRadius: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750 }}>Batch register</Typography><Button href={`${import.meta.env.BASE_URL}registration-requests`} sx={{ textTransform: 'none' }}>Review registration requests</Button></Stack>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}><Typography variant="h6" sx={{ fontWeight: 750 }}>Batch register</Typography>{!sponsorAdmin && <Button href={`${import.meta.env.BASE_URL}registration-requests`} sx={{ textTransform: 'none' }}>Review registration requests</Button>}</Stack>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(5,minmax(0,1fr))' }, gap: 1, mb: 1.5 }}>
           <TextField size="small" label="Search batch" value={filter.query} onChange={event => setFilterValue('query', event.target.value)} />
           <TextField select size="small" label="Project" value={filter.project} onChange={event => setFilterValue('project', event.target.value)}><MenuItem value="">All projects</MenuItem>{authorizedProjects.map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}</TextField>

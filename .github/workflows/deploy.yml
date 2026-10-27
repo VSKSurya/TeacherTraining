@@ -32,7 +32,7 @@ jobs:
       - name: Add single-page app fallback
         run: cp dist/index.html dist/404.html
       - name: Publish test case document
-        run: mkdir -p dist/docs && cp docs/Test_Cases.html dist/docs/Test_Cases.html
+        run: mkdir -p dist/docs && cp docs/Test_Cases.html docs/Test_Cases_Execution_Report.html dist/docs/
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:

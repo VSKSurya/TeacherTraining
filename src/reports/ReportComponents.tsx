@@ -55,5 +55,5 @@ export function ReportPagination({ total, page, pageSize, onPageChange }: Report
 }
 
 export function ReportPanel({ title, description, count, children }: { title: string; description: string; count: string; children: ReactNode }) {
-  return <section className="report-panel"><div className="panel-heading"><div><h2>{title}</h2><p>{description}</p></div><span className="record-count" aria-live="polite">{count}</span></div>{children}</section>;
+  return <section className="report-panel"><div className="panel-heading"><div><h2>{title}</h2>{description && <p>{description}</p>}</div><span className="record-count" aria-live="polite">{count}</span></div>{children}</section>;
 }

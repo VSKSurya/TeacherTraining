@@ -4,6 +4,7 @@ import './reports/reports.css';
 import './theme.css';
 import './holiday-master.css';
 import './projects.css';
+import './certificate.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import DashboardApp from './App';

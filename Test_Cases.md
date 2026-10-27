@@ -1,10 +1,12 @@
-# Screen-by-Screen Test Cases
+﻿# Screen-by-Screen Test Cases
 
 **Interactive HTML edition:** [docs/Test_Cases.html](docs/Test_Cases.html)
 
 **Application:** ERNet Teacher / Student Training Tracker  
 **Coverage:** Sign-in, role-based access, dashboards, operational modules, reports, registration, and session behavior  
 **Type:** Manual functional and access-control test cases
+
+**Security report:** VAPT-style static review and security test plan are included in sections 18â€“22 below. The interactive edition is [docs/Test_Cases.html](docs/Test_Cases.html).
 
 ## Test setup
 
@@ -38,7 +40,7 @@
 | LGN-007 | Use Show password, then Hide password. | Password becomes readable, then masked again; entered value is unchanged. |
 | LGN-008 | Select each story-slide dot. | Corresponding promotional slide changes and the selected dot exposes pressed state. |
 | LGN-009 | Select Forgot password? | The page displays the current guidance message. No reset delivery is initiated by this control. |
-| LGN-010 | Sign in as each Demo1–Demo8 account. | Correct role dashboard is displayed and the header/profile identifies the signed-in account. |
+| LGN-010 | Sign in as each Demo1â€“Demo8 account. | Correct role dashboard is displayed and the header/profile identifies the signed-in account. |
 | LGN-011 | While signed in, refresh the page and open a permitted route directly. | Session persists and the permitted screen loads. |
 | LGN-012 | Use profile menu > Logout. Then refresh or revisit a protected route. | Session is cleared and user is returned to sign-in; protected content is not shown. |
 | LGN-013 | Deactivate a non-current user through Super Admin Access & Users, then attempt sign-in as that user. If already signed in as that user, revisit/refresh a page. | New sign-in is rejected. On the next session lookup, an inactive account is treated as signed out. |
@@ -47,7 +49,7 @@
 
 ## 2. Role and route access matrix
 
-For each row, sign in with the specified account, inspect the sidebar, open each allowed route, then enter one or more disallowed URLs directly. Verify denied routes return to the role’s dashboard.
+For each row, sign in with the specified account, inspect the sidebar, open each allowed route, then enter one or more disallowed URLs directly. Verify denied routes return to the roleâ€™s dashboard.
 
 | ID | Account | Expected visible menus / route access |
 |---|---|---|
@@ -66,11 +68,11 @@ For each row, sign in with the specified account, inspect the sidebar, open each
 
 | ID | Test case / steps | Expected result |
 |---|---|---|
-| DSH-001 | Sign in as each demo role: Demo1–Demo8. | Demo2/3 see the Schoolnet dashboard; Demo4 State, Demo5 School, Demo6 Trainer, Demo7 Trainee dashboards; Demo1 and Demo8 see the shared phasewise dashboard. |
+| DSH-001 | Sign in as each demo role: Demo1â€“Demo8. | Demo2/3 see the Schoolnet dashboard; Demo4 State, Demo5 School, Demo6 Trainer, Demo7 Trainee dashboards; Demo1 and Demo8 see the shared phasewise dashboard. |
 | DSH-002 | On shared phasewise dashboard, switch Teacher/Student audience and select phases. | Selected audience/phase is reflected in the displayed overview and controls. |
 | DSH-003 | Apply dashboard filters, then clear filters. | Filtered content updates; clear action resets all dashboard filters. |
 | DSH-004 | Collapse and expand the sidebar; repeat at a narrow viewport. | Navigation collapses/expands, controls remain usable, and content does not become inaccessible. |
-| DSH-005 | On State Admin dashboard, filter authorized states, drill state → district → block → cluster → school → batch, then use breadcrumbs. | Rows and hierarchy level update at each step; breadcrumbs return to the selected level; empty levels show a clear empty message. |
+| DSH-005 | On State Admin dashboard, filter authorized states, drill state â†’ district â†’ block â†’ cluster â†’ school â†’ batch, then use breadcrumbs. | Rows and hierarchy level update at each step; breadcrumbs return to the selected level; empty levels show a clear empty message. |
 | DSH-006 | On School Admin dashboard, filter by UDISE code and select a school where available. | Dashboard metrics and school details reflect the selected/filtered school; no linked school is explained as an empty assignment. |
 | DSH-007 | On Schoolnet dashboard, select an authorized project. | Project-level metrics and lists update; unauthorized projects are not available. |
 | DSH-008 | Open the profile menu and select My Profile; close the profile dialog. | The profile dialog opens with current account details and closes using its close control. |
@@ -84,7 +86,7 @@ For each row, sign in with the specified account, inspect the sidebar, open each
 | PRJ-002 | Search/filter projects using available controls. | Only matching projects remain; clearing the filter restores the full list. |
 | PRJ-003 | Open a project and inspect its phases/details. | Selected project details and phase information match the chosen record. |
 | PRJ-004 | As Demo2 or Demo3, select an unconfigured Odoo catalog project and choose Configure project. Save without an internal code, then with valid project dates, code, and valid phase data. | Missing/duplicate code, invalid date ranges, incomplete phases, or duplicate phase sequence is rejected; valid configuration is saved and appears in the project list. |
-| PRJ-005 | Open Projects as Demo1, Demo4–Demo8 and inspect assigned project visibility and editing controls. | Projects are scoped by role/assignment; only Super Admin and Project Admin can configure portal projects. |
+| PRJ-005 | Open Projects as Demo1, Demo4â€“Demo8 and inspect assigned project visibility and editing controls. | Projects are scoped by role/assignment; only Super Admin and Project Admin can configure portal projects. |
 | PRJ-006 | Edit a configured project and associate active training plans; remove an association and save. | Associations reflect the saved selection; inactive plans cannot be linked unless the Super Admin explicitly enables the inactive-plan option. |
 
 ## 5. Training Plans (`/training-plans`)
@@ -156,7 +158,7 @@ For each row, sign in with the specified account, inspect the sidebar, open each
 
 | ID | Test case / steps | Expected result |
 |---|---|---|
-| ASM-001 | Open `/assessments` as Demo2–Demo7, then as Demo1 and Demo8. | Schoolnet Super Admin, Project Admin, State Admin, School Admin, Trainer, and Trainee can access the screen through route permissions; Sponsor Admin and Reporting/Audit User return to dashboard. |
+| ASM-001 | Open `/assessments` as Demo2â€“Demo7, then as Demo1 and Demo8. | Schoolnet Super Admin, Project Admin, State Admin, School Admin, Trainer, and Trainee can access the screen through route permissions; Sponsor Admin and Reporting/Audit User return to dashboard. |
 | ASM-002 | As a manager, create a native form with required fields/questions and save. | Valid form is linked to selected plan/day/stage and appears in the forms list. |
 | ASM-003 | Save a form with missing title, invalid rules, or incomplete required question data. | Validation blocks invalid configuration and identifies required values. |
 | ASM-004 | As a trainee, open an assigned form and submit with required answers missing. | Required-answer validation prevents submission unless the form allows unanswered items. |
@@ -185,9 +187,9 @@ Run each case for `/reports/batch-performance`, `/reports/training-summary`, `/r
 | ID | Test case / steps | Expected result |
 |---|---|---|
 | RPT-001 | Open each report route as a role with MIS Reports access and as a role without it. | Authorized role sees the requested report; unauthorized role returns to dashboard. |
-| RPT-002 | Apply each report’s filters and then reset them. | Table/chart values update to matching records and reset restores default report scope. |
+| RPT-002 | Apply each reportâ€™s filters and then reset them. | Table/chart values update to matching records and reset restores default report scope. |
 | RPT-003 | Change page/page size and sort columns where supported. | Visible rows and pagination totals reflect the selected settings. |
-| RPT-004 | Open a row’s View/details action (notably Attendance Report). | Detail dialog displays the selected row’s values and closes through close button/backdrop as supported. |
+| RPT-004 | Open a rowâ€™s View/details action (notably Attendance Report). | Detail dialog displays the selected rowâ€™s values and closes through close button/backdrop as supported. |
 | RPT-005 | Load report with no matching data. | Empty state is clear; no stale rows from a prior filter/report are shown. |
 | RPT-006 | Open the feedback report entry from MIS navigation. | Link behavior is consistent with the current interface; confirm the destination because the manual notes this may be a menu link rather than a dedicated route. |
 
@@ -234,3 +236,102 @@ Run each case for `/reports/batch-performance`, `/reports/training-summary`, `/r
 | Run date | Build/version | Environment/browser | Tester | Passed | Failed | Blocked |
 |---|---|---|---|---:|---:|---:|
 |  |  |  |  |  |  |  |
+
+## 18. VAPT report summary
+
+**Assessment type:** Repository-scope static source review of security-relevant paths with page-level security test design. This is not a completed dynamic penetration test. No application was exercised, no production environment was probed, and no external service was contacted. The report reflects repository revision `0fd0aef` and checked-in deployment configuration reviewed on 2026-10-27.
+
+**Result:** 1 high-severity finding, 0 medium, 0 low. The high rating is a production-readiness blocker if the application is used with real or shared records. The current code appears to keep operational data in each browser's local storage, so this review does not claim compromise of a centralized database. Runtime hosting headers, production identity, and recovery-service behavior remain unverified.
+
+### Finding VAPT-001 â€” Client-side demo authentication does not provide a security boundary
+
+- **Severity:** High (conditional on handling real/shared records); **confidence:** High; **classification:** CWE-602, client-side enforcement of security.
+- **Evidence:** `src/auth.ts:28` embeds `demo1@123`; `src/auth.ts:75â€“83` seeds eight active identities across all roles; `src/auth.ts:118â€“133` loads and saves role/session state in browser `localStorage` and checks the shared password; `src/App.tsx:25,78` gates routes in client code; `src/Login.tsx:46,48` pre-fills the demo user and password. The same shared password is present in this document and `USER_MANUAL.md`.
+- **Impact:** A visitor can sign in as a seeded administrative role and access that role's UI. Browser-local operational records and role state can be read or changed by the browser user. No central service holding those records was found in the reviewed source.
+- **Remediation:** Keep shared demo identities and credentials in a demo-only build. For real users or records, authenticate with a trusted identity service and enforce every data read/write and role permission on a server. Treat client-side routes and `localStorage` only as UI state, never as authorization.
+- **Retest:** Verify the production bundle has no demo credential or privileged seeded users; tamper with local role/session state and confirm protected server operations still reject the request.
+
+### Security-control and code review
+
+| Area | Static review result | Evidence / follow-up |
+|---|---|---|
+| Authentication and sessions | **Finding VAPT-001.** Shared credential, active demo accounts, and session are browser controlled. | `src/auth.ts`, `src/App.tsx`, `src/Login.tsx`. Server-side identity is not present in the reviewed repository. |
+| Authorization and roles | Route, menu, and component checks execute in the client. They are usability controls only. | `src/auth.ts`, `src/App.tsx`; no backend authorization layer found. |
+| Data confidentiality and integrity | Operational records, user roles, and audit history are stored in same-origin `localStorage`. A visitor with access to that browser can inspect or alter them. | Components and stores under `src/`; no shared business-data API found. This is a browser-local demo design. |
+| Public registration | Registration is open by design and writes requests to browser-local data. It does not create a central request visible to another user/browser. | `src/components/OpenRegistration.tsx`; check whether public registration meets product expectations before relying on it operationally. |
+| Trainee recovery | Recovery delegates OTP issuance and verification to optional `VITE_TRAINEE_RECOVERY_API`; the checked-in Pages workflow does not set that variable. | `src/components/RecoverTraineeId.tsx`, `.github/workflows/deploy.yml`. Endpoint security, expiry, throttling, and contact matching need service-side review. |
+| HTML output and file parsing | Reviewed rich HTML output is constructed from static source markup or escaped certificate fields; spreadsheet import paths parse XML. No exploitable untrusted HTML source-to-sink was validated in this static pass. | `src/components/DashboardParts.tsx`, `src/sourceMarkup.ts`, `src/components/CertificateTemplates.tsx`, `src/excelUpload.ts`, `src/components/Batches.tsx`, `src/components/Attendance.tsx`. Retain payload tests in the test plan. |
+| Secrets and dependencies | No server secrets or backend service configuration appear in the reviewed project; `package.json` has no test script. Dependency vulnerability status was not assessed. | `package.json`, `.github/workflows/deploy.yml`. Run dependency and build-pipeline review separately before production. |
+| Hosting headers and transport | Not established by source review. Static workflow publishes the app, but HTTP response headers and runtime HTTPS behavior were not checked. | Requires approved runtime/hosting verification. |
+
+### Page-by-page security review
+
+| Screen / route | Security review focus | Status |
+|---|---|---|
+| Login and session | Demo credentials, account enumeration, session persistence/logout, direct route bypass, localStorage tampering. | VAPT-001 confirmed in source; dynamic cases not run. |
+| Role dashboards and navigation | Administrative role switching, hidden menu vs direct route, cross-role data visibility. | Client-only route and role checks found; dynamic cases not run. |
+| Projects and Training Plans | Tenant/project scoping, unauthorized create/edit/delete, malformed stored data. | Browser-local persistence and client role checks; no server boundary in repository. |
+| Batches and Registration Requests | Unauthorized import/export/edit, open-registration data handling, batch linkage and role scoping. | Browser-local persistence; dynamic cases not run. |
+| Trainer Repository and trainer views | Profile/contact data visibility, ownership checks, role switching. | Client-only filters and local storage; dynamic cases not run. |
+| Attendance | Unauthorized attendance changes/exclusions, duplicate imports, audit alteration. | Records/audit are browser local; no central audit boundary in source. |
+| Content Library | Public resource exposure, import parsing, malformed archive handling. | Static paths inspected; dynamic upload/fuzz testing not run. |
+| Assessment and Feedback | Trainee record visibility, edit permissions, feedback confidentiality. | Local browser storage and client role checks; dynamic cases not run. |
+| Holiday Master and access administration | Privileged mutation and audit tampering. | Admin gate and audit trail run in the client and use localStorage. |
+| Certificates | Unauthorized issue/revoke, template injection, external links. | Client-side role gating; certificate text fields are escaped in generated HTML. Dynamic cases not run. |
+| MIS and four report routes | Cross-role data leakage, report filter scope, export contents, pagination/large data. | Reports derive from browser-local records; role route gate is client-side. Dynamic cases not run. |
+| Open Registration | Abuse, duplicate requests, input validation, availability/capacity checks. | Public page is intentionally unauthenticated; writes to same-browser local data. No rate limiting or server intake exists in reviewed source. |
+| Recover Trainee ID | Contact enumeration, OTP expiry/replay/throttling, response leakage. | External service is optional and absent from repository; service tests are pending. |
+
+## 19. VAPT page-level security test cases
+
+Run only against a local/staging build and a test recovery service. These cases are **Not Run** until an execution record is filled in. Do not use real personal data.
+
+| ID | Test case / steps | Expected result |
+|---|---|---|
+| SEC-001 | Open `/projects`, `/attendance`, `/holiday-master`, and `/reports/batch-performance` while signed out. | Protected routes show sign-in and no protected data or actions are rendered. |
+| SEC-002 | Sign in with each demo role and directly request routes outside its role menu, including reports, access administration, certificates, and trainer repository. | Disallowed roles cannot read or perform protected operations. Record that current client-only handling is not a server authorization test. |
+| SEC-003 | In a disposable browser profile, change `teacher-training-session` role/user fields in localStorage and reload a protected route. | A production-ready system must reject tampering at its trusted API; UI hiding alone is insufficient. |
+| SEC-004 | Sign in, sign out, use browser back, and reopen a protected URL in the same profile. | Logout invalidates server session and protected data stays inaccessible; no sensitive cached screen is restored. |
+| SEC-005 | Attempt access as inactive/deactivated user, including after an existing session is open. | Server rejects the identity on subsequent requests and access revocation takes effect. |
+| SEC-006 | As each role, inspect Projects and Training Plans using direct routes and crafted project IDs. Attempt cross-project reads and create/update/delete actions. | Server checks project scope and role for every operation; changing UI state or identifiers grants no access. |
+| SEC-007 | On Batches and Registration Requests, try direct editing/import/export and altered batch or trainee IDs under a low-privilege role. | Only authorized roles can perform operations; data is scoped to authorized project/batch. |
+| SEC-008 | On Trainer Repository, dashboards, and Attendance, change trainer/batch/trainee identifiers and attempt to view or change another ownerâ€™s records. | Ownership and role are enforced by the trusted service; audit events cannot be altered by editing browser storage. |
+| SEC-009 | Submit registration with oversized fields, HTML/script payloads, duplicate contacts, closed/unknown batch IDs, and repeated requests. | Inputs are bounded/validated; unsafe markup is rendered as text; server enforces duplicate, capacity, and abuse controls. |
+| SEC-010 | Import malformed, oversized, deeply nested, or invalid XLSX/XML in Batches and Attendance. | Import is rejected safely with bounded resource use; no script runs and no partial/truncated records are saved. |
+| SEC-011 | On Content Library, upload malformed archives and files containing HTML/script-like text; open imported content. | Archive limits and type validation apply; imported text is not executed as HTML/script. |
+| SEC-012 | On Assessment and Feedback, Holiday Master, and certificates, use low-privilege roles and attempt direct writes, certificate revoke/reissue, and audit modification. | Unauthorized writes are denied server-side; immutable/auditable changes record the authenticated actor. |
+| SEC-013 | Export data from all four reports while signed in as each role; compare rows/columns and try tampered filters. | Exports contain only the callerâ€™s authorized data and do not leak hidden columns or other project records. |
+| SEC-014 | On Open Registration, repeat submissions and test missing/invalid contact, capacity boundaries, unusual Unicode, and script-like strings. | Server validates and rate-limits submissions, handles duplicates/capacity consistently, and safely encodes values. |
+| SEC-015 | Against a controlled recovery service, request OTP for known/unknown contacts; test expiry, replay, brute-force limits, wrong contact, and concurrent requests. | Responses do not enumerate registered users; OTPs expire, are one-time, rate-limited, bound to the contact/request, and never disclose a trainee ID before verification. |
+| SEC-016 | Inspect deployed response headers and transport in approved staging: HTTPS redirect, CSP, frame/content-type/referrer policies, and cache behavior for sensitive pages. | Hosting policy is appropriate and documented. This cannot be confirmed from the source repository alone. |
+
+## 20. Code-level test cases
+
+| ID | Test case / steps | Expected result |
+|---|---|---|
+| CODE-001 | Inspect production build artifacts for `demo1@123`, Demo1â€“Demo8 seeded accounts, and any real credentials. | No shared credentials or privileged demo identities are present in production artifacts. |
+| CODE-002 | Review all protected data reads/writes and direct routes against a server-side authorization matrix. | Every API operation validates authenticated identity, role, and project/record scope; client checks are not sole enforcement. |
+| CODE-003 | Tamper with every `teacher-training-*` localStorage value (invalid JSON, wrong types, cross-role records) and reload relevant screens. | UI handles corrupt data without crashing or trusting it for security decisions; authoritative records come from the service. |
+| CODE-004 | Submit script markup in names, feedback, trainer profile fields, registration, imported spreadsheet cells, and certificate templates. | Values render as inert text; generated HTML escapes all untrusted fields and URLs are restricted to safe schemes. |
+| CODE-005 | Inspect every `dangerouslySetInnerHTML`, `innerHTML`, dynamic URL, and `window.open` call; trace inputs to output. | No untrusted value reaches an executable HTML/URL sink without context-appropriate sanitization and validation. |
+| CODE-006 | Test XLSX/XML processing with malformed relationships, huge row counts, invalid shared strings, and archive bombs. | Parser rejects invalid input and enforces file, decompression, row, and memory limits. |
+| CODE-007 | Review exported CSV cells beginning with `=`, `+`, `-`, or `@` and values containing quotes/newlines. | CSV export quotes correctly and neutralizes spreadsheet formula injection. |
+| CODE-008 | Verify CI installs locked dependencies, builds from a clean checkout, deploys only intended artifacts, and does not expose build secrets. | Build/deployment has reproducible dependencies and least-privilege credentials; no secrets are embedded in static output. |
+| CODE-009 | Resolve `VITE_TRAINEE_RECOVERY_API` in a controlled build and verify protocol, allowed origin, response schema, and failure paths. | Endpoint is explicit, HTTPS-only, and service-side controls are tested; absent config fails closed without leaking contact data. |
+| CODE-010 | Verify configured hosting security headers and caching against a representative deployed build. | CSP and other header policy are compatible with app functionality and prevent unneeded caching of sensitive responses. |
+
+## 21. VAPT execution record
+
+The cases in sections 19â€“20 are a security test plan, not evidence of successful runtime tests. Record an approved local/staging execution here.
+
+| Run date | Build/revision | Environment | Tester | Passed | Failed | Blocked | Evidence/defect IDs |
+|---|---|---|---|---:|---:|---:|---|
+|  |  |  |  |  |  |  |  |
+
+## 22. Assessment limitations and release gate
+
+- Static source inspection only; no dynamic VAPT, dependency audit, automated test suite, browser session, API test, or hosting-header check was run.
+- Production identity provider, database/API, network rules, backup/retention, hosting configuration, and recovery OTP service were not available in this repository review.
+- Before using this application for real or shared personal/training data, implement server-side identity/authorization and shared data storage, remove demo credentials from production, then execute sections 19â€“20 in authorized staging and remediate VAPT-001.
+- Dependency vulnerability assessment and deployment configuration verification are recommended follow-up activities; no vulnerability status is inferred from package versions alone.
+
