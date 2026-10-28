@@ -102,3 +102,27 @@ Please update my User Manual as per my screens update
 Whenever i open codex i need to Print every prompt in a Txt file
 
 can you print till now whatever i have given the prompt for the Project can store it
+
+what is my session id for the ternimal
+
+how do i continue in the same codex session later
+
+push the code into git, pubhlish it and deploy it
+
+A single, consistent, unique Batch Code format across the entire Teacher Training Tracker application without affecting existing batch relationships or historical records.
+
+committed all uncommitted code
+
+update the prompt that i have give till now in Project_Prompts files
+
+I want run the TestCases for the Demo2 login and product me the Report of it
+
+Can you update the Attendance Rate Currently on Ernet Dashboard can it be hard Code from 68.7% to 86.7%
+
+Can you update the Attendance Rate Ernet Dashboard hard Code from 68.7% to 86.7% KPI
+
+push the code into git, publish it deploy
+
+open the url in MSEdge
+
+update the prompt that i have give till now in Project_Prompts files
