@@ -9,7 +9,9 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import DashboardApp from './App';
 import { seedDemoSampleData } from './demoSampleData';
+import { standardizeStoredBatchCodes } from './batchCodes';
 
 try { document.documentElement.dataset.theme = window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light'; } catch { document.documentElement.dataset.theme = 'light'; }
 seedDemoSampleData();
+standardizeStoredBatchCodes();
 createRoot(document.getElementById('root')!).render(<DashboardApp />);

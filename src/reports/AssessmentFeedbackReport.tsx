@@ -5,6 +5,7 @@ import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportChart
 import { ReportPagination } from './ReportComponents';
 import { formatDate } from '../dateFormat';
 import AssessmentFormDetail from './AssessmentFormDetail';
+import { batchCodeForRecord } from '../batchCodes';
 
 const PAGE_SIZE = 10;
 
@@ -24,7 +25,8 @@ export default function AssessmentFeedbackReport() {
       ...readRows('teacher-training-assessment-records').map(row => ({ ...row, kind: 'assessment' })),
       ...readRows('teacher-training-feedback-records').map(row => ({ ...row, kind: 'feedback' })),
     ];
-    return sourceRows.map(row => ({ id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId: text(row.traineeId ?? row.userId), batchCode: text(row.batchCode ?? row.batchId), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') })).sort((a, b) => b.date.localeCompare(a.date));
+    const batchRows = readRows('teacher-training-batch-plan-uses');
+    return sourceRows.map(row => ({ id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId: text(row.traineeId ?? row.userId), batchCode: batchCodeForRecord(row, batchRows), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') })).sort((a, b) => b.date.localeCompare(a.date));
   }, []);
   const rows = results.filter(row => (kind === 'all' || row.kind === kind) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()));
   const groupedRows = [...rows.reduce((groups, row, index) => {

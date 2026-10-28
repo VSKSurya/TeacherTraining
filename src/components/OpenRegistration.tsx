@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Alert, Box, Button, Card, CardContent, Chip, Container, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { Footer, Topbar } from './DashboardParts';
 import { formatDate } from '../dateFormat';
+import { batchMatchesRecord, batchMatchesReference } from '../batchCodes';
 import { businessDateToday, registrationWindow, registrationWindowError } from '../registrationRules';
 
 type Row = Record<string, any>;
@@ -19,10 +20,11 @@ const base = import.meta.env.BASE_URL;
 export default function OpenRegistration() {
   const batches = useMemo(() => read<Batch>(BATCHES), []);
   const [batchRef, setBatchRef] = useState(() => new URLSearchParams(location.search).get('batch') ?? new URLSearchParams(location.search).get('code') ?? '');
-  const batch = batches.find(item => [item.id, item.batchCode, item.uniqueId].some(value => clean(value).toLowerCase() === batchRef.trim().toLowerCase()));
+  const matchingBatches = batches.filter(item => batchMatchesReference(item, batchRef));
+  const batch = matchingBatches.length === 1 ? matchingBatches[0] : undefined;
   const registrations = read<Row>(REGISTRATIONS);
   const cap = Number(batch?.registrationCapacity ?? batch?.participantCapacity ?? batch?.capacity);
-  const occupied = batch ? registrations.filter(row => (clean(row.batchId) === batch.id || clean(row.batchCode).toLowerCase() === clean(batch.batchCode).toLowerCase()) && active(row)).length : 0;
+  const occupied = batch ? registrations.filter(row => batchMatchesRecord(batch, row) && active(row)).length : 0;
   const window = batch ? registrationWindow(batch) : undefined;
   const closedReason = !batch ? '' : registrationWindowError(batch) || (Number.isFinite(cap) && cap > 0 && occupied >= cap ? 'This batch has reached its registration capacity.' : '');
   const [notice, setNotice] = useState('');
@@ -33,14 +35,14 @@ export default function OpenRegistration() {
     const latestBatch = read<Batch>(BATCHES).find(item => item.id === batch?.id);
     const latestRegistrations = read<Row>(REGISTRATIONS);
     const currentCap = Number(latestBatch?.registrationCapacity ?? latestBatch?.participantCapacity ?? latestBatch?.capacity);
-    const currentCount = latestBatch ? latestRegistrations.filter(row => (clean(row.batchId) === latestBatch.id || clean(row.batchCode).toLowerCase() === clean(latestBatch.batchCode).toLowerCase()) && active(row)).length : 0;
+    const currentCount = latestBatch ? latestRegistrations.filter(row => batchMatchesRecord(latestBatch, row) && active(row)).length : 0;
     const latestError = !latestBatch ? 'This batch is no longer available.' : registrationWindowError(latestBatch) || (Number.isFinite(currentCap) && currentCap > 0 && currentCount >= currentCap ? 'This batch has reached its registration capacity.' : '');
     if (!batch || closedReason || latestError) { setError(latestError || closedReason || 'Enter a valid batch code or registration link.'); return; }
     const form = new FormData(event.currentTarget);
     const name = clean(form.get('name')); const email = clean(form.get('email')).toLowerCase(); const phone = clean(form.get('phone')); const category = clean(form.get('category'));
     if (!name || (!email && !phone)) { setError('Enter your name and at least an email address or mobile number.'); return; }
     const current = latestRegistrations;
-    const duplicate = current.some(row => (clean(row.batchId) === batch.id || clean(row.batchCode).toLowerCase() === clean(batch.batchCode).toLowerCase()) && active(row) && ((email && clean(row.email).toLowerCase() === email) || (phone && normalizedPhone(row.phone) === normalizedPhone(phone))));
+    const duplicate = current.some(row => batchMatchesRecord(batch, row) && active(row) && ((email && clean(row.email).toLowerCase() === email) || (phone && normalizedPhone(row.phone) === normalizedPhone(phone))));
     if (duplicate) { setError('A registration request for this trainee already exists in this batch.'); return; }
     const people = read<Row>(TRAINEES);
     const byEmail = email ? people.find(person => clean(person.email).toLowerCase() === email) : undefined;
@@ -72,7 +74,7 @@ export default function OpenRegistration() {
       {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ my: 2 }}>{notice}</Alert>}
       {batch && !closedReason && <Box component="form" onSubmit={submit}><Stack spacing={2} sx={{ mt: 2 }}><TextField required fullWidth name="name" label="Full name" /><TextField fullWidth name="email" type="email" label="Email address" /><TextField fullWidth name="phone" label="Mobile number" /><TextField select fullWidth name="category" label="Participant category" defaultValue="Teacher"><MenuItem value="Teacher">Teacher</MenuItem><MenuItem value="Student">Student</MenuItem><MenuItem value="Other">Other</MenuItem></TextField><Button variant="contained" type="submit" size="large" sx={{ textTransform: 'none' }}>Submit registration request</Button></Stack></Box>}
       {batch && closedReason && <Alert severity="info" sx={{ mt: 2 }}>{closedReason}</Alert>}
-      {!batch && batchRef && <Alert severity="warning" sx={{ mt: 2 }}>No batch matches that code. Check the code with the trainer or administrator.</Alert>}
+      {!batch && batchRef && <Alert severity="warning" sx={{ mt: 2 }}>{matchingBatches.length > 1 ? 'That previous code matches more than one batch. Ask the trainer or administrator for the current Batch Code.' : 'No batch matches that code. Check the code with the trainer or administrator.'}</Alert>}
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 3 }}>Submitting a request does not confirm a place. Your trainer or an authorized administrator will review it.</Typography>
     </CardContent></Card>
   </Stack></Container></Box><Footer /></Box>;

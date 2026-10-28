@@ -1,3 +1,5 @@
+import { batchIdentifiers } from './batchCodes';
+
 export type AttendanceRow = Record<string, unknown>;
 export type AttendanceSummary = { expected: number; present: number; absent: number; pending: number; excluded: number; percentage: number | null };
 const value = (row: AttendanceRow, ...fields: string[]) => { for (const field of fields) { const item = row[field]; if (typeof item === 'string' && item) return item; } return ''; };
@@ -41,7 +43,7 @@ export function calculateAttendance(batches: AttendanceRow[], registrations: Att
   const expectedSlots = new Set<string>(), presentSlots = new Set<string>(), absentSlots = new Set<string>(), excludedSlots = new Set<string>();
   const activeBatches = batches.filter(batch => !['cancelled', 'archived'].includes(value(batch, 'status').toLowerCase()));
   for (const batch of activeBatches) {
-    const batchRefs = new Set([value(batch, 'id'), value(batch, 'batchCode'), value(batch, 'uniqueId')].filter(Boolean));
+    const batchRefs = new Set(batchIdentifiers(batch));
     const id = value(batch, 'id') || value(batch, 'batchCode') || value(batch, 'uniqueId');
     const heldDates = trainingSessionDates(batch).filter(sessionDate => sessionDate <= asOf);
     if (!id || !heldDates.length) continue;

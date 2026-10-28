@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
+import { batchIdentifiers } from '../batchCodes';
 import { formatDate } from '../dateFormat';
 
 type Row = Record<string, unknown>;
@@ -44,7 +45,7 @@ export default function TrainerDashboard() {
   const resourceUsage = useMemo(() => readRows<Row>(KEYS.resourceUsage), []);
   const userId = session?.userId ?? '';
   const myBatches = batches.filter(batch => text(batch.trainerCode).toLowerCase() === userId.toLowerCase() && !['cancelled', 'archived'].includes(text(batch.status).toLowerCase()));
-  const identifiers = (batch: Batch) => new Set([batch.id, batch.batchCode ?? '', text(batch.uniqueId)].filter(Boolean));
+  const identifiers = (batch: Batch) => new Set(batchIdentifiers(batch));
   const related = (rows: Row[], batch: Batch) => rows.filter(row => identifiers(batch).has(batchRef(row)));
   const activeBatches = myBatches.filter(batch => !['completed'].includes(text(batch.status).toLowerCase()));
   const today = businessToday();

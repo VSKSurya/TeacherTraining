@@ -7,6 +7,7 @@ import { locations } from '../data/locations';
 import { formatDate } from '../dateFormat';
 import { businessToday, calculateAttendance } from '../attendanceMetrics';
 import { buildTrainingCompletionRows, summarizeTrainingCompletion } from '../completion';
+import { batchIdentifiers } from '../batchCodes';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; states?: string[]; assignedUsers?: string[] };
@@ -67,13 +68,13 @@ export default function StateAdminDashboard() {
   const scopeProjects = projects.filter(project => (!projectScope.length || projectScope.some(item => item.id === project.id)) && (!(project.states?.length) || project.states.some(state => states.includes(state))));
   const projectIds = new Set(scopeProjects.map(item => item.id));
   const visibleBatches = stateBatches.filter(batch => projectScope.length ? Boolean(batch.projectId && projectIds.has(batch.projectId)) : (!batch.projectId || projectIds.size === 0 || projectIds.has(batch.projectId)));
-  const batchIds = new Set(visibleBatches.flatMap(batch => [batch.id, batch.batchCode ?? '', str(batch.uniqueId)]).filter(Boolean));
+  const batchIds = new Set(visibleBatches.flatMap(batchIdentifiers));
   const registrationsInScope = registrations.filter(row => batchIds.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
   const attendanceInScope = attendance.filter(row => batchIds.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
   const assessmentsInScope = assessments.filter(row => batchIds.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
   const metrics = metricLabel(visibleBatches, registrationsInScope, attendanceInScope);
   const metricsFor = (rows: Batch[]) => {
-    const ids = new Set(rows.flatMap(batch => [batch.id, batch.batchCode ?? '', str(batch.uniqueId)]).filter(Boolean));
+    const ids = new Set(rows.flatMap(batchIdentifiers));
     const rowRegistrations = registrationsInScope.filter(row => ids.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
     const rowAttendance = attendanceInScope.filter(row => ids.has(str(row.batchId ?? row.batchCode ?? row.batchUniqueId)));
     const summary = calculateAttendance(rows, rowRegistrations, rowAttendance, exclusions);

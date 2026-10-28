@@ -5,6 +5,7 @@ import { getSession, getUsers } from '../auth';
 import { formatDate } from '../dateFormat';
 import { businessToday, calculateAttendance } from '../attendanceMetrics';
 import { buildTrainingCompletionRows, summarizeTrainingCompletion } from '../completion';
+import { batchIdentifiers } from '../batchCodes';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; status?: string; assignedUsers?: string[]; endDate?: string };
@@ -58,7 +59,7 @@ export default function SchoolnetDashboard() {
   const planIds = new Set(associations.map(item => item.trainingPlanId));
   const plans = allPlans.filter(plan => planIds.has(plan.id));
   const batches = allBatches.filter(batch => projectIds.has(text(batch.projectId)) && (batch.status ?? 'Scheduled') !== 'Archived');
-  const batchIds = new Set(batches.flatMap(batch => [batch.id, batch.batchCode ?? '', text(batch.uniqueId)]).filter(Boolean));
+  const batchIds = new Set(batches.flatMap(batchIdentifiers));
   const filterRelated = (rows: Row[]) => rows.filter(row => batchIds.has(text(row.batchId ?? row.batchCode ?? row.batchUniqueId)) || associationIds.has(text(row.projectPlanAssociationId)));
   const registrations = filterRelated(allRegistrations);
   const attendance = filterRelated(allAttendance);
@@ -155,7 +156,7 @@ export default function SchoolnetDashboard() {
         {projects.length ? <Box sx={{ overflowX: 'auto' }}><Box component="table" sx={{ width: '100%', minWidth: 920, borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 11 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', fontSize: 11 } }}><thead><tr><th>Project</th><th>Status</th><th>Linked plans</th><th>Batches</th><th>Attendance</th><th>Completion</th><th>Risk</th></tr></thead><tbody>{projects.map(project => {
           const projectAssociations = associations.filter(item => item.projectId === project.id && item.status === 'Active');
           const projectBatches = batches.filter(batch => batch.projectId === project.id); const projectActive = projectBatches.filter(batch => !['Cancelled', 'Archived'].includes(text(batch.status)));
-          const projectBatchIds = new Set(projectBatches.flatMap(batch => [batch.id, batch.batchCode ?? '', text(batch.uniqueId)]).filter(Boolean));
+          const projectBatchIds = new Set(projectBatches.flatMap(batchIdentifiers));
           const projectAttendanceSummary = calculateAttendance(projectActive, registrations.filter(row => projectBatchIds.has(text(row.batchId ?? row.batchCode ?? row.batchUniqueId))), attendance.filter(row => projectBatchIds.has(text(row.batchId ?? row.batchCode ?? row.batchUniqueId))), allExclusions);
           const completedBatches = projectBatches.filter(batch => text(batch.status).toLowerCase() === 'completed').length;
           const late = projectActive.filter(batch => text(batch.status).toLowerCase() !== 'completed' && dayValue(batch.trainingEndAuto) && dayValue(batch.trainingEndAuto) < today).length;

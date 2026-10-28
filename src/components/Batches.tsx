@@ -7,6 +7,7 @@ import { kgbvSchools } from '../data/kgbvSchools';
 import { locations } from '../data/locations';
 import { trainerAvailability, trainerAvailabilityConflict, trainerProfiles } from '../trainerStore';
 import { calculateAttendance } from '../attendanceMetrics';
+import { batchIdentifiers, createBatchCode } from '../batchCodes';
 
 type Project = { id: string; name: string; code: string; assignedUsers: string[]; startDate: string; endDate: string; phases?: { id: string; name: string; sequence: number }[]; batchImportPolicy?: 'valid-rows' | 'all-or-nothing' };
 type Plan = { id: string; code: string; name: string; type: 'Classroom' | 'Online' | 'Hybrid'; status: 'Draft' | 'Active' | 'Inactive' };
@@ -17,7 +18,7 @@ type Batch = {
   phaseId?: string; trainingCycle?: string; deliveryMode?: string; schoolUdiseVenue?: string; state?: string; district?: string; location?: string;
   trainingPlanCode?: string; trainingStartDate?: string; trainingDuration?: number; trainingEndAuto?: string; trainingDates?: string[];
   trainingStartTime?: string; trainingEndTime?: string; trainerCode?: string; trainerProfileCode?: string; trainerName?: string; openRegistration?: boolean; registrationCapacity?: number; registrationWindowBeforeDays?: number; registrationWindowAfterDays?: number;
-  createdAt: string; createdBy: string; status?: BatchStatus; warnings?: string[]; registrationCount?: number; attendanceCount?: number; assessmentCount?: number; dependentRecordCount?: number;
+  createdAt: string; createdBy: string; status?: BatchStatus; warnings?: string[]; registrationCount?: number; attendanceCount?: number; assessmentCount?: number; dependentRecordCount?: number; legacyBatchCodes?: string[];
 };
 type DraftRow = { Batch_UniqueID: string; Project_Code: string; Project_Phase: string; Training_Cycle: string; Delivery_Mode: string; School_UDISE_Venue: string; State: string; District: string; Location: string; Training_Plan_Code: string; Training_Start_Date: string; Training_Duration: string; Training_End_Auto: string; Training_Start_Time: string; Training_End_Time: string; Trainer_Code: string; Trainer_Name: string; Open_Registration: string };
 type ValidationRow = { rowNumber: number; values: DraftRow; batch?: Batch; errors: string[]; warnings: string[] };
@@ -126,7 +127,7 @@ async function parseWorkbook(file: File): Promise<{ rows: Record<string, string>
 }
 function readDependentRecords(batch: Batch) {
   if ((batch.registrationCount ?? 0) > 0 || (batch.attendanceCount ?? 0) > 0 || (batch.assessmentCount ?? 0) > 0 || (batch.dependentRecordCount ?? 0) > 0) return true;
-  const identifiers = new Set([batch.id, batch.uniqueId, batch.batchCode].filter(Boolean));
+  const identifiers = new Set(batchIdentifiers(batch));
   const keys = [REGISTRATIONS_KEY, ATTENDANCE_KEY, ASSESSMENTS_KEY, ...OTHER_DEPENDENT_KEYS];
   for (let index = 0; index < localStorage.length; index++) {
     const key = localStorage.key(index);
@@ -169,6 +170,7 @@ export default function Batches() {
   function validateRows(rawRows: Record<string, string>[], uploadedHeaders: string[]) {
     const rows: ValidationRow[] = [];
     const uploadedIds = new Set<string>();
+    const reservedBatchCodes = new Set(batches.flatMap(batch => batchIdentifiers(batch).map(item => item.toUpperCase())));
     const prior = [...batches];
     const allProjects = projects;
     const userList = getUsers();
@@ -186,7 +188,7 @@ export default function Batches() {
       const key = `${project?.id ?? projectCode.toLowerCase()}|${uniqueId.toLowerCase()}`;
       if (uniqueId && uploadedIds.has(key)) errors.push(`Batch_UniqueID “${uniqueId}” is duplicated in this upload for the project.`);
       if (uniqueId) uploadedIds.add(key);
-      if (project && batches.some(item => item.projectId === project.id && (item.uniqueId ?? item.batchCode).toLowerCase() === uniqueId.toLowerCase())) errors.push(`Batch_UniqueID “${uniqueId}” already exists in this project.`);
+      if (project && batches.some(item => item.projectId === project.id && batchIdentifiers(item).some(identifier => identifier.toLowerCase() === uniqueId.toLowerCase()))) errors.push(`Batch_UniqueID “${uniqueId}” already exists in this project.`);
       if (!project) errors.push(`Project_Code “${projectCode || '(blank)'}” does not match a project.`);
       else if (!canAccess) errors.push(`Project “${projectCode}” is not accessible to your account.`);
       const plan = plans.find(item => item.code.toLowerCase() === values.Training_Plan_Code.trim().toLowerCase());
@@ -269,8 +271,10 @@ export default function Batches() {
           if (holiday) errors.push(`Training day ${date} conflicts with an active ${holiday.scope.toLowerCase()} holiday.`);
         }
       }
+      const batchCode = errors.length === 0 ? createBatchCode(undefined, reservedBatchCodes) : '';
+      if (batchCode) reservedBatchCodes.add(batchCode);
       const batch: Batch | undefined = errors.length === 0 && project && association && plan && startDate && calculatedEnd && startTime && endTime && openRegistration !== null ? {
-        id: crypto.randomUUID(), batchCode: uniqueId, uniqueId, projectId: project.id, projectPlanAssociationId: association.id, name: values.Location || `Batch ${uniqueId}`,
+        id: crypto.randomUUID(), batchCode, uniqueId, legacyBatchCodes: [uniqueId], projectId: project.id, projectPlanAssociationId: association.id, name: values.Location || `Batch ${uniqueId}`,
         phaseId, trainingCycle: values.Training_Cycle.trim(), deliveryMode, schoolUdiseVenue: venueRef, state: values.State.trim(), district: values.District.trim(), location: values.Location.trim(),
         trainingPlanCode: plan.code, trainingStartDate: startDate, trainingDuration: duration, trainingEndAuto: calculatedEnd, trainingDates, trainingStartTime: startTime, trainingEndTime: endTime,
         trainerCode, trainerProfileCode: trainerProfile?.trainerCode, trainerName: trainerProfile?.name ?? values.Trainer_Name.trim(), openRegistration, registrationWindowBeforeDays: 0, registrationWindowAfterDays: 0, createdAt: new Date().toISOString(), createdBy: session?.userId ?? '', status: 'Scheduled', warnings: [...warnings],
@@ -354,7 +358,7 @@ export default function Batches() {
     return { ...batch, projectName: project?.name ?? 'Unavailable project', planName: plan?.name ?? 'Unavailable plan', hasDependents: readDependentRecords(batch), attendanceSummary: calculateAttendance([batch], registrations, attendanceRecords, attendanceExclusions) };
   }).filter(batch => {
     const q = filter.query.trim().toLowerCase();
-    return (!q || `${batch.batchCode} ${batch.uniqueId ?? ''} ${batch.name}`.toLowerCase().includes(q)) && (!filter.project || batch.projectId === filter.project) && (!filter.phase || batch.phaseId === filter.phase) && (!filter.state || batch.state === filter.state) && (!filter.district || batch.district === filter.district) && (!filter.school || batch.schoolUdiseVenue === filter.school) && (!filter.plan || batch.trainingPlanCode === filter.plan) && (!filter.trainer || batch.trainerCode === filter.trainer) && (!filter.from || (batch.trainingStartDate ?? '') >= filter.from) && (!filter.to || (batch.trainingStartDate ?? '') <= filter.to) && (!filter.status || (batch.status ?? 'Scheduled') === filter.status);
+    return (!q || `${batch.batchCode} ${batch.uniqueId ?? ''} ${(batch.legacyBatchCodes ?? []).join(' ')} ${batch.name}`.toLowerCase().includes(q)) && (!filter.project || batch.projectId === filter.project) && (!filter.phase || batch.phaseId === filter.phase) && (!filter.state || batch.state === filter.state) && (!filter.district || batch.district === filter.district) && (!filter.school || batch.schoolUdiseVenue === filter.school) && (!filter.plan || batch.trainingPlanCode === filter.plan) && (!filter.trainer || batch.trainerCode === filter.trainer) && (!filter.from || (batch.trainingStartDate ?? '') >= filter.from) && (!filter.to || (batch.trainingStartDate ?? '') <= filter.to) && (!filter.status || (batch.status ?? 'Scheduled') === filter.status);
   });
   const setFilterValue = (key: keyof typeof filter, value: string) => setFilter(current => ({ ...current, [key]: value }));
 
@@ -363,7 +367,7 @@ export default function Batches() {
       {!sponsorAdmin && <>
       <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, border: '1px solid #e3ebf3', borderRadius: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={1.5}>
-          <Box><Typography variant="h6" sx={{ fontWeight: 750 }}>Create batches through Excel upload</Typography><Typography variant="body2" color="text.secondary">One row creates one batch. End dates count Monday–Friday training days and skip active national and state holidays.</Typography></Box>
+          <Box><Typography variant="h6" sx={{ fontWeight: 750 }}>Create batches through Excel upload</Typography><Typography variant="body2" color="text.secondary">One row creates one batch with a system-assigned unique code in TTB-YYYY-XXXXXXXXXXXXXXXXXXXX format (for example, TTB-2026-0123456789ABCDEF0123). Batch_UniqueID is retained for import matching. End dates count Monday–Friday training days and skip active national and state holidays.</Typography></Box>
           <Button variant="outlined" onClick={downloadTemplate} sx={{ textTransform: 'none', flexShrink: 0 }}>Download Excel template</Button>
         </Stack>
         {canOverrideInactive && <FormControlLabel sx={{ mt: 1 }} control={<Checkbox checked={includeInactive} onChange={event => { setIncludeInactive(event.target.checked); setValidation([]); }} />} label="Explicitly authorize inactive plans for this import" />}
@@ -377,7 +381,7 @@ export default function Batches() {
           <Stack direction="row" spacing={1}><Button variant="outlined" onClick={downloadErrors} disabled={!validation.some(row => row.errors.length || row.warnings.length)} sx={{ textTransform: 'none' }}>Download error report</Button><Button variant="contained" onClick={() => setConfirmImport(true)} disabled={rowsForImport.length === 0 || !canImport} sx={{ textTransform: 'none' }}>Review import ({rowsForImport.length})</Button></Stack>
         </Stack>
         {projects.some(project => project.batchImportPolicy === 'all-or-nothing') && <Alert severity="info" sx={{ mt: 1.5 }}>Projects configured for all-or-nothing imports will have all their rows held if any row for that project is invalid.</Alert>}
-        <Box sx={{ mt: 2, overflowX: 'auto' }}><Box component="table" sx={{ minWidth: 900, width: '100%', borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 12 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', verticalAlign: 'top', fontSize: 12 } }}><thead><tr><th>Row</th><th>Batch ID</th><th>Project / Plan</th><th>Training dates</th><th>Result</th><th>Validation details</th></tr></thead><tbody>{validation.map(row => <tr key={row.rowNumber}><td>{row.rowNumber}</td><td>{row.values.Batch_UniqueID}</td><td>{row.values.Project_Code} / {row.values.Training_Plan_Code}</td><td>{formatDate(row.values.Training_Start_Date)}{row.batch?.trainingEndAuto ? ` → ${formatDate(row.batch.trainingEndAuto)}` : ''}</td><td><Chip size="small" label={row.errors.length ? 'Invalid' : row.warnings.length ? 'Warning' : 'Valid'} color={row.errors.length ? 'error' : row.warnings.length ? 'warning' : 'success'} /></td><td>{[...row.errors, ...row.warnings].map((text, index) => <Typography key={index} variant="caption" display="block" color={row.errors.length ? 'error.main' : 'warning.dark'}>{text}</Typography>)}</td></tr>)}</tbody></Box></Box>
+        <Box sx={{ mt: 2, overflowX: 'auto' }}><Box component="table" sx={{ minWidth: 900, width: '100%', borderCollapse: 'collapse', '& th': { textAlign: 'left', p: 1, bgcolor: '#f6f9fc', color: '#61778e', fontSize: 12 }, '& td': { p: 1, borderTop: '1px solid #edf1f5', verticalAlign: 'top', fontSize: 12 } }}><thead><tr><th>Row</th><th>Batch Code / Import ID</th><th>Project / Plan</th><th>Training dates</th><th>Result</th><th>Validation details</th></tr></thead><tbody>{validation.map(row => <tr key={row.rowNumber}><td>{row.rowNumber}</td><td><strong>{row.batch?.batchCode ?? '—'}</strong><br />Import ID: {row.values.Batch_UniqueID}</td><td>{row.values.Project_Code} / {row.values.Training_Plan_Code}</td><td>{formatDate(row.values.Training_Start_Date)}{row.batch?.trainingEndAuto ? ` → ${formatDate(row.batch.trainingEndAuto)}` : ''}</td><td><Chip size="small" label={row.errors.length ? 'Invalid' : row.warnings.length ? 'Warning' : 'Valid'} color={row.errors.length ? 'error' : row.warnings.length ? 'warning' : 'success'} /></td><td>{[...row.errors, ...row.warnings].map((text, index) => <Typography key={index} variant="caption" display="block" color={row.errors.length ? 'error.main' : 'warning.dark'}>{text}</Typography>)}</td></tr>)}</tbody></Box></Box>
       </Paper>}
       </>}
 

@@ -1,4 +1,5 @@
 import { trainingSessionDates } from './attendanceMetrics';
+import { batchIdentifiers } from './batchCodes';
 
 export type TrainingRow = Record<string, unknown>;
 export type CompletionCriteria = { minimumAttendancePercent?: number; mandatoryTrainingDays?: number[]; requireAssessments?: boolean; minimumAssessmentMarks?: number | null; requireFeedback?: boolean; requireExternalCourse?: boolean };
@@ -7,7 +8,7 @@ export function buildTrainingCompletionRows(registrations: TrainingRow[], batche
   const eligible = registrations.filter(row => row.approved === true || ['approved', 'confirmed', 'enrolled'].includes(text(row.status ?? row.registrationStatus ?? row.approvalStatus).toLowerCase()));
   return eligible.map(registration => {
     const ref = batchRef(registration);
-    const batch = batches.find(item => [text(item.id), text(item.batchCode), text(item.uniqueId)].filter(Boolean).includes(ref));
+    const batch = batches.find(item => batchIdentifiers(item).includes(ref));
     const association = associations.find(item => text(item.id) === text(batch?.projectPlanAssociationId));
     const plan = plans.find(item => text(item.id) === text(association?.trainingPlanId) || (text(item.code) && text(item.code) === text(batch?.trainingPlanCode)));
     return { registration, batch, criteria: (plan?.completionCriteria ?? {}) as CompletionCriteria, userIds: [registration.userId, registration.traineeId, registration.participantId, registration.studentId, registration.beneficiaryId, registration.candidateId].map(text).filter(Boolean), registrationIds: [registration.id, registration.registrationId].map(text).filter(Boolean) };
@@ -25,7 +26,7 @@ function associated(row: TrainingRow, userIds: Set<string>, registrationIds: Set
 export function isTrainingComplete(args: { registration: TrainingRow; batch?: TrainingRow; criteria?: CompletionCriteria; userIds: string[]; registrationIds: string[]; attendance: TrainingRow[]; assessments: TrainingRow[]; feedback: TrainingRow[]; externalCourses: TrainingRow[]; assessmentForms?: TrainingRow[] }) {
   const { registration, batch, criteria = {}, userIds, registrationIds, attendance, assessments, feedback, externalCourses, assessmentForms = [] } = args;
   if (!batch) return false;
-  const batchIds = new Set([text(batch.id), text(batch.batchCode), text(batch.uniqueId)].filter(Boolean));
+  const batchIds = new Set(batchIdentifiers(batch));
   const users = new Set(userIds.map(id => id.toLowerCase()).filter(Boolean));
   const regs = new Set(registrationIds.filter(Boolean));
   const inBatch = (row: TrainingRow) => batchIds.has(batchRef(row));
@@ -53,7 +54,7 @@ export function evaluateTrainingCompletion(args: { registration: TrainingRow; ba
   const sessionDates = trainingSessionDates(batch);
   const due = text(batch.status).toLowerCase() === 'completed' || Boolean(sessionDates.length && sessionDates[sessionDates.length - 1] <= asOf);
   if (!due) return 'In progress';
-  const batchIds = new Set([text(batch.id), text(batch.batchCode), text(batch.uniqueId)].filter(Boolean));
+  const batchIds = new Set(batchIdentifiers(batch));
   const users = new Set(userIds.map(id => id.toLowerCase()).filter(Boolean));
   const regs = new Set(registrationIds.filter(Boolean));
   const own = (rows: TrainingRow[]) => rows.filter(row => associated(row, users, regs) && batchIds.has(batchRef(row)));

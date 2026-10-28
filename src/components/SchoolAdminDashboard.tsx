@@ -6,6 +6,7 @@ import { calculateAttendance } from '../attendanceMetrics';
 import { buildTrainingCompletionRows, summarizeTrainingCompletion } from '../completion';
 import { getSession } from '../auth';
 import { kgbvSchools, type KgbvSchool } from '../data/kgbvSchools';
+import { batchIdentifiers } from '../batchCodes';
 
 type Row = Record<string, unknown>;
 type Batch = Row & { id: string; batchCode?: string; projectId?: string; schoolUdiseVenue?: string; status?: string; trainingStartDate?: string; trainingEndAuto?: string; trainingDates?: string[]; trainingStartTime?: string; trainingEndTime?: string; trainingCycle?: string; trainerCode?: string };
@@ -82,7 +83,7 @@ export default function SchoolAdminDashboard() {
   const school = selectedSchools[0];
   const selectedSchoolIds = new Set(selectedSchools.map(item => item.udise));
   const schoolBatches = activeBatches.filter(batch => selectedSchoolIds.has(str(batch.schoolUdiseVenue)));
-  const batchIds = new Set(schoolBatches.flatMap(batch => [batch.id, batch.batchCode ?? '', str(batch.uniqueId)]).filter(Boolean));
+  const batchIds = new Set(schoolBatches.flatMap(batchIdentifiers));
   const related = (rows: Row[]) => rows.filter(row => batchIds.has(rowBatch(row)) || selectedSchoolIds.has(rowSchool(row)));
   const schoolRegistrations = related(registrations).filter(row => !['cancelled', 'withdrawn', 'rejected'].includes(str(row.status).toLowerCase()));
   const approvedRegistrations = schoolRegistrations.filter(approved);

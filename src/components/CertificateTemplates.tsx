@@ -2,6 +2,7 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { Alert, Box, Button, Chip, FormControl, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
+import { batchIdentifiers } from '../batchCodes';
 import { isTrainingComplete } from '../completion';
 
 type Mode = 'Offline' | 'Online' | 'Hybrid';
@@ -77,7 +78,7 @@ export default function CertificateTemplates() {
   const chooseSponsor = (sponsor: Sponsor) => update({ sponsor, sponsorName: sponsor === 'ERNET' ? 'ERNET India' : sponsor === 'Adding Dimensions' ? 'Adding Dimensions' : sponsor === 'Schoolnet India' ? 'Schoolnet India' : template.sponsorName, logoData: sponsor === 'Custom' ? template.logoData : undefined });
   const candidates = useMemo(() => registrations.flatMap(registration => {
     const batchId = batchRef(registration);
-    const batch = batches.find(row => [val(row, 'id'), val(row, 'batchCode'), val(row, 'uniqueId')].includes(batchId));
+    const batch = batches.find(row => batchIdentifiers(row).includes(batchId));
     if (!batch) return [];
     const association = associations.find(row => val(row, 'id') === val(batch, 'projectPlanAssociationId'));
     const plan = plans.find(row => val(row, 'id') === val(association, 'trainingPlanId') || val(row, 'code') === val(batch, 'trainingPlanCode'));

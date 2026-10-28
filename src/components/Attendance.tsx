@@ -3,6 +3,7 @@ import { Alert, Box, Button, Chip, MenuItem, Paper, Stack, Table, TableBody, Tab
 import { Footer, Sidebar, Topbar } from './DashboardParts';
 import { getSession } from '../auth';
 import { formatDate, formatDateTime } from '../dateFormat';
+import { batchIdentifiers, batchMatchesRecord } from '../batchCodes';
 
 type Row = Record<string, unknown>;
 type Project = Row & { id: string; name: string; code?: string; assignedUsers?: string[] };
@@ -134,7 +135,7 @@ export default function Attendance() {
   const trainingDates = batch ? datesFor(batch) : [];
   const trainees = useMemo(() => {
     if (!batch) return [];
-    const rows = registrations.filter(row => (text(row.batchId) === batch.id || text(row.batchCode) === batch.batchCode) && (row.approved === true || ['approved', 'confirmed', 'enrolled'].includes(text(row.status ?? row.registrationStatus ?? row.approvalStatus).toLowerCase())));
+    const rows = registrations.filter(row => batchMatchesRecord(batch, row) && (row.approved === true || ['approved', 'confirmed', 'enrolled'].includes(text(row.status ?? row.registrationStatus ?? row.approvalStatus).toLowerCase())));
     const seen = new Set<string>();
     return rows.filter(row => { const id = idFor(row); if (!id || seen.has(id)) return false; seen.add(id); return true; }).map(row => ({ id: idFor(row), name: nameFor(row) }));
   }, [batch, registrations]);
@@ -229,7 +230,7 @@ export default function Attendance() {
       const seen = new Set<string>();
       const validated = workbook.rows.map(({ rowNumber, value }): UploadResult => {
         const errors: string[] = [];
-        const batch = batches.find(item => item.id === value.batchId || item.batchCode === value.batchId || item.uniqueId === value.batchId);
+        const batch = batches.find(item => batchIdentifiers(item).includes(value.batchId));
         if (!value.batchId) errors.push('Batch_ID is required.');
         else if (!batch) errors.push(`Batch “${value.batchId}” does not exist.`);
         else if (!canMarkBatch(batch)) errors.push('You are not authorized to mark attendance for this batch.');
@@ -239,7 +240,7 @@ export default function Attendance() {
         if (!value.traineeId) errors.push('Trainee_ID is required.');
         let trainee: UploadResult['trainee'];
         if (value.traineeId && batch) {
-          const registration = registrations.find(row => (text(row.batchId) === batch.id || text(row.batchCode) === batch.batchCode) && idFor(row) === value.traineeId && !['cancelled', 'rejected', 'withdrawn'].includes(text(row.status).toLowerCase()));
+          const registration = registrations.find(row => batchMatchesRecord(batch, row) && idFor(row) === value.traineeId && !['cancelled', 'rejected', 'withdrawn'].includes(text(row.status).toLowerCase()));
           if (!registration) errors.push(`Trainee “${value.traineeId}” is not registered in batch “${batch.batchCode || value.batchId}”.`);
           else trainee = { id: idFor(registration), name: nameFor(registration) };
         }
