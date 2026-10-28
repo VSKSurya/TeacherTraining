@@ -1,18 +1,18 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog, IconButton, Snackbar } from '@mui/material';
 import { Sidebar, Topbar, Footer } from './components/DashboardParts';
 
 type Category = 'Presentation' | 'Video' | 'Documents' | 'Forms';
-type Resource = { id: string; title: string; file: string; category: Category; format: string; size: string; language: string; tags: string[]; url: string; text?: string; questions?: FormRow[]; planCode?: string; day?: number };
+type Resource = { id: string; title: string; file: string; sourceFile?: string; category: Category; format: string; size: string; language: string; tags: string[]; url: string; text?: string; questions?: FormRow[]; planCode?: string; day?: number };
 type FormRow = Record<string, unknown>;
 type ContentSample = { filename: string; base64: string };
 declare global { interface Window { CONTENT_SAMPLES?: ContentSample[] } }
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
 const resources: Resource[] = [
-  { id: 'video', title: 'Digital classroom training', file: 'sample-training-video.mp4', category: 'Video', format: 'MP4', size: '20 KB', language: 'English', tags: ['Training', 'Digital classroom', 'Video'], url: publicAsset('/content-library-assets/sample-training-video.mp4') },
-  { id: 'manual', title: 'Teacher training manual', file: 'sample-training-manual.pdf', category: 'Documents', format: 'PDF', size: '2 KB', language: 'English', tags: ['Manual', 'Reference', 'Training'], url: publicAsset('/content-library-assets/sample-training-manual.pdf') },
-  { id: 'presentation', title: 'Teacher training presentation', file: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', language: 'English', tags: ['Presentation', 'Training', 'Classroom'], url: publicAsset('/content-library-assets/sample-training.pptx') },
-  { id: 'guide', title: 'Teacher training guide', file: 'sample-training-guide.docx', category: 'Documents', format: 'DOCX', size: '36 KB', language: 'English', tags: ['Document', 'Guide', 'Training'], url: publicAsset('/content-library-assets/sample-training-guide.docx') },
+  { id: 'video', title: 'Digital classroom training', file: 'digital-classroom-training.mp4', sourceFile: 'sample-training-video.mp4', category: 'Video', format: 'MP4', size: '20 KB', language: 'English', tags: ['Training', 'Digital classroom', 'Video'], url: publicAsset('/content-library-assets/sample-training-video.mp4') },
+  { id: 'manual', title: 'Teacher training manual', file: 'teacher-training-manual.pdf', sourceFile: 'sample-training-manual.pdf', category: 'Documents', format: 'PDF', size: '2 KB', language: 'English', tags: ['Manual', 'Reference', 'Training'], url: publicAsset('/content-library-assets/sample-training-manual.pdf') },
+  { id: 'presentation', title: 'Teacher training presentation', file: 'teacher-training-presentation.pptx', sourceFile: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', language: 'English', tags: ['Presentation', 'Training', 'Classroom'], url: publicAsset('/content-library-assets/sample-training.pptx') },
+  { id: 'guide', title: 'Teacher training guide', file: 'teacher-training-guide.docx', sourceFile: 'sample-training-guide.docx', category: 'Documents', format: 'DOCX', size: '36 KB', language: 'English', tags: ['Document', 'Guide', 'Training'], url: publicAsset('/content-library-assets/sample-training-guide.docx') },
 ];
 const categories = ['All', 'Presentation', 'Video', 'Documents', 'Forms'] as const;
 const languages = ['All Languages', 'English', 'Hindi'];
@@ -41,7 +41,7 @@ function xmlText(xml: string, tag: string) {
 async function officePreview(resource: Resource) {
   try {
     const samples = await loadContentSamples();
-    const sample = samples.find(item => item.filename === resource.file);
+    const sample = samples.find(item => item.filename === (resource.sourceFile ?? resource.file));
     if (!sample) return 'Download this file to open it in a compatible app.';
     const bytes = Uint8Array.from(atob(sample.base64), ch => ch.charCodeAt(0));
     const { default: JSZip } = await import('jszip');
@@ -86,7 +86,7 @@ export default function ContentLibrary() {
   const formResources = useMemo(() => formRecords.map((form, index) => {
     const questions = Array.isArray(form.questions) ? form.questions as FormRow[] : [];
     const rawTitle = typeof form.title === 'string' ? form.title : 'Untitled form';
-    const title = rawTitle === 'Sample Digital Teaching Pre-assessment' ? 'Digital Teaching Pre-assessment' : rawTitle === 'Sample Teacher Training Feedback Form' ? 'Teacher Training Feedback Form' : rawTitle;
+    const title = rawTitle.replace(/^Sample\s+/i, '') || rawTitle;
     const kind = typeof form.kind === 'string' ? form.kind : 'Form';
     const stage = typeof form.stage === 'string' ? form.stage : 'Training';
     const planCode = typeof form.planCode === 'string' ? form.planCode : 'All plans';

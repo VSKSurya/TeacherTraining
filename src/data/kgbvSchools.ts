@@ -1,4 +1,4 @@
-// Source: KGBV sample school list.xlsx, worksheet "Table 1"; 750 school rows.
+// Source: KGBV school list.xlsx, worksheet "Table 1"; 750 school rows.
 export type KgbvSchool = { state: string; district: string; block: string; school: string; udise: string; enrollment: number };
 
 export const kgbvSchools: KgbvSchool[] = [

@@ -37,7 +37,7 @@
   document.querySelectorAll('.filter select').forEach(select=>select.addEventListener('change',()=>{
     const count=[...document.querySelectorAll('.filter select')].filter(item=>item.selectedIndex>0).length;
     const badge=document.querySelector('#filter-count');badge.textContent=count;badge.classList.toggle('visible',count>0);
-    showToast(count ? `${count} filter${count===1?'':'s'} selected. This demo uses static sample data.` : 'Showing all sample dashboard data.');
+    showToast(count ? `${count} filter${count===1?'':'s'} selected. This demo uses static data.` : 'Showing all dashboard data.');
   }));
 
   const filterTrigger=document.querySelector('#filter-trigger');
@@ -260,7 +260,7 @@
     const blockNode=getOrCreateLocationNode(districtNode.children,sourceSchool.block);
     locationSchoolNodes.push(getOrCreateLocationNode(blockNode.children,sourceSchool.school));
   });
-  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV sample school list, Table 1. Click State, District, or Block rows to drill down to schools.';
+  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV school list, Table 1. Click State, District, or Block rows to drill down to schools.';
   batchData.forEach((batch,index)=>locationSchoolNodes[index]?.assignedBatches.push(batch));
   function locationTotals(node){
     if(!node.children.length){

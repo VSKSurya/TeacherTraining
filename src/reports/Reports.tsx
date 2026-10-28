@@ -10,7 +10,7 @@ import { formatDate } from '../dateFormat';
 const reportMeta = {
   'batch-performance': { page: 'Batch Performance' as AppPage, title: 'Batch Performance', description: 'Review scheduled batches, attendance, and completion across the training plan.', heading: 'Batch performance details', note: '750 generated batch records aligned to the dashboard phases. End dates use the last calendar day of each phase month.' },
   'training-summary': { page: 'Training Summary' as AppPage, title: 'Training Summary', description: 'Review trainee progress across training plans and locations.', heading: 'Training summary details', note: '' },
-  'attendance-report': { page: 'Attendance Report' as AppPage, title: 'Attendance Report', description: 'Review participant attendance records across batches, locations, and training plans.', heading: 'Attendance details', note: 'Sample participant attendance entries are generated from Phasewise Dashboard rates for ongoing and completed batches; one training date is available per batch.' },
+  'attendance-report': { page: 'Attendance Report' as AppPage, title: 'Attendance Report', description: 'Review participant attendance records across batches, locations, and training plans.', heading: 'Attendance details', note: 'Participant attendance entries are generated from Phasewise Dashboard rates for ongoing and completed batches; one training date is available per batch.' },
 };
 type ReportKey = keyof typeof reportMeta;
 const REPORT_PAGE_SIZE = 10;

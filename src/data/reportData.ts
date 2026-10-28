@@ -4,6 +4,7 @@ import { kgbvSchools } from './kgbvSchools';
 export { locations } from './locations';
 
 export const phaseNames = ['Orientation', 'Device & Content Use', 'Digital Skills', 'Refresher I', 'Refresher II'] as const;
+const phaseDates: [number, number, number][] = [[2026, 9, 20], [2026, 9, 24], [2026, 9, 28], [2026, 10, 4], [2026, 10, 10]];
 export const trainers = ['Asha Reddy', 'Ravi Kumar', 'Meera Nair', 'Suresh Rao', 'Kavitha Devi', 'Arun Das', 'Neha Sharma', 'Vikram Singh', 'Farah Khan', 'Joseph Mathew', 'Pooja Iyer', 'Mohan Das'] as const;
 export type ReportStatus = 'Scheduled' | 'Ongoing' | 'Completed';
 export type BatchRecord = {
@@ -22,8 +23,8 @@ export const batchRecords: BatchRecord[] = Array.from({ length: 750 }, (_, index
   const district = school.district;
   const attendance = status === 'Scheduled' ? 0 : status === 'Ongoing' ? 65 + index * 13 % 34 : 83 + index * 11 % 18;
   const completion = status === 'Scheduled' ? 0 : status === 'Ongoing' ? 15 + index * 17 % 76 : 100;
-  const startDate = new Date(2024, phase, 1);
-  const endDate = new Date(2024, phase + 1, 0);
+  const startDate = new Date(...phaseDates[phase]);
+  const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
   const dateText = formatDate(startDate);
   const registered = 10;
   const attended = Math.round(registered * attendance / 100);

@@ -23,7 +23,7 @@ const TRAINING_PLANS_KEY = 'teacher-training-plans';
 const PROJECT_PLAN_ASSOCIATIONS_KEY = 'teacher-training-project-plan-associations';
 const BATCH_PLAN_USES_KEY = 'teacher-training-batch-plan-uses';
 const users = ['Demo1', 'Demo2', 'Demo3', 'Demo4', 'Demo5', 'Demo6', 'Demo7', 'Demo8'];
-const sampleCatalog: OdooProject[] = [
+const demoCatalog: OdooProject[] = [
   { id: 'ODOO-PRJ-001', name: 'Teacher Training', reference: 'TT-2026', sponsor: 'ERNET India' },
   { id: 'ODOO-PRJ-002', name: 'Digital Classrooms', reference: 'DC-2026', sponsor: 'Schoolnet India' },
 ];
@@ -45,7 +45,7 @@ export default function Projects() {
   const session = getSession();
   const canConfigure = session?.role === 'schoolnet-super-admin' || session?.role === 'schoolnet-project-admin';
   const isSuperAdmin = session?.role === 'schoolnet-super-admin';
-  const [catalog] = useState<OdooProject[]>(() => readJson(CATALOG_KEY, sampleCatalog));
+  const [catalog] = useState<OdooProject[]>(() => readJson(CATALOG_KEY, demoCatalog));
   const [projects, setProjects] = useState<Project[]>(() => readJson(PROJECTS_KEY, []));
   const [trainingPlans] = useState<TrainingPlanDefinition[]>(() => readJson(TRAINING_PLANS_KEY, []));
   const [planAssociations, setPlanAssociations] = useState<ProjectPlanAssociation[]>(() => readJson(PROJECT_PLAN_ASSOCIATIONS_KEY, []));

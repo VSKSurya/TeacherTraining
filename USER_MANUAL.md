@@ -14,7 +14,7 @@ This guide explains how to sign in, what each role sees on its dashboard, and wh
 
 | Demo ID | Role | Dashboard |
 |---|---|---|
-| `Demo1` | Sponsor Admin | Phasewise Dashboard |
+| `Demo1` | ERnet Admin | Phasewise Dashboard |
 | `Demo2` | Schoolnet Super Admin | Schoolnet Dashboard |
 | `Demo3` | Schoolnet Project Admin | Schoolnet Dashboard |
 | `Demo4` | State Admin | State Admin Dashboard |
@@ -23,13 +23,23 @@ This guide explains how to sign in, what each role sees on its dashboard, and wh
 | `Demo7` | Trainee | Trainee Dashboard |
 | `Demo8` | Reporting/Audit User | Phasewise Dashboard |
 
-The demo IDs and password are for demonstration only. The sign-in page also provides **Open registration** for users with a batch registration link and **Forgot your Trainee ID? Recover it with OTP** for trainee ID recovery. “Forgot password?” currently displays an informational message; it does not perform a password reset.
+The demo IDs and password are for demonstration only. The sign-in page provides **Click here to register.** followed by the **Open Registration** link for users with a registration link, and **Forgot your Trainee ID? Recover it with OTP** for trainee ID recovery. “Forgot password?” currently displays an informational message; it does not perform a password reset.
+
+The sign-in page presents three rotating learning stories, one at a time, changing every 30 seconds:
+
+| Story heading | Supporting text |
+|---|---|
+| **Empowering Teachers, Transforming Classrooms** | One connected platform to plan training, build teaching skills, track progress, and recognize achievements through certification. |
+| **Every Training Session Builds a Better Tomorrow** | From training plans to classroom implementation, assessments, and certification—supporting every step of a teacher's professional growth. |
+| **Learn. Practice. Grow. Inspire.** | A unified training experience that helps teachers develop digital skills, strengthen classroom practices, and achieve measurable learning outcomes. |
+
+The “ERNet learning hub” label is not displayed.
 
 ## 3. Dashboard screens by role
 
 The diagrams below show the main screen areas and the purpose of each role’s dashboard. Actual figures and rows depend on the training data, assignments, and permissions available to the account.
 
-### Sponsor Admin — Demo1
+### ERnet Admin — Demo1
 
 ```text
 ┌─────────────────┬────────────────────────────────────────────────┐
@@ -40,7 +50,7 @@ The diagrams below show the main screen areas and the purpose of each role’s d
 └─────────────────┴────────────────────────────────────────────────┘
 ```
 
-Use this dashboard for an overall phasewise view. Sponsor Admin has Projects and MIS Reports in addition to Dashboard.
+Use this dashboard for an overall phasewise view. Demo1 is labeled **ERnet Admin** and has Projects and MIS Reports in addition to Dashboard. The phase cards show two completed phases, one in progress, and two upcoming phases. In the current demo data, their dates are October 20, October 24, October 28, November 4, and November 10, 2026. The Attendance Report uses the same training dates as the Dashboard phases.
 
 ### Schoolnet Super Admin — Demo2
 
@@ -152,12 +162,12 @@ This role has a reporting-oriented menu: Dashboard, Projects, and MIS Reports.
 | **Training Plans** | View and maintain training plans and their learning structure. |
 | **Batches** | Import, schedule, filter, and maintain project training batches. Batch filters include project, phase, state, district, school/UDISE, plan, trainer, and status. |
 | **Attendance** | Select a project, batch, and training date, then record or review trainee attendance. Future training dates cannot be selected. |
-| **Content Library** | Browse and open learning resources. Supported previews include common media and document formats supplied by the library. |
+| **Content Library** | Browse learning resources and switch to the **Forms** tab to preview available forms. Form cards show a **Preview** action; previews present the form questions and response controls without submitting answers. The current form names are **Digital Teaching Pre-assessment** and **Teacher Training Feedback Form**. Workflow controls are not shown in this area. |
 | **Assessments** | Access assessment-related learning information. This menu is present for Super Admin, Project Admin, and Trainee; the current app does not expose it as a standalone route. |
 | **Certificates** | Access certificate-related information. This menu is present for Super Admin, Project Admin, and Trainee; the current app does not expose it as a standalone route. |
-| **MIS Reports** | Open report pages: Batch Performance, Training Summary, Attendance Report, and Feedback Report. The first three have dedicated report routes; Feedback Report is a menu link in the current interface. |
+| **MIS Reports** | Open report pages: Batch Performance, Training Summary, Attendance Report, and Feedback Report. In Assessment & Feedback Report, Chart View shows question-level answer distributions with legends for the answer options and an overall correct/incorrect comparison. Question cards are arranged two per row on desktop; redundant answer-count and per-question correct/incorrect charts are hidden. |
 | **Holiday Master** | Maintain national and state holidays used for training operations. Available to Schoolnet Super Admin. |
-| **Trainer Repository** | Maintain trainer profiles and declared availability; profiles can include contact, competency, location, and availability details. |
+| **Trainer Repository** | Maintain trainer profiles and declared availability; profiles can include contact, competency, location, and availability details. Forms Repository, Availability calendar, and Availability and assignments panels are hidden in the current screen. |
 
 ### Registration support screens
 
@@ -171,7 +181,7 @@ Some operational screens are opened by direct navigation or links rather than a 
 
 | Role | Menus shown |
 |---|---|
-| Sponsor Admin | Dashboard, Projects, MIS Reports |
+| ERnet Admin | Dashboard, Projects, MIS Reports |
 | Schoolnet Super Admin | Dashboard, Projects, Training Plans, Batches, Attendance, Content Library, Assessments, Certificates, MIS Reports, Holiday Master, Trainer Repository |
 | Schoolnet Project Admin | Dashboard, Projects, Training Plans, Batches, Attendance, Content Library, Assessments, Certificates, MIS Reports, Trainer Repository |
 | State Admin | Dashboard, Projects, Training Plans, Batches, Attendance, MIS Reports, Trainer Repository |

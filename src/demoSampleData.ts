@@ -40,6 +40,35 @@ function upsertSampleForm(form: Record<string, any>) {
   localStorage.setItem('teacher-training-assessment-form-master', JSON.stringify(current));
 }
 
+function cleanSampleLabels(value: unknown, field = ''): unknown {
+  if (typeof value === 'string') {
+    if (/id$/i.test(field)) return value;
+    const cleaned = value.replace(/^Sample data$/i, 'Demo data').replace(/\bSample\s+/gi, '');
+    return cleaned === value ? value : cleaned.trim();
+  }
+  if (Array.isArray(value)) return value.map(item => cleanSampleLabels(item));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cleanSampleLabels(item, key)]));
+  return value;
+}
+
+function cleanSavedDemoLabels() {
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    if (!key) continue;
+    let value: unknown;
+    try { value = JSON.parse(localStorage.getItem(key) ?? 'null'); } catch { continue; }
+    if (!Array.isArray(value)) continue;
+    let changed = false;
+    const cleaned = value.map(row => {
+      if (!row || typeof row !== 'object' || !String((row as Record<string, unknown>).id ?? '').startsWith(samplePrefix)) return row;
+      const next = cleanSampleLabels(row) as Record<string, unknown>;
+      if (JSON.stringify(next) !== JSON.stringify(row)) changed = true;
+      return next;
+    });
+    if (changed) localStorage.setItem(key, JSON.stringify(cleaned));
+  }
+}
+
 function sampleTrainer(): TrainerProfile {
   const profiles = trainerProfiles();
   const linked = profiles.find(item => item.userId?.toLowerCase() === 'demo6');
@@ -128,7 +157,7 @@ export function seedDemoSampleData() {
   const feedbackAnswers: Record<string, string> = {};
   feedbackQuestions.forEach((question, index) => {
     if (index === 0) feedbackAnswers[question.id] = school.school;
-    else if (index === 1) feedbackAnswers[question.id] = 'Sample Teacher';
+    else if (index === 1) feedbackAnswers[question.id] = 'Teacher';
     else if (index === 2) feedbackAnswers[question.id] = '9000000007';
     else if (question.options.length) feedbackAnswers[question.id] = String(index % question.options.length === 0 ? 3 : 4);
     else feedbackAnswers[question.id] = index === 18 ? 'The hands-on classroom activities were useful. More practice time with the teaching device would be helpful.' : 'Please include more examples of using digital content across different subjects.';
@@ -141,20 +170,20 @@ export function seedDemoSampleData() {
     return sum + (explicitRating ? Number(explicitRating) : question.options.length - answerIndex);
   }, 0);
   const feedbackMaxMarks = feedbackQuestions.reduce((sum, question) => question.options.length ? sum + Math.max(1, ...question.options.map(option => Number(option.match(/^\s*(\d+)/)?.[1] ?? 0))) : sum, 0);
-  const plan = { id: planId, code: 'TP-DEMO-001', name: 'Digital Teaching Foundations', type: 'Hybrid', description: 'Sample program for practical digital teaching and classroom technology.', days: 3, beneficiaries: ['Teacher'], resources: [], learningResourceIds: ['video', 'manual', 'guide'], resourceAssignments: [{ id: `${samplePrefix}RESOURCE-001`, resource: 'Teacher training manual', fromDay: 1, toDay: 3, throughProjectEnd: false }, { id: `${samplePrefix}RESOURCE-002`, resource: preAssessmentForm.title, formId: preAssessmentFormId, fromDay: 1, toDay: 1, throughProjectEnd: false }, { id: `${samplePrefix}RESOURCE-003`, resource: feedbackForm.title, formId: feedbackFormId, fromDay: 3, toDay: 3, throughProjectEnd: false }], status: 'Active', createdAt: '2026-01-10T09:00:00.000Z' };
-  const project = { id: projectId, odooId: 'DEMO-ODOO-001', odooReference: 'DEMO-TT-2026', name: 'Digital Teaching Improvement Project', code: 'PRJ-DEMO-001', sponsor: 'Schoolnet India', startDate: '2026-10-20', endDate: '2026-11-10', description: 'Sample project connecting trainer development to school based teacher training.', states: [school.state], assignedUsers: ['Demo2', 'Demo3', 'Demo4', 'Demo5'], status: 'Active', phases: [{ id: `${samplePrefix}PHASE-01`, name: 'Planning and school onboarding', sequence: 1, startDate: '2026-10-20', endDate: '2026-10-24', status: 'Completed' }, { id: `${samplePrefix}PHASE-02`, name: 'Teacher training delivery', sequence: 2, startDate: '2026-10-27', endDate: '2026-11-03', status: 'In Progress' }, { id: `${samplePrefix}PHASE-03`, name: 'Review and project closeout', sequence: 3, startDate: '2026-11-04', endDate: '2026-11-10', status: 'Not Started' }], trainingPlans: [plan.name], selectedTrainingPlanIds: [planId], batchImportPolicy: 'valid-rows' };
+  const plan = { id: planId, code: 'TP-DEMO-001', name: 'Digital Teaching Foundations', type: 'Hybrid', description: 'Program for practical digital teaching and classroom technology.', days: 3, beneficiaries: ['Teacher'], resources: [], learningResourceIds: ['video', 'manual', 'guide'], resourceAssignments: [{ id: `${samplePrefix}RESOURCE-001`, resource: 'Teacher training manual', fromDay: 1, toDay: 3, throughProjectEnd: false }, { id: `${samplePrefix}RESOURCE-002`, resource: preAssessmentForm.title, formId: preAssessmentFormId, fromDay: 1, toDay: 1, throughProjectEnd: false }, { id: `${samplePrefix}RESOURCE-003`, resource: feedbackForm.title, formId: feedbackFormId, fromDay: 3, toDay: 3, throughProjectEnd: false }], status: 'Active', createdAt: '2026-01-10T09:00:00.000Z' };
+  const project = { id: projectId, odooId: 'DEMO-ODOO-001', odooReference: 'DEMO-TT-2026', name: 'Digital Teaching Improvement Project', code: 'PRJ-DEMO-001', sponsor: 'Schoolnet India', startDate: '2026-10-20', endDate: '2026-11-10', description: 'Project connecting trainer development to school based teacher training.', states: [school.state], assignedUsers: ['Demo2', 'Demo3', 'Demo4', 'Demo5'], status: 'Active', phases: [{ id: `${samplePrefix}PHASE-01`, name: 'Planning and school onboarding', sequence: 1, startDate: '2026-10-20', endDate: '2026-10-24', status: 'Completed' }, { id: `${samplePrefix}PHASE-02`, name: 'Teacher training delivery', sequence: 2, startDate: '2026-10-27', endDate: '2026-11-03', status: 'In Progress' }, { id: `${samplePrefix}PHASE-03`, name: 'Review and project closeout', sequence: 3, startDate: '2026-11-04', endDate: '2026-11-10', status: 'Not Started' }], trainingPlans: [plan.name], selectedTrainingPlanIds: [planId], batchImportPolicy: 'valid-rows' };
   const association = { id: associationId, projectId, trainingPlanId: planId, status: 'Active', createdAt: '2026-01-10T09:00:00.000Z', updatedAt: '2026-01-10T09:00:00.000Z' };
   const commonBatch = { projectId, projectName: project.name, projectPlanAssociationId: associationId, name: school.school, phaseId: `${samplePrefix}PHASE-02`, trainingCycle: '2026 Cycle 1', deliveryMode: 'Hybrid', schoolUdiseVenue: school.udise, schoolName: school.school, state: school.state, district: school.district, location: school.school, trainingPlanCode: plan.code, trainingPlanName: plan.name, trainingDuration: 3, trainingStartTime: '09:30', trainingEndTime: '15:30', trainerCode: trainer.userId ?? trainer.trainerCode, trainerProfileCode: trainer.trainerCode, trainerName: trainer.name, createdAt: '2026-01-10T09:00:00.000Z', createdBy: 'Demo2', registrationCapacity: 30, registrationWindowBeforeDays: 14, registrationWindowAfterDays: 0, attendanceCount: 3, assessmentCount: 1 };
   const batches = [
     { ...commonBatch, id: pastBatchId, batchCode: 'BATCH-DEMO-PAST', uniqueId: 'BATCH-DEMO-PAST', trainingStartDate: '2026-09-14', trainingDates: ['2026-09-14', '2026-09-15', '2026-09-16'], trainingEndAuto: '2026-09-16', openRegistration: false, status: 'Completed' },
     { ...commonBatch, id: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', uniqueId: 'BATCH-DEMO-NOV', trainingCycle: '2026 Cycle 2', trainingStartDate: '2026-11-10', trainingDates: ['2026-11-10', '2026-11-11', '2026-11-12'], trainingEndAuto: '2026-11-12', openRegistration: true, status: 'Scheduled', attendanceCount: 0, assessmentCount: 0 },
   ];
-  const trainee = { id: demoTraineeId, traineeId: demoTraineeId, userId: 'Demo7', name: 'Sample Trainee', email: 'demo7.trainee@example.org', phone: '+91 90000 10007', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-01-10T09:00:00.000Z', createdBy: 'Demo2' };
-  const pendingTrainee = { id: pendingTraineeId, traineeId: pendingTraineeId, name: 'Sample Teacher Two', email: 'teacher.two@example.org', phone: '+91 90000 10008', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-10-20T09:00:00.000Z', createdBy: 'Demo6' };
+  const trainee = { id: demoTraineeId, traineeId: demoTraineeId, userId: 'Demo7', name: 'Trainee', email: 'demo7.trainee@example.org', phone: '+91 90000 10007', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-01-10T09:00:00.000Z', createdBy: 'Demo2' };
+  const pendingTrainee = { id: pendingTraineeId, traineeId: pendingTraineeId, name: 'Teacher Two', email: 'teacher.two@example.org', phone: '+91 90000 10008', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-10-20T09:00:00.000Z', createdBy: 'Demo6' };
   const registrations = [
-    { id: `${samplePrefix}REG-COMPLETE`, batchId: pastBatchId, batchCode: 'BATCH-DEMO-PAST', projectId, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: trainee.name, email: trainee.email, phone: trainee.phone, category: 'Teacher', consentProvided: true, status: 'Approved', registrationStatus: 'Approved', approvalStatus: 'Approved', approved: true, completed: true, source: 'Sample data', submittedAt: '2026-08-01T09:00:00.000Z', submittedBy: 'Demo7', reviewedBy: 'Demo6', reviewedAt: '2026-08-02T09:00:00.000Z' },
-    { id: `${samplePrefix}REG-APPROVED`, batchId: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', projectId, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: trainee.name, email: trainee.email, phone: trainee.phone, category: 'Teacher', consentProvided: true, status: 'Approved', registrationStatus: 'Approved', approvalStatus: 'Approved', approved: true, source: 'Sample data', submittedAt: '2026-10-12T09:00:00.000Z', submittedBy: 'Demo7', reviewedBy: 'Demo6', reviewedAt: '2026-10-13T09:00:00.000Z' },
-    { id: `${samplePrefix}REG-PENDING`, batchId: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', projectId, traineeId: pendingTraineeId, traineeName: pendingTrainee.name, name: pendingTrainee.name, email: pendingTrainee.email, phone: pendingTrainee.phone, category: 'Teacher', consentProvided: true, status: 'Pending', registrationStatus: 'Pending', approvalStatus: 'Pending', approved: false, source: 'Sample data', submittedAt: '2026-10-20T09:00:00.000Z', submittedBy: 'Demo7' },
+    { id: `${samplePrefix}REG-COMPLETE`, batchId: pastBatchId, batchCode: 'BATCH-DEMO-PAST', projectId, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: trainee.name, email: trainee.email, phone: trainee.phone, category: 'Teacher', consentProvided: true, status: 'Approved', registrationStatus: 'Approved', approvalStatus: 'Approved', approved: true, completed: true, source: 'Demo data', submittedAt: '2026-08-01T09:00:00.000Z', submittedBy: 'Demo7', reviewedBy: 'Demo6', reviewedAt: '2026-08-02T09:00:00.000Z' },
+    { id: `${samplePrefix}REG-APPROVED`, batchId: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', projectId, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: trainee.name, email: trainee.email, phone: trainee.phone, category: 'Teacher', consentProvided: true, status: 'Approved', registrationStatus: 'Approved', approvalStatus: 'Approved', approved: true, source: 'Demo data', submittedAt: '2026-10-12T09:00:00.000Z', submittedBy: 'Demo7', reviewedBy: 'Demo6', reviewedAt: '2026-10-13T09:00:00.000Z' },
+    { id: `${samplePrefix}REG-PENDING`, batchId: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', projectId, traineeId: pendingTraineeId, traineeName: pendingTrainee.name, name: pendingTrainee.name, email: pendingTrainee.email, phone: pendingTrainee.phone, category: 'Teacher', consentProvided: true, status: 'Pending', registrationStatus: 'Pending', approvalStatus: 'Pending', approved: false, source: 'Demo data', submittedAt: '2026-10-20T09:00:00.000Z', submittedBy: 'Demo7' },
   ];
 
   addSamples('teacher-training-projects', [project]);
@@ -188,10 +217,11 @@ export function seedDemoSampleData() {
   addSamples('teacher-training-eligible-students', [{ id: `${samplePrefix}ELIGIBLE-STUDENTS`, schoolUdise: school.udise, projectId, eligible: true, participantType: 'student', count: 120 }]);
   addSamples('teacher-training-school-assignments', [{ id: `${samplePrefix}SCHOOL-ASSIGNMENT`, userId: 'Demo5', schoolUdise: school.udise, projectId }]);
 
-  const availability: TrainerAvailability[] = ['2026-11-10', '2026-11-11', '2026-11-12'].map((date, index) => ({ id: `${samplePrefix}AVAILABILITY-${index + 1}`, trainerCode: trainer.userId ?? trainer.trainerCode, date, startTime: '09:00', endTime: '16:00', status: 'Available', remarks: 'Sample batch availability', createdBy: 'Demo6', updatedAt: '2026-10-01T09:00:00.000Z' }));
+  const availability: TrainerAvailability[] = ['2026-11-10', '2026-11-11', '2026-11-12'].map((date, index) => ({ id: `${samplePrefix}AVAILABILITY-${index + 1}`, trainerCode: trainer.userId ?? trainer.trainerCode, date, startTime: '09:00', endTime: '16:00', status: 'Available', remarks: 'Batch availability', createdBy: 'Demo6', updatedAt: '2026-10-01T09:00:00.000Z' }));
   addSamples(TRAINER_AVAILABILITY_KEY, availability as unknown as Record<string, any>[]);
   addSamples('teacher-training-holidays', [
-    { id: `${samplePrefix}HOLIDAY-NATIONAL`, name: 'Children’s Day', date: '2026-11-14', scope: 'National', state: '', district: '', school: '', active: true, note: 'Sample national holiday' },
-    { id: `${samplePrefix}HOLIDAY-STATE`, name: 'Andhra Pradesh Formation Day', date: '2026-11-01', scope: 'State', state: 'Andhra Pradesh', district: '', school: '', active: true, note: 'Sample state holiday' },
+    { id: `${samplePrefix}HOLIDAY-NATIONAL`, name: 'Children’s Day', date: '2026-11-14', scope: 'National', state: '', district: '', school: '', active: true, note: 'National holiday' },
+    { id: `${samplePrefix}HOLIDAY-STATE`, name: 'Andhra Pradesh Formation Day', date: '2026-11-01', scope: 'State', state: 'Andhra Pradesh', district: '', school: '', active: true, note: 'State holiday' },
   ]);
+  cleanSavedDemoLabels();
 }

@@ -1,0 +1,104 @@
+Project prompts from this conversation
+
+where i am
+
+Need to update the Phase date to current Year with near day of today date.
+1. Complete date
+2. InProgress
+3. Upcoming
+
+In Sponsor Admin
+
+Update date "phase-fact" with Current Year, today
+
+Update date "phase-fact" Need to update the Phase date to current Year with near day of today date.
+1. Complete date complete date
+2. InProgress date is Current date
+3. Upcoming date will future date
+
+On login screen Update the text "Have a batch registration link?" with this "Click here to register."
+
+Keep "Click here to register." Link to Open Registration
+
+i Need Click here to register. Open Regsitration clickable will be Open Registration
+
+Update this "Every session moves learning forward" with "Empowering Teachers, Transforming Classrooms"
+Update the Tag line "One connected space for training plans, classroom practice, progress and certification." with "One connected platform to plan training, build teaching skills, track progress, and recognize achievements through certification."
+
+Update this "Build skills that make a difference." with "Every Training Session Builds a Better Tomorrow"
+Update the Tag line "Bring learning resources, trainers and every classroom together in one place." with "From training plans to classroom implementation, assessments, and certification—supporting every step of a teacher's professional growth"
+
+Update this "See progress take shape." with "Learn. Practice. Grow. Inspire."
+Update the Tag line "Track milestones and celebrate the small wins that lead to lasting change." with "A unified training experience that helps teachers develop digital skills, strengthen classroom practices, and achieve measurable learning outcomes"
+
+hide the "ERNet learning hub"
+
+in Login screen we have three under "learning-art" that "art-card progress-card" replace with image properly [Empowering Education Through Learning Cards.png]
+
+Update image this "[Floating Learning and Growth Cards.png]"
+
+And also story-copy can it carousel all three can view for every 300ms
+
+Update image this "[Floating Learning and Growth Cards.png]"
+
+And also story-copy can it carousel all three can view for every 60sec
+
+Update the style below
+.learning-art {
+    position: relative;
+    display: block;
+    width: min(700px, 84%);
+    height: auto;
+    aspect-ratio: 1600 / 984;
+    margin: 0 auto 3px;
+    object-fit: contain;
+}
+
+And also story-copy can it carousel all three can view for every 30sec
+
+align the kpi-icon and button-info-button should properly align together
+
+And it should right aligned
+
+As a Create another Tab as forms under Content library
+
+hide the  workflow from the documents tab
+
+hide the workflow
+
+Keep only Perview button for Forms. When i click on it.
+
+It should open for the form of the Sample Digital Teaching Pre-assessment
+And also update text "Sample Digital Teaching Pre-assessment" to "Digital Teaching Pre-assessment"
+
+Like wise for the Feedback form "Sample Teacher Training Feedback Form" to "Teacher Training Feedback Form"
+
+When i click on the Preview it should look like form how it is looking in the Trainer Repository
+
+Please hide "Forms Repository", "Availability calendar", and "Availability and assignments" in the Trainer Repository
+
+Update profile -- Sponsor Admin into ERnet Admin. in login Demo1
+
+In "Assessment & Feedback Report" under Chart View we have Graphical Representation
+
+Hide the Answer Counts of all Questions
+Show the Question in the Answer Distribution
+Hide the Option
+
+Show legend from those charts all option
+
+Place cards 2 in a row
+
+Dulipicate data need to remove
+
+push the code into git, publish it and deploy
+
+Update the Training Date Under Attendance Report as per Dashboard Phases dates
+
+Remove wherever we have Word "Sample"
+
+Please update my User Manual as per my screens update
+
+Whenever i open codex i need to Print every prompt in a Txt file
+
+can you print till now whatever i have given the prompt for the Project can store it
