@@ -70,7 +70,7 @@ function AppContent() {
     };
     const role = session ? ROLE_LABELS[session.role] : '';
     const page = pages[path] ?? 'Dashboard';
-    const title = path === '/login' ? 'Dashboard | Schoolnet' : session ? `${role} · ${page} · ${session.userId} | Schoolnet` : `${page} | Schoolnet`;
+    const title = path === '/login' ? 'Sign in | Teacher Training' : session ? `${role} · ${page} · ${session.userId} | Schoolnet` : `${page} | Schoolnet`;
     const roleDescription = session ? `Signed in as ${session.userId}, ${role}. Access the Schoolnet teacher training portal.` : 'Schoolnet teacher training portal for projects, training plans, batches, learning resources, and registration.';
     document.title = title;
     const updateMeta = (selector: string, attribute: string, value: string, create: () => HTMLMetaElement) => {
