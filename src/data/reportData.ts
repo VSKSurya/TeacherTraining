@@ -8,7 +8,7 @@ const phaseDates: [number, number, number][] = [[2026, 9, 20], [2026, 9, 24], [2
 export const trainers = ['Asha Reddy', 'Ravi Kumar', 'Meera Nair', 'Suresh Rao', 'Kavitha Devi', 'Arun Das', 'Neha Sharma', 'Vikram Singh', 'Farah Khan', 'Joseph Mathew', 'Pooja Iyer', 'Mohan Das'] as const;
 export type ReportStatus = 'Scheduled' | 'Ongoing' | 'Completed';
 export type BatchRecord = {
-  index: number; batch: string; udise: string; school: string; state: string; district: string; phase: string; trainingPlan: string; participant: 'Teacher' | 'Student'; plan: string; trainer: string;
+  index: number; batch: string; udise: string; school: string; state: string; district: string; block: string; phase: string; trainingPlan: string; participant: 'Teacher' | 'Student'; plan: string; trainer: string;
   dashboardStatus: ReportStatus; dashboardAttendance: number; dashboardCompletion: number; teacherParticipants: number; studentParticipants: number;
   startDate: Date; endDate: Date | null; dateText: string; capacity: number; registered: number; attended: number; completed: number;
   attendance: number; status: ReportStatus;
@@ -31,7 +31,7 @@ export const batchRecords: BatchRecord[] = Array.from({ length: 750 }, (_, index
   const completed = Math.round(registered * completion / 100);
   const trainingPlan = phaseNames[phase];
   return {
-    index, batch: `B-${String(1001 + index).padStart(4, '0')}`, udise: school.udise, school: school.school, state: school.state, district,
+    index, batch: `B-${String(1001 + index).padStart(4, '0')}`, udise: school.udise, school: school.school, state: school.state, district, block: school.block,
     plan: `Phase ${phase + 1} · ${phaseNames[phase]}`, trainer: trainers[index % trainers.length], startDate, endDate, dateText,
     phase: `Phase ${phase + 1}`, trainingPlan, participant: index % 2 === 0 ? 'Teacher' : 'Student',
     dashboardStatus, dashboardAttendance, dashboardCompletion, teacherParticipants: 10, studentParticipants: 100,

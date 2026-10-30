@@ -90,7 +90,23 @@ function BatchPerformance() {
     return attendanceMatch(row.attendance, filters.attendance);
   }), [filters]);
   const columns: TableColumn<BatchRecord>[] = [
-    { key: 'batch', label: 'Batch ID' }, { key: 'udise', label: 'School UDISE' }, { key: 'school', label: 'School Name' }, { key: 'state', label: 'State' }, { key: 'district', label: 'District' }, { key: 'phase', label: 'Phase' }, { key: 'trainingPlan', label: 'Training Plan' }, { key: 'participant', label: 'Participant' }, { key: 'trainer', label: 'Trainer Name' }, { key: 'startDate', label: 'Start Date', render: row => formatDate(row.startDate) }, { key: 'endDate', label: 'End Date', render: row => row.endDate ? formatDate(row.endDate) : '—' }, { key: 'capacity', label: 'Batch Capacity', align: 'right' }, { key: 'registered', label: 'Registered', align: 'right' }, { key: 'attended', label: 'Attended', align: 'right' }, { key: 'completionRate', label: 'Completion %', align: 'right', render: row => `${row.registered ? (row.completed / row.registered * 100).toFixed(1) : '0.0'}%` }, { key: 'attendance', label: 'Attendance %', align: 'right', render: row => `${row.registered ? (row.attended / row.registered * 100).toFixed(1) : '0.0'}%` }, { key: 'status', label: 'Status', render: row => <span className={`status ${row.status.toLowerCase()}`}>{row.status}</span> },
+    { key: 'batch', label: 'Batch ID' },
+    { key: 'udise', label: 'School UDISE (Venue)' },
+    { key: 'school', label: 'School Name (Venue)' },
+    { key: 'state', label: 'State' },
+    { key: 'district', label: 'District' },
+    { key: 'block', label: 'Block' },
+    { key: 'phase', label: 'Phase' },
+    { key: 'trainingPlan', label: 'Training Plan' },
+    { key: 'trainer', label: 'Trainer' },
+    { key: 'startDate', label: 'Start Date', render: row => formatDate(row.startDate) },
+    { key: 'endDate', label: 'End Date', render: row => row.endDate ? formatDate(row.endDate) : '-' },
+    { key: 'registered', label: 'Registered', align: 'right' },
+    { key: 'attended', label: 'Attended', align: 'right' },
+    { key: 'attendance', label: 'Attendance %', align: 'right', render: row => `${row.attendance.toFixed(1)}%` },
+    { key: 'completed', label: 'Completed', align: 'right' },
+    { key: 'completionRate', label: 'Completion %', align: 'right', render: row => `${(row.registered ? row.completed / row.registered * 100 : 0).toFixed(1)}%` },
+    { key: 'status', label: 'Status' },
   ];
   const orderedRows = useMemo(() => [...rows].sort((left, right) => {
     const value = (row: BatchRecord) => sortBy === 'completionRate' ? (row.registered ? row.completed / row.registered * 100 : 0) : row[sortBy as keyof BatchRecord];
