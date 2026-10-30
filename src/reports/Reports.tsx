@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Dialog, IconButton, Snackbar } from '@mui/material';
+import { Box, Snackbar } from '@mui/material';
 import { batchRecords, locations, statusNames, trainers, uniqueSorted, type BatchRecord } from '../data/reportData';
 import { Sidebar, Topbar, Footer, type AppPage } from '../components/DashboardParts';
 import { ReportFilterPanel, ReportPanel, ReportTable, type FilterSpec, type ReportFilters, type TableColumn } from './ReportComponents';
 import AssessmentFeedbackReport from './AssessmentFeedbackReport';
 import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportCharts';
 import { formatDate } from '../dateFormat';
+import { downloadExcelWorkbook } from './exportExcel';
+import AttendanceDetail, { type AttendanceBatchDetail, type AttendancePersonDetail } from './AttendanceDetail';
+import './report-export.css';
 
 const reportMeta = {
   'batch-performance': { page: 'Batch Performance' as AppPage, title: 'Batch Performance', description: 'Review scheduled batches, attendance, and completion across the training plan.', heading: 'Batch performance details', note: '750 generated batch records aligned to the dashboard phases. End dates use the last calendar day of each phase month.' },
   'training-summary': { page: 'Training Summary' as AppPage, title: 'Training Summary', description: 'Review trainee progress across training plans and locations.', heading: 'Training summary details', note: '' },
-  'attendance-report': { page: 'Attendance Report' as AppPage, title: 'Attendance Report', description: 'Review participant attendance records across batches, locations, and training plans.', heading: 'Attendance details', note: 'Participant attendance entries are generated from Phasewise Dashboard rates for ongoing and completed batches; one training date is available per batch.' },
+  'attendance-report': { page: 'Attendance Report' as AppPage, title: 'Attendance Report', description: 'Review participant attendance records across batches, locations, and training plans.', heading: 'Attendance details', note: 'Batch summaries include four training days; select View Details to review daily participant attendance.' },
 };
 type ReportKey = keyof typeof reportMeta;
 const REPORT_PAGE_SIZE = 10;
@@ -74,6 +77,8 @@ function BatchPerformance() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string>('batch');
   const [sortDirection, setSortDirection] = useState<'ascending' | 'descending'>('ascending');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const rows = useMemo(() => batchRecords.filter(row => {
     if (filters.batch && !row.batch.toLowerCase().includes(filters.batch.trim().toLowerCase())) return false;
@@ -116,6 +121,23 @@ function BatchPerformance() {
       : String(a ?? '').localeCompare(String(b ?? ''), undefined, { numeric: true, sensitivity: 'base' });
     return sortDirection === 'ascending' ? result : -result;
   }), [rows, sortBy, sortDirection]);
+  const exportToExcel = async () => {
+    setExporting(true);
+    setExportError('');
+    try {
+      const values = orderedRows.map(row => [
+        row.batch, row.udise, row.school, row.state, row.district, row.block, row.phase, row.trainingPlan, row.trainer,
+        formatDate(row.startDate), row.endDate ? formatDate(row.endDate) : '', row.registered, row.attended,
+        `${row.attendance.toFixed(1)}%`, row.completed,
+        `${(row.registered ? row.completed / row.registered * 100 : 0).toFixed(1)}%`, row.status,
+      ]);
+      await downloadExcelWorkbook(`batch-performance-${new Date().toISOString().slice(0, 10)}.xlsx`, 'Batch Performance', columns.map(column => column.label), values);
+    } catch {
+      setExportError('The Excel file could not be created. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
   const pages = Math.max(1, Math.ceil(orderedRows.length / REPORT_PAGE_SIZE));
   const currentPage = Math.min(page, pages);
   const pageRows = orderedRows.slice((currentPage - 1) * REPORT_PAGE_SIZE, currentPage * REPORT_PAGE_SIZE);
@@ -137,6 +159,7 @@ function BatchPerformance() {
       ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Batch status" description="Filtered batch count by delivery status" series={statusSeries} rows={batchStatusRows} chartType="pie" /><ReportBarChart title="Attendance by status" description="Attendance calculated as total attended divided by total registered in each status" series={[{ label: 'Average attendance', color: '#176fba' }]} rows={attendanceByStatus} formatter={value => `${value.toFixed(1)}%`} chartType="cluster" /></Box>
       : <ReportPanel title="Batch performance details" description={reportMeta['batch-performance'].note} count={`${rows.length.toLocaleString()} of ${batchRecords.length.toLocaleString()} batches`}>
         <Box className="summary-report-toolbar" sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 1.25, borderBottom: '1px solid #edf1f5', flexWrap: 'wrap' }}>
+          <button className="report-export-button" type="button" onClick={exportToExcel} disabled={exporting || !orderedRows.length}>{exporting ? 'Preparing Excel…' : 'Download Excel'}</button>
           <div className="location-head-actions">
             <label className="location-sort-label" htmlFor="batch-performance-sort">Sort by</label>
             <select className="location-sort-select" id="batch-performance-sort" aria-label="Sort batches by" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }}>{columns.map(column => <option key={String(column.key)} value={String(column.key)}>{column.label}</option>)}</select>
@@ -148,6 +171,7 @@ function BatchPerformance() {
         </Box>
         <ReportTable columns={columns} rows={pageRows} rowKey={row => row.batch} emptyMessage="No batches match these filters." tableClassName="batch-table" pagination={{ total: orderedRows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} />
       </ReportPanel>}
+    <Snackbar open={Boolean(exportError)} autoHideDuration={4000} onClose={() => setExportError('')} message={exportError} />
   </ReportPage>;
 }
 
@@ -238,36 +262,69 @@ function TrainingSummary() {
   return <ReportPage kind="training-summary"><ReportFilterPanel fields={summaryFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Trainee progress by plan" description="Planned, registered, and completed trainees in the filtered plans" series={traineeSeries} rows={traineeRows} chartType="cluster" /><ReportBarChart title="Training rates by plan" description="Attendance and completion percentages for the filtered plans" series={[{ label: 'Attendance', color: '#2584b9' }, { label: 'Completion', color: '#16945b' }]} rows={rateRows} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title="Training summary details" description={reportMeta['training-summary'].note} count={`${rows.length} training plans from ${matchingBatches.toLocaleString()} batches`}>{sortControls}<ReportTable columns={columns} rows={pageRows} rowKey={row => row.plan} emptyMessage="No training plans match these filters." tableClassName="summary-table" pagination={{ total: rows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} /></ReportPanel>}</ReportPage>;
 }
 
-type AttendanceRow = { batch: string; batchIndex: number; plan: string; state: string; district: string; trainer: string; date: Date; dateText: string; present: boolean; totalDays: number; daysPresent: number; attendance: number; name: string };
+type AttendanceRecord = AttendancePersonDetail & { batch: string; batchIndex: number; plan: string; udise: string; school: string; state: string; district: string; block: string; trainer: string; date: Date; totalTrainingDays: number };
+type AttendanceSummary = AttendanceBatchDetail & { batchIndex: number; plan: string; totalPresent: number; totalPossible: number };
+const attendanceTrainingDays = 4;
 const firstNames = ['Aarav', 'Aditi', 'Ananya', 'Arjun', 'Divya', 'Farhan', 'Ishita', 'Kiran', 'Lakshmi', 'Manoj', 'Nisha', 'Pavan', 'Priya', 'Rahul', 'Sana', 'Sanjay', 'Sita', 'Varun', 'Vijay', 'Zoya'];
 const lastNames = ['Rao', 'Sharma', 'Kumar', 'Reddy', 'Nair', 'Patel', 'Das', 'Singh', 'Iyer', 'Khan', 'Devi', 'Joshi', 'Menon', 'Gupta', 'Naidu', 'Pillai'];
-const attendanceRows: AttendanceRow[] = batchRecords.filter(batch => batch.status !== 'Scheduled').flatMap(batch => Array.from({ length: batch.registered }, (_, personIndex) => {
+const attendanceRows: AttendanceRecord[] = batchRecords.filter(batch => batch.status !== 'Scheduled').flatMap(batch => Array.from({ length: batch.registered }, (_, personIndex) => {
   const first = firstNames[(batch.index + personIndex * 3) % firstNames.length];
   const last = lastNames[(batch.index * 5 + personIndex * 7) % lastNames.length];
-  const present = personIndex < batch.attended;
-  return { batch: batch.batch, batchIndex: batch.index, plan: asPlanLabel(batch.plan), state: batch.state, district: batch.district, trainer: batch.trainer, date: batch.startDate, dateText: batch.dateText, present, totalDays: 1, daysPresent: present ? 1 : 0, attendance: present ? 100 : 0, name: `${first} ${last}` };
+  const days = Array.from({ length: attendanceTrainingDays }, (_, dayIndex) => ((batch.index * 11 + personIndex * 29 + dayIndex * 17) % 100) < batch.attendance);
+  const userId = `user${String(personIndex + 1).padStart(3, '0')}`;
+  return {
+    batch: batch.batch, batchIndex: batch.index, plan: asPlanLabel(batch.plan), udise: batch.udise, school: batch.school,
+    state: batch.state, district: batch.district, block: batch.block, trainer: batch.trainer, date: batch.startDate,
+    totalTrainingDays: attendanceTrainingDays, userId, name: `${first} ${last}`, mobileMasked: `98xxxx${980 + personIndex}`,
+    emailMasked: `us******${personIndex + 1}@hxxx.co`, days, daysPresent: days.filter(Boolean).length,
+  };
 }));
+
 function AttendanceReport() {
   const [filters, setFilters] = useState<ReportFilters>(emptyAttendanceFilters);
   const [view, setView] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<AttendanceRow | null>(null);
+  const [selected, setSelected] = useState<AttendanceSummary | null>(null);
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
-  const rows = useMemo(() => attendanceRows.filter(row => {
+  const batchRows = useMemo<AttendanceSummary[]>(() => {
+    const groups = new Map<number, AttendanceRecord[]>();
+    for (const record of attendanceRows) groups.set(record.batchIndex, [...(groups.get(record.batchIndex) ?? []), record]);
+    return [...groups.entries()].map(([batchIndex, users]) => {
+      const first = users[0];
+      const totalPresent = users.reduce((sum, user) => sum + user.daysPresent, 0);
+      const totalPossible = users.length * first.totalTrainingDays;
+      return {
+        batchIndex, batch: first.batch, plan: first.plan, udise: first.udise, school: first.school, state: first.state,
+        district: first.district, block: first.block, trainer: first.trainer, startDate: first.date, endDate: batchRecords[batchIndex]?.endDate ?? null,
+        totalTrainingDays: first.totalTrainingDays, registered: users.length,
+        presentAllDays: users.filter(user => user.daysPresent === first.totalTrainingDays).length,
+        absentUsers: users.filter(user => user.daysPresent < first.totalTrainingDays).length,
+        attendance: totalPossible ? totalPresent / totalPossible * 100 : 0, totalPresent, totalPossible, users: users.map(({ batch: _batch, batchIndex: _batchIndex, plan: _plan, udise: _udise, school: _school, state: _state, district: _district, block: _block, trainer: _trainer, date: _date, totalTrainingDays: _days, ...user }) => user),
+      };
+    });
+  }, []);
+  const rows = useMemo(() => batchRows.filter(row => {
     if (filters.plan && row.plan !== filters.plan) return false;
     if (filters.state && row.state !== filters.state) return false;
     if (filters.district && row.district !== filters.district) return false;
     if (filters.trainer && row.trainer !== filters.trainer) return false;
-    if (filters.start && row.date < new Date(`${filters.start}T00:00:00`)) return false;
-    if (filters.end && row.date > new Date(`${filters.end}T23:59:59`)) return false;
+    if (filters.start && row.startDate < new Date(`${filters.start}T00:00:00`)) return false;
+    if (filters.end && row.startDate > new Date(`${filters.end}T23:59:59`)) return false;
     return attendanceMatch(row.attendance, filters.attendance);
-  }), [filters]);
+  }), [batchRows, filters]);
   const pageSize = REPORT_PAGE_SIZE;
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, pages);
   const pageRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const columns: TableColumn<AttendanceRow>[] = [
-    { key: 'batch', label: 'Batch' }, { key: 'name', label: 'Trainee' }, { key: 'dateText', label: 'Training Date' }, { key: 'present', label: 'Present', render: row => row.present ? '1' : '0' }, { key: 'absent', label: 'Absent', render: row => row.present ? '0' : '1' }, { key: 'totalDays', label: 'Total Days' }, { key: 'daysPresent', label: 'Days Present' }, { key: 'attendance', label: 'Attendance %', render: row => `${row.attendance}%` }, { key: 'action', label: 'Action', render: row => <button className="action-button" type="button" onClick={() => setSelected(row)}>View</button> },
+  const columns: TableColumn<AttendanceSummary>[] = [
+    { key: 'batch', label: 'Batch Code' },
+    { key: 'registered', label: 'Registered', align: 'right' },
+    { key: 'startDate', label: 'Training Start Date', render: row => formatDate(row.startDate) },
+    { key: 'totalTrainingDays', label: 'Total Training Days', align: 'right' },
+    { key: 'presentAllDays', label: 'No. of users Present all days', align: 'right' },
+    { key: 'absentUsers', label: 'No. of users Absent on days', align: 'right' },
+    { key: 'attendance', label: 'Attendance %', align: 'right', render: row => `${row.attendance.toFixed(1)}%` },
+    { key: 'viewDetails', label: 'View Details', render: row => <button className='action-button' type='button' onClick={() => setSelected(row)}>View Details</button> },
   ];
   const setValue = (key: string, value: string) => {
     setFilters(previous => {
@@ -277,12 +334,12 @@ function AttendanceReport() {
     }); setPage(1);
   };
   const clear = () => { setFilters(emptyAttendanceFilters); setPage(1); };
-  const presentCount = rows.filter(row => row.present).length;
-  const absentCount = rows.length - presentCount;
-  const attendanceByPlan = [...rows.reduce((grouped, row) => { const current = grouped.get(row.plan) ?? { count: 0, total: 0 }; current.count++; current.total += row.attendance; grouped.set(row.plan, current); return grouped; }, new Map<string, { count: number; total: number }>()).entries()].map(([plan, value]) => ({ label: plan, values: [value.count ? value.total / value.count : 0] })).sort((a, b) => a.label.localeCompare(b.label));
-  return <><ReportPage kind="attendance-report"><ReportFilterPanel fields={attendanceFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={clear} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Present and absent" description="Attendance record counts using the active report filters" series={[{ label: 'Present', color: '#16945b' }, { label: 'Absent', color: '#dd6670' }]} rows={[{ label: 'Filtered records', values: [presentCount, absentCount] }]} chartType="pie" /><ReportBarChart title="Attendance rate by plan" description="Average present percentage in the filtered plan records" series={[{ label: 'Attendance', color: '#2584b9' }]} rows={attendanceByPlan} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title="Attendance details" description={reportMeta['attendance-report'].note} count={`${rows.length.toLocaleString()} attendance records`}><ReportTable columns={columns} rows={pageRows} rowKey={(row, index) => `${row.batchIndex}-${(currentPage - 1) * pageSize + index}-${row.name}`} emptyMessage="No attendance records match these filters." tableClassName="attendance-table" pagination={{ total: rows.length, page: currentPage, pageSize, onPageChange: setPage }} /></ReportPanel>}</ReportPage>
-    <Dialog open={Boolean(selected)} onClose={() => setSelected(null)} PaperProps={{ className: 'attendance-dialog' }} slotProps={{ backdrop: { className: 'attendance-backdrop' } }}>{selected && <><header><div><span className="dialog-eyebrow">Attendance record</span><h2>{selected.name}</h2></div><IconButton className="dialog-close" aria-label="Close details" onClick={() => setSelected(null)}>×</IconButton></header><div className="dialog-content">{[['Batch', selected.batch], ['Training Plan', selected.plan], ['Training Date', selected.dateText], ['Location', `${selected.district}, ${selected.state}`], ['Trainer', selected.trainer], ['Attendance', selected.present ? 'Present' : 'Absent']].map(([label, value]) => <div className="dialog-item" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></>}</Dialog>
-  </>;
+  const totalPresent = rows.reduce((sum, row) => sum + row.totalPresent, 0);
+  const totalPossible = rows.reduce((sum, row) => sum + row.totalPossible, 0);
+  const absentCount = totalPossible - totalPresent;
+  const attendanceByPlan = [...rows.reduce((grouped, row) => { const current = grouped.get(row.plan) ?? { present: 0, possible: 0 }; current.present += row.totalPresent; current.possible += row.totalPossible; grouped.set(row.plan, current); return grouped; }, new Map<string, { present: number; possible: number }>()).entries()].map(([plan, value]) => ({ label: plan, values: [value.possible ? value.present / value.possible * 100 : 0] })).sort((a, b) => a.label.localeCompare(b.label));
+  if (selected) return <ReportPage kind='attendance-report'><AttendanceDetail batch={selected} onBack={() => setSelected(null)} /></ReportPage>;
+  return <ReportPage kind='attendance-report'><ReportFilterPanel fields={attendanceFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={setValue} onClear={clear} onApply={() => setPage(1)} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>{view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title='Present and absent' description='Present and absent attendance slots across the filtered batches' series={[{ label: 'Present', color: '#16945b' }, { label: 'Absent', color: '#dd6670' }]} rows={[{ label: 'Filtered batches', values: [totalPresent, absentCount] }]} chartType='pie' /><ReportBarChart title='Attendance rate by plan' description='Attendance calculated across all training days for each filtered plan' series={[{ label: 'Attendance', color: '#2584b9' }]} rows={attendanceByPlan} formatter={value => `${value.toFixed(1)}%`} /></Box> : <ReportPanel title='Attendance Reports' description='Batch-level attendance summaries. Select View Details for daily participant attendance.' count={`${rows.length.toLocaleString()} batches`}><ReportTable columns={columns} rows={pageRows} rowKey={row => row.batch} emptyMessage='No batches match these filters.' tableClassName='attendance-table attendance-summary-table' pagination={{ total: rows.length, page: currentPage, pageSize, onPageChange: setPage }} /></ReportPanel>}</ReportPage>;
 }
 function ReportPage({ kind, children }: { kind: ReportKey; children: React.ReactNode }) {
   const meta = reportMeta[kind];
