@@ -18,14 +18,14 @@ function DateFilterInput({ id, value, onChange }: { id: string; value: string; o
   }} /><button type="button" aria-label="Choose date" onClick={() => { const input = picker.current; if (!input) return; if (input.showPicker) input.showPicker(); else input.focus(); }}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg></button><input ref={picker} className="native-date-picker" type="date" aria-label={`${id} calendar picker`} value={value} onChange={event => { const next = event.target.value; setText(formatDate(next)); onChange(next); }} /></div>;
 }
 
-export function ReportFilterPanel({ fields, values, onChange, onClear, onApply }: {
-  fields: FilterSpec[]; values: ReportFilters; onChange: (key: string, value: string) => void; onClear: () => void; onApply: () => void;
+export function ReportFilterPanel({ fields, values, onChange, onClear }: {
+  fields: FilterSpec[]; values: ReportFilters; onChange: (key: string, value: string) => void; onClear: () => void;
 }) {
   return <div className="dashboard-controls"><div className="filter-control"><section className="filters report-filters" aria-label="Report filters"><h2>Filters</h2><div className="filter-grid">
     {fields.map(field => <div className="filter" key={field.key}><label htmlFor={`filter-${field.key}`}>{field.label}</label>{field.type === 'select'
       ? <select id={`filter-${field.key}`} value={values[field.key] ?? ''} disabled={field.disabled} onChange={event => onChange(field.key, event.target.value)}><option value="">{field.placeholder ?? `All ${field.label.toLowerCase()}`}</option>{field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
       : field.type === 'date' ? <DateFilterInput id={`filter-${field.key}`} value={values[field.key] ?? ''} onChange={value => onChange(field.key, value)} /> : <input id={`filter-${field.key}`} type="search" placeholder={field.placeholder} value={values[field.key] ?? ''} onChange={event => onChange(field.key, event.target.value)} />}</div>)}
-  </div><div className="filter-actions"><button type="button" onClick={onClear}>Clear all</button><button className="apply" type="button" onClick={onApply}>Apply filters</button></div></section></div></div>;
+  </div><div className="filter-actions"><button type="button" onClick={onClear}>Clear all</button></div></section></div></div>;
 }
 
 export type TableColumn<T> = { key: keyof T | string; label: string; align?: 'left' | 'center' | 'right'; render?: (row: T, index: number) => ReactNode };
