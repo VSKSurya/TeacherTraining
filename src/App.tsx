@@ -6,6 +6,7 @@ import { Sidebar, Topbar, Footer, DashboardContent, DashboardModals, DashboardBr
 import ContentLibrary from './ContentLibrary';
 import { Reports } from './reports/Reports';
 import Login from './Login';
+import ComingSoon from './ComingSoon';
 import HolidayMaster from './HolidayMaster';
 import Projects from './Projects';
 import TrainingPlanPage from './components/TrainingPlan';
@@ -50,7 +51,7 @@ function AppContent() {
     const main = document.querySelector('main');
     if (main && !main.id) main.id = 'main-content';
     const pages: Record<string, string> = {
-      '/login': 'Sign in', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
+      '/login': 'Sign in', '/privacy-policy': 'Privacy Policy', '/consent-form': 'Consent Form', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
       '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
       '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Repository',
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
@@ -76,6 +77,8 @@ function AppContent() {
     updateMeta('meta[property="og:description"]', 'content', roleDescription, () => { const meta = document.createElement('meta'); meta.setAttribute('property', 'og:description'); return meta; });
   }, [path, session?.userId, session?.role]);
   if (path === '/login') return <Login />;
+  if (path === '/privacy-policy') return <ComingSoon title="Privacy Policy" />;
+  if (path === '/consent-form') return <ComingSoon title="Consent Form" />;
   if (path === '/register') return <OpenRegistration />;
   if (path === '/recover-trainee') return <RecoverTraineeId />;
   if (!session) return <Login />;
