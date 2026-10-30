@@ -27,7 +27,7 @@ const batchPhaseOptions = uniqueSorted(batchRecords.map(row => row.phase)).map(p
 const batchTrainingPlanOptions = uniqueSorted(batchRecords.map(row => row.trainingPlan)).map(plan => ({ label: plan, value: plan }));
 const batchFilters: FilterSpec[] = [
   { key: 'plan', label: 'Training Plan', type: 'select', placeholder: 'All training plans', options: batchTrainingPlanOptions },
-  { key: 'participant', label: 'Participant Type', type: 'select', options: [{ label: 'All', value: 'All' }, { label: 'Teacher', value: 'Teacher' }, { label: 'Student', value: 'Student' }] },
+  { key: 'participant', label: 'Participant Type', type: 'select', options: [{ label: 'All', value: 'All' }, { label: 'Teachers', value: 'Teacher' }, { label: 'Students', value: 'Student' }] },
   { key: 'batch', label: 'Batch ID', type: 'search', placeholder: 'Search batch ID' },
   { key: 'udise', label: 'Venue School UDISE', type: 'search', placeholder: 'Search venue school UDISE' },
   { key: 'state', label: 'State', type: 'select', placeholder: 'All states', options: stateOptions },
