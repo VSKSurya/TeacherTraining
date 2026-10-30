@@ -8,6 +8,7 @@ import { locations } from '../data/locations';
 import { kgbvSchools } from '../data/kgbvSchools';
 import { canAccessMenu, getSession, ROLE_LABELS, signOut, type MenuKey } from '../auth';
 import { formatDateTime } from '../dateFormat';
+import { applyFontScale, readFontScale, MIN_FONT_SCALE, MAX_FONT_SCALE } from '../fontScale';
 
 declare global {
   interface Window { KGBV_SCHOOLS?: typeof kgbvSchools }
@@ -134,12 +135,14 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
 }
 export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; description?: string; logoSrc?: string }) {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light');
+  const [fontScale, setFontScale] = useState(readFontScale);
   const session = getSession();
   const roleLabel = session ? session.userId.toLowerCase() === 'demo1' && session.role === 'sponsor-admin' ? 'ERnet Admin' : ROLE_LABELS[session.role] : 'Guest';
   const initials = roleLabel.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+  const fontScaleControls = `<div class="font-size-controls" role="group" aria-label="Text size controls"><svg class="font-size-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><button type="button" data-font-size="decrease" aria-label="Decrease text size" title="Decrease text size" ${fontScale <= MIN_FONT_SCALE ? 'disabled' : ''}>A<span aria-hidden="true">−</span></button><button type="button" data-font-size="reset" aria-label="Reset text size to default" title="Reset text size to default">A</button><button type="button" data-font-size="increase" aria-label="Increase text size" title="Increase text size" ${fontScale >= MAX_FONT_SCALE ? 'disabled' : ''}>A<span aria-hidden="true">+</span></button><span class="sr-only" aria-live="polite" aria-atomic="true">Text size ${Math.round(fontScale * 100)} percent</span></div>`;
   const themeSwitch = `<div class="theme-switch" role="group" aria-label="Choose color theme"><button class="theme-option${theme === 'light' ? ' active' : ''}" id="theme-light" type="button" aria-pressed="${theme === 'light'}" title="Light theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><span>Light</span></button><button class="theme-option${theme === 'dark' ? ' active' : ''}" id="theme-dark" type="button" aria-pressed="${theme === 'dark'}" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg><span>Dark</span></button></div>`;
   const heading = logoSrc ? `<h1><img src="${logoSrc}" alt="${title}" style="display:block;max-width:190px;max-height:48px;object-fit:contain" /></h1>` : `<h1>${title}</h1>`;
-  const html = topbarMarkup.replace('<h1>Dashboard</h1>', heading).replace('<span class="divider" aria-hidden="true"></span>', `${themeSwitch}<span class="divider" aria-hidden="true"></span>`)
+  const html = topbarMarkup.replace('<h1>Dashboard</h1>', heading).replace('<span class="divider" aria-hidden="true"></span>', `${fontScaleControls}${themeSwitch}<span class="divider" aria-hidden="true"></span>`)
     .replace('aria-label="Project Sponsor account"', `aria-label="${roleLabel} account"`)
     .replace('<span class="avatar">PS</span><span>Project Sponsor</span>', `<span class="avatar">${initials}</span><span>${roleLabel}</span>`);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -160,10 +163,17 @@ export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; descr
   useEffect(() => {
     const onNotificationClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      const fontButton = target.closest<HTMLButtonElement>('[data-font-size]');
       const themeButton = target.closest<HTMLButtonElement>('#theme-light, #theme-dark');
       const button = target.closest<HTMLElement>('#notifications');
       const profileButton = target.closest<HTMLElement>('#profile-button');
-      if (themeButton?.id === 'theme-light' || themeButton?.id === 'theme-dark') { event.stopPropagation(); setTheme(themeButton.id === 'theme-dark' ? 'dark' : 'light'); }
+      if (fontButton) {
+        event.stopPropagation();
+        const current = readFontScale();
+        const next = fontButton.dataset.fontSize === 'reset' ? 1 : fontButton.dataset.fontSize === 'increase' ? current + 0.1 : current - 0.1;
+        setFontScale(applyFontScale(next));
+      }
+      else if (themeButton?.id === 'theme-light' || themeButton?.id === 'theme-dark') { event.stopPropagation(); setTheme(themeButton.id === 'theme-dark' ? 'dark' : 'light'); }
       else if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); setProfileAnchor(null); }
       else if (profileButton) { event.stopPropagation(); setProfileAnchor(current => current ? null : profileButton); setAnchor(null); }
     };
