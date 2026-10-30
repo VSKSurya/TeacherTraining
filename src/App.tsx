@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { Provider, useSelector } from 'react-redux';
 import { store, type RootState } from './store';
@@ -43,9 +43,16 @@ function DashboardFrame() {
   return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="main-content"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
+  const [, setRouteVersion] = useState(0);
+  useEffect(() => {
+    const syncHashRoute = () => setRouteVersion(version => version + 1);
+    window.addEventListener('hashchange', syncHashRoute);
+    return () => window.removeEventListener('hashchange', syncHashRoute);
+  }, []);
   const basePath = import.meta.env.BASE_URL;
   const pathname = window.location.pathname;
-  const path = (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname).replace(/\/$/, '');
+  const hashRoute = window.location.hash.startsWith('#/') ? window.location.hash.slice(1) : '';
+  const path = (hashRoute || (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname)).replace(/\/$/, '');
   const session = getSession();
   useEffect(() => {
     const main = document.querySelector('main');

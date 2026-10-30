@@ -23,16 +23,16 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   const dashboard = activePage === 'Dashboard';
   const role = getSession()?.role ?? 'sponsor-admin';
   let html = sidebarMarkup
-    .replace('class="side-link active" href="#overview" aria-current="page"', `class="side-link${dashboard ? ' active' : ''}" href="/"${dashboard ? ' aria-current="page"' : ''}`)
-    .replace('class="side-link" href="#projects"', `class="side-link${activePage === 'Projects' ? ' active' : ''}" href="/projects"${activePage === 'Projects' ? ' aria-current="page"' : ''}`)
-    .replace('class="side-link" href="#training-progress"', `class="side-link${activePage === 'Training Plans' ? ' active' : ''}" href="/training-plans"${activePage === 'Training Plans' ? ' aria-current="page"' : ''}`)
-    .replace('class="side-link" href="#batch-status"', `class="side-link${activePage === 'Batches' ? ' active' : ''}" href="/batches"${activePage === 'Batches' ? ' aria-current="page"' : ''}`)
-    .replace('class="side-link" href="#attendance"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
-    .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
-    .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
-  html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Repository' ? ' active' : ''}" href="/trainers"${activePage === 'Trainer Repository' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Repository</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
-  html = html.replace('href="#effectiveness">Feedback Report</a>', 'href="/reports/assessment-feedback">Assessment &amp; Feedback Report</a>');
-  const reportLinks: Record<string, string> = { 'Batch Performance': '/reports/batch-performance', 'Training Summary': '/reports/training-summary', 'Attendance Report': '/reports/attendance-report', 'Assessment & Feedback Report': '/reports/assessment-feedback' };
+    .replace('class="side-link active" href="#overview" aria-current="page"', `class="side-link${dashboard ? ' active' : ''}" href="#/"${dashboard ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="#projects"', `class="side-link${activePage === 'Projects' ? ' active' : ''}" href="#/projects"${activePage === 'Projects' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="#training-progress"', `class="side-link${activePage === 'Training Plans' ? ' active' : ''}" href="#/training-plans"${activePage === 'Training Plans' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="#batch-status"', `class="side-link${activePage === 'Batches' ? ' active' : ''}" href="#/batches"${activePage === 'Batches' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="#attendance"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="#/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="#/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
+    .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="#/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
+  html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Repository' ? ' active' : ''}" href="#/trainers"${activePage === 'Trainer Repository' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Repository</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="#/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
+  html = html.replace('href="#effectiveness">Feedback Report</a>', 'href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a>');
+  const reportLinks: Record<string, string> = { 'Batch Performance': '#/reports/batch-performance', 'Training Summary': '#/reports/training-summary', 'Attendance Report': '#/reports/attendance-report', 'Assessment & Feedback Report': '#/reports/assessment-feedback' };
   for (const [label, href] of Object.entries(reportLinks)) {
     const fileName = label === 'Batch Performance' ? 'Batch_performance.html' : label === 'Training Summary' ? 'Training_Summary.html' : 'Attendance_Report.html';
     html = html.replace(`href="${fileName}"`, `href="${href}"${activePage === label ? ' aria-current="page"' : ''}`);
@@ -56,12 +56,12 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   }
   const certificatesLink = [...sidebarDocument.querySelectorAll<HTMLAnchorElement>('.side-nav > .side-link')].find(link => link.textContent?.trim() === 'Certificates');
   if (certificatesLink) {
-    certificatesLink.href = '/certificates';
+    certificatesLink.href = '#/certificates';
     if (activePage === 'Certificates') { certificatesLink.classList.add('active'); certificatesLink.setAttribute('aria-current', 'page'); }
   }
   const assessmentsLink = [...sidebarDocument.querySelectorAll<HTMLAnchorElement>('.side-nav > .side-link')].find(link => link.textContent?.trim() === 'Assessments');
   if (assessmentsLink) {
-    assessmentsLink.href = '/assessments';
+    assessmentsLink.href = '#/assessments';
     if (activePage === 'Assessments & Feedback') { assessmentsLink.classList.add('active'); assessmentsLink.setAttribute('aria-current', 'page'); }
   }
   sidebarDocument.querySelectorAll<HTMLElement>('.side-nav > .side-link, .side-nav > .side-group').forEach(item => {
