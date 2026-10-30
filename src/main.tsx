@@ -3,6 +3,7 @@ import './content-library.css';
 import './reports/reports.css';
 import './theme.css';
 import './holiday-master.css';
+import './compliance.css';
 import './projects.css';
 import './certificate.css';
 import React from 'react';

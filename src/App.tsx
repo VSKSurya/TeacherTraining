@@ -22,6 +22,7 @@ import RecoverTraineeId from './components/RecoverTraineeId';
 import TrainerRepository from './components/TrainerRepository';
 import AssessmentFeedback from './components/AssessmentFeedback';
 import CertificateTemplates from './components/CertificateTemplates';
+import ComplianceChecklist from './ComplianceChecklist';
 import { canAccessRoute, getSession, ROLE_LABELS } from './auth';
 
 const theme = createTheme({
@@ -53,6 +54,7 @@ function AppContent() {
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
       '/content-library': 'Learning Library', '/assessments': 'Assessments and Feedback',
       '/certificates': 'Certificate Templates',
+      '/compliance': 'GIGW 3.0 Compliance Checklist',
       '/reports/batch-performance': 'Batch Performance', '/reports/training-summary': 'Training Summary',
       '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report',
     };
@@ -76,6 +78,7 @@ function AppContent() {
   if (path === '/recover-trainee') return <RecoverTraineeId />;
   if (!session) return <Login />;
   if (!canAccessRoute(session.role, path)) return <DashboardFrame />;
+  if (path === '/compliance') return <ComplianceChecklist />;
   if (path === '/projects') return <Projects />;
   if (path === '/training-plans') return <TrainingPlanPage />;
   if (path === '/batches') return <Batches />;

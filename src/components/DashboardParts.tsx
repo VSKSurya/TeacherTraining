@@ -17,7 +17,7 @@ const Markup = memo(function Markup({ html, className }: { html: string; classNa
   const baseAwareHtml = html.replace(/\b(src|href)="\/(?!\/)/g, (_match, attribute: string) => `${attribute}="${import.meta.env.BASE_URL}`);
   return <div className={`component-markup ${className ?? ''}`} dangerouslySetInnerHTML={{ __html: baseAwareHtml }} />;
 });
-export type AppPage = 'Dashboard' | 'Projects' | 'Training Plans' | 'Batches' | 'Attendance' | 'Content Library' | 'Assessments & Feedback' | 'Certificates' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Assessment & Feedback Report' | 'Holiday Master' | 'Trainer Repository';
+export type AppPage = 'Dashboard' | 'Projects' | 'Training Plans' | 'Batches' | 'Attendance' | 'Content Library' | 'Assessments & Feedback' | 'Certificates' | 'Batch Performance' | 'Training Summary' | 'Attendance Report' | 'Assessment & Feedback Report' | 'Holiday Master' | 'Trainer Repository' | 'Compliance Checklist';
 export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) {
   const dashboard = activePage === 'Dashboard';
   const role = getSession()?.role ?? 'sponsor-admin';
