@@ -275,7 +275,7 @@ input:focus-visible {
 
 .browser-head p {
     margin: 5px 0 0;
-    color: #71839a;
+    color: #52677d;
     font-size: 11px
 }
 
@@ -368,7 +368,7 @@ input:focus-visible {
     justify-content: space-between;
     gap: 12px;
     padding: 13px 20px;
-    color: #71839a;
+    color: #52677d;
     font-size: 11px
 }
 
@@ -474,7 +474,7 @@ input:focus-visible {
     margin-top: auto;
     padding: 8px 0;
     border-top: 1px solid #eef2f6;
-    color: #71839a;
+    color: #52677d;
     font-size: 10px
 }
 
@@ -518,7 +518,7 @@ input:focus-visible {
 .empty {
     grid-column: 1/-1;
     padding: 45px 16px;
-    color: #70859a;
+    color: #52677d;
     text-align: center
 }
 
@@ -529,7 +529,7 @@ input:focus-visible {
 
 .footer {
     padding: 14px 3px 2px;
-    color: #71839a;
+    color: #52677d;
     font-size: 10px;
     text-align: center
 }
@@ -619,7 +619,7 @@ dialog::backdrop {
     overflow-wrap: anywhere
 }
 
-.form-preview{display:grid;gap:12px;max-height:65vh;overflow:auto;padding:1px 2px 4px}.form-preview-meta{margin:0;color:#70849a;font-size:12px}.form-preview-note{margin:0 0 2px;color:#70849a;font-size:11px}.form-preview-question{padding:12px;border:1px solid #dce6ef;border-radius:8px;background:#fff}.form-preview-question h3{margin:0 0 9px;color:#244765;font-size:13px;font-weight:700;line-height:1.5}.form-preview-option{display:flex;align-items:flex-start;gap:8px;margin:7px 0;color:#344f68;font-size:12px;line-height:1.45}.form-preview-option input{flex:0 0 auto;margin:2px 0 0;accent-color:#176fba}.form-preview-question textarea{width:100%;min-height:58px;padding:9px;border:1px solid #d6e1e9;border-radius:7px;color:#243e58;font:inherit;font-size:12px;line-height:1.5;resize:vertical}.form-preview-question textarea:focus{outline:2px solid #6fa9cc55;border-color:#6fa9cc}
+.form-preview{display:grid;gap:12px;max-height:65vh;overflow:auto;padding:1px 2px 4px}.form-preview-meta{margin:0;color:#52677d;font-size:12px}.form-preview-note{margin:0 0 2px;color:#52677d;font-size:11px}.form-preview-question{padding:12px;border:1px solid #dce6ef;border-radius:8px;background:#fff}.form-preview-question h3{margin:0 0 9px;color:#244765;font-size:13px;font-weight:700;line-height:1.5}.form-preview-option{display:flex;align-items:flex-start;gap:8px;margin:7px 0;color:#344f68;font-size:12px;line-height:1.45}.form-preview-option input{flex:0 0 auto;margin:2px 0 0;accent-color:#176fba}.form-preview-question textarea{width:100%;min-height:58px;padding:9px;border:1px solid #d6e1e9;border-radius:7px;color:#243e58;font:inherit;font-size:12px;line-height:1.5;resize:vertical}.form-preview-question textarea:focus{outline:2px solid #6fa9cc55;border-color:#6fa9cc}
 
 .preview-toolbar {
     display: flex;
@@ -627,7 +627,7 @@ dialog::backdrop {
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 12px;
-    color: #70849a;
+    color: #52677d;
     font-size: 11px
 }
 

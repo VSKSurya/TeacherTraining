@@ -26,7 +26,7 @@ import ComplianceChecklist from './ComplianceChecklist';
 import { canAccessRoute, getSession, ROLE_LABELS } from './auth';
 
 const theme = createTheme({
-  palette: { primary: { main: '#176fba' }, background: { default: '#f4f7fb', paper: '#ffffff' }, text: { primary: '#173553', secondary: '#71839a' } },
+  palette: { primary: { main: '#176fba' }, background: { default: '#f4f7fb', paper: '#ffffff' }, text: { primary: '#173553', secondary: '#52677d' } },
   typography: { fontFamily: 'Poppins, "Segoe UI", Arial, sans-serif' },
   components: { MuiCssBaseline: { styleOverrides: { body: { minWidth: 320, fontSize: 13 } } } },
 });
@@ -39,7 +39,7 @@ function DashboardFrame() {
   if (session?.role === 'school-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolAdminDashboard /></ThemeProvider>;
   if (session?.role === 'trainer') return <ThemeProvider theme={theme}><CssBaseline /><TrainerDashboard /></ThemeProvider>;
   if (session?.role === 'trainee') return <ThemeProvider theme={theme}><CssBaseline /><TraineeDashboard /></ThemeProvider>;
-  return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="overview"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
+  return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="main-content"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
   const basePath = import.meta.env.BASE_URL;
@@ -47,6 +47,8 @@ function AppContent() {
   const path = (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname).replace(/\/$/, '');
   const session = getSession();
   useEffect(() => {
+    const main = document.querySelector('main');
+    if (main && !main.id) main.id = 'main-content';
     const pages: Record<string, string> = {
       '/login': 'Sign in', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
       '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
@@ -92,5 +94,5 @@ function AppContent() {
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;
   return <DashboardFrame />;
 }
-function DashboardApp() { return <Provider store={store}><AppContent /></Provider>; }
+function DashboardApp() { return <Provider store={store}><a className="a11y-skip-link" href="#main-content">Skip to main content</a><AppContent /></Provider>; }
 export default DashboardApp;
