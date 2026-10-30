@@ -10,7 +10,7 @@ export default function ComingSoon({ title }: ComingSoonProps) {
       <h1 id="coming-soon-title">{title}</h1>
       <p className="coming-soon-status" role="status">Coming soon</p>
       <p className="coming-soon-copy">This page is being prepared. Please check back later.</p>
-      <a className="coming-soon-back" href={`${import.meta.env.BASE_URL}login`}>Back to login</a>
+      <a className="coming-soon-back" href={`${import.meta.env.BASE_URL}#/login`}>Back to login</a>
     </section>
   </main>;
 }

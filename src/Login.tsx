@@ -52,7 +52,7 @@ export default function Login() {
         </form>
         <p className="register-prompt">Click here to register. <a href={`${import.meta.env.BASE_URL}register`}>Open Registration</a><br /><a href={`${import.meta.env.BASE_URL}recover-trainee`}>Forgot your Trainee ID? Recover it with OTP</a></p>
       </div>
-      <footer className="login-footer"><nav aria-label="Policies"><a href={`${import.meta.env.BASE_URL}privacy-policy`}>Privacy policy</a><a href={`${import.meta.env.BASE_URL}consent-form`}>Consent form</a></nav><span>© 2026 Schoolnet India Limited</span></footer>
+      <footer className="login-footer"><nav aria-label="Policies"><a href={`${import.meta.env.BASE_URL}#/privacy-policy`}>Privacy policy</a><a href={`${import.meta.env.BASE_URL}#/consent-form`}>Consent form</a></nav><span>© 2026 Schoolnet India Limited</span></footer>
     </section>
   </main>;
 }
