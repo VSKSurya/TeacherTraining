@@ -3,6 +3,7 @@ import './content-library.css';
 import './reports/reports.css';
 import './theme.css';
 import './font-scale.css';
+import './display-fixes.css';
 import './holiday-master.css';
 import './compliance.css';
 import './projects.css';

@@ -1,13 +1,17 @@
-const STORAGE_KEY = 'teacher-training-font-scale';
+const STORAGE_KEY = 'teacher-training-font-scale-v2';
+const LEGACY_STORAGE_KEY = 'teacher-training-font-scale';
+export const DEFAULT_FONT_SCALE = 1.1;
 export const MIN_FONT_SCALE = 0.8;
 export const MAX_FONT_SCALE = 2;
 
 export function readFontScale(): number {
   try {
-    const stored = Number(window.localStorage.getItem(STORAGE_KEY));
-    return Number.isFinite(stored) && stored >= MIN_FONT_SCALE && stored <= MAX_FONT_SCALE ? stored : 1;
+    const current = window.localStorage.getItem(STORAGE_KEY);
+    const stored = Number(current ?? window.localStorage.getItem(LEGACY_STORAGE_KEY));
+    if (!Number.isFinite(stored) || stored < MIN_FONT_SCALE || stored > MAX_FONT_SCALE || stored === 0) return DEFAULT_FONT_SCALE;
+    return current === null && stored === 1 ? DEFAULT_FONT_SCALE : stored;
   } catch {
-    return 1;
+    return DEFAULT_FONT_SCALE;
   }
 }
 

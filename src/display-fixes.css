@@ -1,0 +1,3 @@
+/* Use escaped Unicode in generated location chevrons to avoid source-encoding artifacts. */
+.location-name-button::after{content:"\203A"}
+.location-breadcrumb li+li::before{content:"\203A"}
