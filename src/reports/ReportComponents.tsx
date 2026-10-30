@@ -3,7 +3,7 @@ import { formatDate, parseDisplayDate } from '../dateFormat';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 export type FilterOption = { label: string; value: string };
-export type FilterSpec = { key: string; label: string; type: 'select' | 'search' | 'date'; placeholder?: string; options?: FilterOption[] };
+export type FilterSpec = { key: string; label: string; type: 'select' | 'search' | 'date'; placeholder?: string; options?: FilterOption[]; disabled?: boolean };
 export type ReportFilters = Record<string, string>;
 function DateFilterInput({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
   const [text, setText] = useState(() => formatDate(value));
@@ -23,7 +23,7 @@ export function ReportFilterPanel({ fields, values, onChange, onClear, onApply }
 }) {
   return <div className="dashboard-controls"><div className="filter-control"><section className="filters report-filters" aria-label="Report filters"><h2>Filters</h2><div className="filter-grid">
     {fields.map(field => <div className="filter" key={field.key}><label htmlFor={`filter-${field.key}`}>{field.label}</label>{field.type === 'select'
-      ? <select id={`filter-${field.key}`} value={values[field.key] ?? ''} onChange={event => onChange(field.key, event.target.value)}><option value="">{field.placeholder ?? `All ${field.label.toLowerCase()}`}</option>{field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+      ? <select id={`filter-${field.key}`} value={values[field.key] ?? ''} disabled={field.disabled} onChange={event => onChange(field.key, event.target.value)}><option value="">{field.placeholder ?? `All ${field.label.toLowerCase()}`}</option>{field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
       : field.type === 'date' ? <DateFilterInput id={`filter-${field.key}`} value={values[field.key] ?? ''} onChange={value => onChange(field.key, value)} /> : <input id={`filter-${field.key}`} type="search" placeholder={field.placeholder} value={values[field.key] ?? ''} onChange={event => onChange(field.key, event.target.value)} />}</div>)}
   </div><div className="filter-actions"><button type="button" onClick={onClear}>Clear all</button><button className="apply" type="button" onClick={onApply}>Apply filters</button></div></section></div></div>;
 }
