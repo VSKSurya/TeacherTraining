@@ -27,7 +27,8 @@ export function readFontScale(): number {
 
 export function applyFontScale(value: number): number {
   const scale = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, Math.round(value * 10) / 10));
-  document.body.style.zoom = String(scale);
+  const appRoot = document.getElementById('root');
+  if (appRoot) appRoot.style.zoom = String(scale);
   try { window.localStorage.setItem(STORAGE_KEY, String(scale)); } catch { /* Keep the in-memory setting when storage is unavailable. */ }
   return scale;
 }
