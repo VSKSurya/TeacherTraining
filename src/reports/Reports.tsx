@@ -17,7 +17,7 @@ const reportMeta = {
 };
 type ReportKey = keyof typeof reportMeta;
 const REPORT_PAGE_SIZE = 10;
-const emptyBatchFilters = { batch: '', udise: '', state: '', district: '', phase: '', plan: '', participant: 'All', trainer: '', start: '', end: '', status: '', attendance: '' };
+const emptyBatchFilters = { batch: '', udise: '', state: '', district: '', block: '', phase: '', plan: '', participant: 'All', trainer: '', start: '', end: '', status: '', attendance: '' };
 const emptySummaryFilters = { plan: '', state: '', district: '', block: '', trainer: '', start: '', to: '', participant: 'All', status: '' };
 const emptyAttendanceFilters = { plan: '', state: '', district: '', trainer: '', start: '', end: '', attendance: '' };
 const stateOptions = locations.map(location => ({ label: location.name, value: location.name }));
@@ -26,12 +26,18 @@ const statusOptions = statusNames.map(name => ({ label: name, value: name }));
 const batchPhaseOptions = uniqueSorted(batchRecords.map(row => row.phase)).map(phase => ({ label: phase, value: phase }));
 const batchTrainingPlanOptions = uniqueSorted(batchRecords.map(row => row.trainingPlan)).map(plan => ({ label: plan, value: plan }));
 const batchFilters: FilterSpec[] = [
-  { key: 'batch', label: 'Batch ID', type: 'search', placeholder: 'Search batch ID' }, { key: 'udise', label: 'School UDISE', type: 'search', placeholder: 'Search UDISE' },
-  { key: 'state', label: 'State', type: 'select', placeholder: 'All states', options: stateOptions }, { key: 'district', label: 'District', type: 'select', placeholder: 'All districts' },
-  { key: 'phase', label: 'Phase wise', type: 'select', placeholder: 'All phases', options: batchPhaseOptions }, { key: 'plan', label: 'Training Plan', type: 'select', placeholder: 'All training plans', options: batchTrainingPlanOptions },
-  { key: 'participant', label: 'Participant', type: 'select', options: [{ label: 'All', value: 'All' }, { label: 'Teacher', value: 'Teacher' }, { label: 'Student', value: 'Student' }] },
-  { key: 'trainer', label: 'Trainer Name', type: 'select', placeholder: 'All trainers', options: trainerOptions }, { key: 'start', label: 'From Start Date', type: 'date' }, { key: 'end', label: 'To Start Date', type: 'date' },
-  { key: 'status', label: 'Status', type: 'select', placeholder: 'All statuses', options: statusOptions }, { key: 'attendance', label: 'Attendance', type: 'select', placeholder: 'Any attendance', options: [{ label: 'Less than 50%', value: 'lt-50' }, { label: 'Less than 75%', value: 'lt-75' }, { label: 'Less than 90%', value: 'lt-90' }, { label: '50% or higher', value: 'gte-50' }, { label: '75% or higher', value: 'gte-75' }, { label: '90% or higher', value: 'gte-90' }] },
+  { key: 'plan', label: 'Training Plan', type: 'select', placeholder: 'All training plans', options: batchTrainingPlanOptions },
+  { key: 'participant', label: 'Participant Type', type: 'select', options: [{ label: 'All', value: 'All' }, { label: 'Teacher', value: 'Teacher' }, { label: 'Student', value: 'Student' }] },
+  { key: 'batch', label: 'Batch ID', type: 'search', placeholder: 'Search batch ID' },
+  { key: 'udise', label: 'Venue School UDISE', type: 'search', placeholder: 'Search venue school UDISE' },
+  { key: 'state', label: 'State', type: 'select', placeholder: 'All states', options: stateOptions },
+  { key: 'district', label: 'District', type: 'select', placeholder: 'Select a state first' },
+  { key: 'block', label: 'Block', type: 'select', placeholder: 'Select a district first' },
+  { key: 'phase', label: 'Phase', type: 'select', placeholder: 'All phases', options: batchPhaseOptions },
+  { key: 'trainer', label: 'Trainer Name', type: 'select', placeholder: 'Select a block first' },
+  { key: 'start', label: 'From Start Date', type: 'date' }, { key: 'end', label: 'To Start Date', type: 'date' },
+  { key: 'status', label: 'Status', type: 'select', placeholder: 'All statuses', options: statusOptions },
+  { key: 'attendance', label: 'Attendance', type: 'select', placeholder: 'Any attendance', options: [{ label: 'Less than 50%', value: 'lt-50' }, { label: 'Less than 75%', value: 'lt-75' }, { label: 'Less than 90%', value: 'lt-90' }, { label: '50% or higher', value: 'gte-50' }, { label: '75% or higher', value: 'gte-75' }, { label: '90% or higher', value: 'gte-90' }] },
 ];
 const summaryFilters: FilterSpec[] = [
   { key: 'plan', label: 'Training Plan', type: 'select', placeholder: 'All training plans', options: uniqueSorted(batchRecords.map(row => row.plan.replace(' · ', ' - '))).map(v => ({ label: v, value: v })) },
@@ -57,6 +63,7 @@ const attendanceMatch = (value: number, filter: string) => {
 const asPlanLabel = (plan: string) => plan.replace(' · ', ' - ');
 const reportDistrictOptions = (state: string) => uniqueSorted(batchRecords.filter(row => !state || row.state === state).map(row => row.district)).map(district => ({ label: district, value: district }));
 const reportBlockOptions = (state: string, district: string) => uniqueSorted(batchRecords.filter(row => (!state || row.state === state) && (!district || row.district === district)).map(row => row.block)).map(block => ({ label: block, value: block }));
+const reportTrainerOptions = (state: string, district: string, block: string) => uniqueSorted(batchRecords.filter(row => (!state || row.state === state) && (!district || row.district === district) && (!block || row.block === block)).map(row => row.trainer)).map(trainer => ({ label: trainer, value: trainer }));
 
 function ShellBehavior({ onToast }: { onToast: (text: string) => void }) {
   useEffect(() => {
@@ -80,11 +87,14 @@ function BatchPerformance() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
+  const blocks = useMemo(() => reportBlockOptions(filters.state, filters.district), [filters.state, filters.district]);
+  const filteredTrainers = useMemo(() => reportTrainerOptions(filters.state, filters.district, filters.block), [filters.state, filters.district, filters.block]);
   const rows = useMemo(() => batchRecords.filter(row => {
     if (filters.batch && !row.batch.toLowerCase().includes(filters.batch.trim().toLowerCase())) return false;
     if (filters.udise && !row.udise.toLowerCase().includes(filters.udise.trim().toLowerCase())) return false;
     if (filters.state && row.state !== filters.state) return false;
     if (filters.district && row.district !== filters.district) return false;
+    if (filters.block && row.block !== filters.block) return false;
     if (filters.phase && row.phase !== filters.phase) return false;
     if (filters.plan && row.trainingPlan !== filters.plan) return false;
     if (filters.participant !== 'All' && filters.participant && row.participant !== filters.participant) return false;
@@ -143,7 +153,9 @@ function BatchPerformance() {
   const pageRows = orderedRows.slice((currentPage - 1) * REPORT_PAGE_SIZE, currentPage * REPORT_PAGE_SIZE);
   const setValue = (key: string, value: string) => setFilters(previous => {
     const next = { ...previous, [key]: value };
-    if (key === 'state' && next.district && !reportDistrictOptions(value).some(option => option.value === next.district)) next.district = '';
+    if (key === 'state') { next.district = ''; next.block = ''; next.trainer = ''; }
+    if (key === 'district') { next.block = ''; next.trainer = ''; }
+    if (key === 'block') next.trainer = '';
     return next;
   });
   const changeFilter = (key: string, value: string) => { setValue(key, value); setPage(1); };
@@ -153,7 +165,7 @@ function BatchPerformance() {
   const batchStatusRows = [{ label: 'Filtered batches', values: statusNames.map(status => rows.filter(row => row.status === status).length) }];
   const attendanceByStatus = statusNames.map(status => { const matching = rows.filter(row => row.status === status); const registered = matching.reduce((sum, row) => sum + row.registered, 0); const attended = matching.reduce((sum, row) => sum + row.attended, 0); return { label: status, values: [registered ? attended / registered * 100 : 0] }; });
   return <ReportPage kind="batch-performance">
-    <ReportFilterPanel fields={batchFilters.map(field => field.key === 'district' ? { ...field, options: districts } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} />
+    <ReportFilterPanel fields={batchFilters.map(field => field.key === 'district' ? { ...field, options: districts, disabled: !filters.state } : field.key === 'block' ? { ...field, options: blocks, disabled: !filters.district } : field.key === 'trainer' ? { ...field, options: filteredTrainers, disabled: !filters.block } : field)} values={filters} onChange={changeFilter} onClear={clearFilters} />
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1, md: 2 } }}><ReportViewToggle view={view} onChange={setView} /></Box>
     {view === 'graph'
       ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5, px: { xs: 1, md: 2 } }}><ReportBarChart title="Batch status" description="Filtered batch count by delivery status" series={statusSeries} rows={batchStatusRows} chartType="pie" /><ReportBarChart title="Attendance by status" description="Attendance calculated as total attended divided by total registered in each status" series={[{ label: 'Average attendance', color: '#176fba' }]} rows={attendanceByStatus} formatter={value => `${value.toFixed(1)}%`} chartType="cluster" /></Box>
