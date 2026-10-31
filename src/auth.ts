@@ -22,10 +22,11 @@ export type MenuKey =
   | 'holiday-master'
   | 'trainer-repository';
 
-export type UserRecord = { userId: string; role: UserRole; active: boolean };
+export type UserRecord = { userId: string; role: UserRole; active: boolean; password?: string };
 export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
 
 export const DEMO_PASSWORD = 'demo1@123';
+export const TRAINER_DEFAULT_PASSWORD = 'Pass@123';
 export const ROLE_LABELS: Record<UserRole, string> = {
   'sponsor-admin': 'Sponsor Admin',
   'schoolnet-super-admin': 'Schoolnet Super Admin',
@@ -102,7 +103,7 @@ export function getUsers(): UserRecord[] {
 
   const users: UserRecord[] = Array.isArray(saved)
     ? saved.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && typeof (item as Record<string, unknown>).userId === 'string'))
-      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false }))
+      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false, ...(typeof item.password === 'string' ? { password: item.password } : {}) }))
     : [];
 
   for (const demoUser of DEFAULT_USERS) {
@@ -128,7 +129,7 @@ export function getSession(): SessionUser | null {
 
 export function signIn(userId: string, password: string): SessionUser | null {
   const user = getUsers().find(item => item.userId.toLowerCase() === userId.trim().toLowerCase() && item.active);
-  if (!user || password !== DEMO_PASSWORD) return null;
+  if (!user || password !== (user.password ?? DEMO_PASSWORD)) return null;
   const session = { userId: user.userId, role: user.role };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;

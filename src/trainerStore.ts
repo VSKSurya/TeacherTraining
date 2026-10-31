@@ -1,4 +1,4 @@
-import { getUsers } from './auth';
+import { getUsers, saveUsers, TRAINER_DEFAULT_PASSWORD } from './auth';
 
 export type TrainerProfile = {
   id: string;
@@ -44,6 +44,38 @@ export function trainerProfiles(): TrainerProfile[] {
     records.push({ id: crypto.randomUUID(), trainerCode: `TR-${String(++sequence).padStart(5, '0')}`, userId: trainer.userId, name: trainer.userId, category: 'Employee', email: '', phone: '', languages: [], competencies: [], certifications: '', state: '', district: '', serviceArea: '', active: trainer.active });
     changed = true;
   }
+  const demoProfiles: Omit<TrainerProfile, 'id' | 'trainerCode'>[] = [
+    { name: 'Aarav Sharma', category: 'Employee', email: 'aarav.sharma@example.com', phone: '9876543210', languages: ['Hindi', 'English'], competencies: ['Digital literacy'], certifications: 'ICT Trainer', experienceYears: 5, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+    { name: 'Meera Iyer', category: 'Employee', email: 'meera.iyer@example.com', phone: '9876501234', languages: ['Hindi', 'English', 'Tamil'], competencies: ['Teacher training'], certifications: 'Training of Trainers', experienceYears: 7, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+    { name: 'Kabir Das', category: 'Employee', email: 'kabir.das@example.com', phone: '9876512340', languages: ['Hindi', 'English'], competencies: ['Digital learning'], certifications: 'Education Technology', experienceYears: 4, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+    { name: 'Ananya Rao', category: 'Consultant', email: 'ananya.rao@example.com', phone: '9876523401', languages: ['Hindi', 'English'], competencies: ['Inclusive education'], certifications: 'Learning Consultant', experienceYears: 8, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+    { name: 'Nisha Kapoor', category: 'Employee', email: 'nisha.kapoor@example.com', phone: '9876534012', languages: ['Hindi', 'English'], competencies: ['Classroom technology'], certifications: 'Digital Teaching', experienceYears: 6, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+    { name: 'Dev Malhotra', category: 'Employee', email: 'dev.malhotra@example.com', phone: '9876540123', languages: ['Hindi', 'English'], competencies: ['ICT training'], certifications: 'ICT Trainer', experienceYears: 5, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+    { name: 'Sana Khan', category: 'Employee', email: 'sana.khan@example.com', phone: '9876541023', languages: ['Hindi', 'English', 'Urdu'], competencies: ['Teacher mentoring'], certifications: 'Training of Trainers', experienceYears: 7, state: 'Delhi', district: 'New Delhi', serviceArea: '', active: true },
+  ];
+  for (const sample of demoProfiles) {
+    const employeeCount = records.filter(item => item.category === 'Employee').length;
+    const consultantCount = records.filter(item => item.category === 'Consultant').length;
+    if (employeeCount >= 6 && consultantCount >= 1) break;
+    if (sample.category === 'Employee' && employeeCount >= 6) continue;
+    if (sample.category === 'Consultant' && consultantCount >= 1) continue;
+    if (records.some(item => item.name === sample.name)) continue;
+    records.push({ ...sample, id: `demo-trainer-${records.length + 1}`, trainerCode: `TR-${String(++sequence).padStart(5, '0')}` });
+    changed = true;
+  }
+  const users = getUsers();
+  let usersChanged = false;
+  for (const profile of records) {
+    if (profile.userId) continue;
+    let userId = profile.trainerCode;
+    let suffix = 1;
+    while (users.some(user => user.userId.toLowerCase() === userId.toLowerCase())) userId = `${profile.trainerCode}-${suffix++}`;
+    profile.userId = userId;
+    users.push({ userId, role: 'trainer', active: profile.active, password: TRAINER_DEFAULT_PASSWORD });
+    usersChanged = true;
+    changed = true;
+  }
+  if (usersChanged) saveUsers(users);
   if (changed) localStorage.setItem(TRAINER_PROFILES_KEY, JSON.stringify(records));
   return records;
 }
