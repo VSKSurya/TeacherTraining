@@ -155,3 +155,6 @@ Update in UI [Image #1] in the given images
 [2026-11-02]
 In Teacher Training Feedback Form – Detailed Report, add filters for Training Plan, Batch Id, Venue School UDISE, State, District, Block, Phase, Trainer Name, From Start Date, To Start Date, and Status. Apply the selected filters to the report data and provide an Excel download. Explain the changes as a log.
 [Work log: Added cascading State → District → Block filters and report filters for the requested batch/training attributes. Filters now drive the matching submission set used by summary metrics, question-level answer counts and charts, and participant answers. Added an Excel export containing filtered response metadata and each visible question's answer.]
+[2026-11-02]
+The detailed feedback report displays a literal “\n” between the filters and Report Summary. Please remove it and publish the corrected page.
+[Work log: Removed the unintended visible newline escape from the report JSX so the summary follows the filter card without stray text.]
