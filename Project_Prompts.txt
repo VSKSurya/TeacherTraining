@@ -146,3 +146,6 @@ one it has explain what you have done and also record the prompt in the Project_
 Still can see the result of the table Result For Ever Question Answer Result in horizontal only not in vertical. Can you can check and give me ths Proper solution
 
 Explain the changes and also update in Project_Prompts.txt file
+[2026-11-02]
+I need in this way UI
+[Reference screenshot: question text in the first column, answer options across columns, selected counts in one row and percentages in the next row, with a Total column.]

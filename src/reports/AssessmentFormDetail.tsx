@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { ReportBarChart } from './ReportCharts';
 import { formatDate } from '../dateFormat';
@@ -85,6 +85,8 @@ export default function AssessmentFormDetail({ form, submissions, onBack }: { fo
     return { question, questionIndex, optionCounts, correct, incorrect, skipped, answeredCount, freeText, answerRows, questionType };
   });
   const objectiveStats = questionStats.filter(item => item.question.correctIndex !== undefined);
+  const matrixOptions = [...new Set(questionStats.flatMap(item => item.answerRows.map(answer => answer.label.replace(/^[A-Z]\.\s*/, ''))))];
+  const matrixMinWidth = Math.max(900, 300 + matrixOptions.length * 145);
   const summaryBatches = assignedBatches.length ? assignedBatches : batches.filter(batch => submissions.some(row => refs(batch).includes(text(row.batchId ?? row.batchCode))));
   const projectNames = [...new Set(summaryBatches.map(batch => text(batch.projectName)).filter(Boolean))];
   const batchNames = [...new Set(summaryBatches.map(batch => text(batch.batchCode ?? batch.name ?? batch.id)).filter(Boolean))];
@@ -117,30 +119,30 @@ export default function AssessmentFormDetail({ form, submissions, onBack }: { fo
     <Stack direction="row" justifyContent="flex-end"><ToggleButtonGroup size="small" exclusive value={view} onChange={(_, next) => { if (next) setView(next); }} aria-label="Report display mode"><ToggleButton value="table">Table View</ToggleButton><ToggleButton value="chart">Chart View</ToggleButton><ToggleButton value="combined">Combined View</ToggleButton></ToggleButtonGroup></Stack>
     {(view === 'table' || view === 'combined') && <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}>
       <Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Question-wise Answer Analysis</Typography>
-      {questionStats.map(({ question, questionIndex, answerRows, correct, incorrect, skipped, answeredCount, questionType }) => <Box key={question.id} sx={{ mb: 2.25 }}>
-        <Typography variant="subtitle1" fontWeight={750}>Question {reportQuestionNumber(questionIndex)}: {question.prompt}</Typography>
-        <Typography variant="caption" color="text.secondary">Question Type: {questionType} · Skipped: {skipped} · Correct: {question.correctIndex === undefined ? 'Not configured' : correct} · Incorrect: {question.correctIndex === undefined ? 'Not configured' : incorrect}</Typography>
-        {answerRows.length ? <Stack component="ol" spacing={.75} aria-label={`Vertical answers for question ${reportQuestionNumber(questionIndex)}`} sx={{ mt: .75, m: 0, pl: 0, listStyle: 'none' }}>
-          {answerRows.map((answer, index) => <Paper component="li" key={`${index}-${answer.label}`} variant="outlined" sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#fbfdff' }}>
-            <Stack spacing={.25}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>Answer Option</Typography>
-              <Typography variant="body2" fontWeight={750}>{answer.label}{answer.correct && <Chip size="small" color="success" label="Correct" sx={{ ml: 1 }} />}</Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>Selected Count</Typography>
-              <Typography variant="body2" fontWeight={700}>{answer.count}</Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>Percentage</Typography>
-              <Typography variant="body2" fontWeight={700}>{optionPercent(answer.count, answeredCount)}</Typography>
-            </Stack>
-          </Paper>)}
-          <Paper component="li" variant="outlined" sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#f3f7fb' }}>
-            <Stack spacing={.25}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>Total answered</Typography>
-              <Typography variant="body2" fontWeight={750}>{answeredCount}</Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>Percentage</Typography>
-              <Typography variant="body2" fontWeight={750}>{answeredCount ? '100.0%' : '0.0%'}</Typography>
-            </Stack>
-          </Paper>
-        </Stack> : <Typography variant="body2" color="text.secondary" sx={{ mt: .75 }}>No responses recorded yet.</Typography>}
-      </Box>)}
+      <TableContainer sx={{ overflowX: 'auto' }}>
+        <Table size="small" aria-label="Answer counts and percentages by question" sx={{ minWidth: matrixMinWidth }}>
+          <TableHead><TableRow>
+            <TableCell sx={{ minWidth: 300 }}>Question</TableCell>
+            {matrixOptions.map(option => <TableCell key={option} align="right" sx={{ minWidth: 145, whiteSpace: 'normal' }}>{option}</TableCell>)}
+            <TableCell align="right" sx={{ minWidth: 90 }}>Total</TableCell>
+          </TableRow></TableHead>
+          <TableBody>{questionStats.map(({ question, questionIndex, answerRows, correct, incorrect, skipped, answeredCount, questionType }) => {
+            const counts = matrixOptions.map(option => answerRows.reduce((total, answer) => total + (answer.label.replace(/^[A-Z]\.\s*/, '') === option ? answer.count : 0), 0));
+            return <Fragment key={question.id}>
+              <TableRow>
+                <TableCell><Typography variant="body2" fontWeight={750}>Question {reportQuestionNumber(questionIndex)}: {question.prompt}</Typography><Typography variant="caption" color="text.secondary">{questionType} · Skipped: {skipped} · Correct: {question.correctIndex === undefined ? 'Not configured' : correct} · Incorrect: {question.correctIndex === undefined ? 'Not configured' : incorrect}</Typography></TableCell>
+                {counts.map((count, index) => <TableCell key={`${question.id}-count-${index}`} align="right">{count}</TableCell>)}
+                <TableCell align="right" sx={{ fontWeight: 750 }}>{answeredCount}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell><Typography variant="caption" color="text.secondary" fontWeight={700}>Percentage</Typography></TableCell>
+                {counts.map((count, index) => <TableCell key={`${question.id}-percentage-${index}`} align="right">{optionPercent(count, answeredCount)}</TableCell>)}
+                <TableCell />
+              </TableRow>
+            </Fragment>;
+          })}</TableBody>
+        </Table>
+      </TableContainer>
     </Paper>}
     {(view === 'chart' || view === 'combined') && <><Typography variant="h6" fontWeight={750}>Graphical Representation</Typography>{objectiveStats.length > 0 && <ReportBarChart title="Question-wise correct and incorrect comparison" description="Objective response counts across submitted participants" series={[{ label: 'Correct', color: '#16945b' }, { label: 'Incorrect', color: '#dd6670' }]} rows={objectiveStats.map(item => ({ label: `Q${reportQuestionNumber(item.questionIndex)}`, values: [item.correct, item.incorrect] }))} chartType="cluster" />}<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,minmax(0,1fr))' }, gap: 1.25 }}>{questionStats.map(({ question, questionIndex, optionCounts, answeredCount, freeText }) => { const questionNumber = reportQuestionNumber(questionIndex); const optionNames = (question.options ?? []).map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`); const chartNames = optionNames.length ? optionNames : freeText.map(item => item.value); const chartValues = optionNames.length ? optionCounts : freeText.map(item => item.count); return <ReportBarChart key={`charts-${question.id}`}  title={`Question ${questionNumber}: ${question.prompt}`} description={`Answer distribution · ${answeredCount} answered response(s); skipped: ${submissions.length - answeredCount}`} series={chartNames.map((label, index) => ({ label, color: COLORS[index % COLORS.length] }))} rows={[{ label: `Question ${questionNumber}`, values: chartValues }]} formatter={value => `${value} (${optionPercent(value, answeredCount)})`} chartType="pie" />; })}</Box></>}
     {(view === 'table' || view === 'combined') && <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Participant-wise Answers</Typography>{submissions.length ? <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Participant Name</TableCell><TableCell>Participant Unique ID</TableCell><TableCell>State / District / School</TableCell><TableCell>Batch Code</TableCell><TableCell>Submission Date</TableCell><TableCell>Total Score</TableCell><TableCell /></TableRow></TableHead><TableBody>{submissions.map(row => { const { registration, trainee, batch } = responseProfile(row); return <TableRow key={row.id}><TableCell>{text(registration?.traineeName ?? registration?.name ?? trainee?.name) || 'Participant'}</TableCell><TableCell>{text(row.traineeId ?? row.userId) || '—'}</TableCell><TableCell>{[text(registration?.state ?? trainee?.state ?? batch?.state), text(registration?.district ?? trainee?.district ?? batch?.district), text(registration?.schoolName ?? trainee?.schoolName ?? batch?.schoolName)].filter(Boolean).join(' / ') || '—'}</TableCell><TableCell>{batchCodeForRecord(row, batches) || text(batch?.batchCode) || '—'}</TableCell><TableCell>{row.submittedAt ? formatDate(text(row.submittedAt)) : '—'}</TableCell><TableCell>{typeof row.score === 'number' ? `${row.score}/${row.maxMarks ?? '—'}` : '—'}</TableCell><TableCell><Button size="small" onClick={() => setParticipant(row)}>View answer sheet</Button></TableCell></TableRow>; })}</TableBody></Table></TableContainer> : <Typography color="text.secondary">No participant submissions for this form.</Typography>}</Paper>}
