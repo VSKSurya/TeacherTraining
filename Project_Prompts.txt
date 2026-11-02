@@ -134,3 +134,11 @@ open the url in MSEdge
 update the prompt that i have give till now in Project_Prompts files
 
 I could not see my latest Prompts in the .txt file
+
+[2026-11-02]
+In the Assessment & Feedback Report when we click onthe form we get the Teacher Training Feedback Form – Detailed Report
+Consolidated response analysis for Teacher Training Feedback Form.
+
+In that we have table view which in Horizontal Answer option has been given for every Question. Can it be Vertical Answer option with select count and Percentage
+
+one it has explain what you have done and also record the prompt in the Project_Prompts.txt (append into it)
