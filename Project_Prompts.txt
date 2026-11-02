@@ -152,3 +152,6 @@ I need in this way UI
 [2026-11-02]
 Update in UI [Image #1] in the given images
 [Reference screenshot: each question prompt spans the full table width, followed by a repeated answer-option header, count row, and percentage row, with a Total column.]
+[2026-11-02]
+In Teacher Training Feedback Form – Detailed Report, add filters for Training Plan, Batch Id, Venue School UDISE, State, District, Block, Phase, Trainer Name, From Start Date, To Start Date, and Status. Apply the selected filters to the report data and provide an Excel download. Explain the changes as a log.
+[Work log: Added cascading State → District → Block filters and report filters for the requested batch/training attributes. Filters now drive the matching submission set used by summary metrics, question-level answer counts and charts, and participant answers. Added an Excel export containing filtered response metadata and each visible question's answer.]
