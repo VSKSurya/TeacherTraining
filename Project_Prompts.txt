@@ -142,3 +142,7 @@ Consolidated response analysis for Teacher Training Feedback Form.
 In that we have table view which in Horizontal Answer option has been given for every Question. Can it be Vertical Answer option with select count and Percentage
 
 one it has explain what you have done and also record the prompt in the Project_Prompts.txt (append into it)
+[2026-11-02]
+Still can see the result of the table Result For Ever Question Answer Result in horizontal only not in vertical. Can you can check and give me ths Proper solution
+
+Explain the changes and also update in Project_Prompts.txt file
