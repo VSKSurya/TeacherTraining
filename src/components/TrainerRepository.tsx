@@ -131,7 +131,7 @@ export default function TrainerRepository() {
   const selectedDayAssignments = upcomingAssignments.filter(item => item.date === selectedDate);
   const profileNextCode = useMemo(() => nextTrainerCode(profiles), [profiles]);
 
-  return <Box className="app"><Sidebar activePage="Trainer Repository" /><main className="main"><Topbar title="Trainer Repository & Availability" description="Maintain trainer profiles and declared availability." /><Container maxWidth="xl" sx={{ py: 2.5 }}><Stack spacing={2}>
+  return <Box className="app"><Sidebar activePage="Trainer Directory" /><main className="main"><Topbar title="Trainer Directory" description="Maintain trainer profiles and declared availability." /><Container maxWidth="xl" sx={{ py: 2.5 }}><Stack spacing={2}>
     <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}><Box><Typography variant="h5" fontWeight={800}>Trainer pool</Typography><Typography variant="body2" color="text.secondary">Employees and consultants · {visibleProfiles.filter(item => item.active).length} active trainers{session?.role === 'sponsor-admin' ? ' assigned to authorized project batches' : ''}</Typography></Box>{isAdmin && <Button variant="contained" onClick={openNewProfile}>Add trainer profile</Button>}</Stack>
     {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}{error && <Alert severity="error" onClose={() => setError('')}>{error}</Alert>}
     <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 1.5 }}><Typography variant="h6" fontWeight={750}>Trainer pool</Typography></Stack>

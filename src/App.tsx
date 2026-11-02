@@ -60,7 +60,7 @@ function AppContent() {
     const pages: Record<string, string> = {
       '/login': 'Dashboard', '/privacy-policy': 'Privacy Policy', '/consent-form': 'Consent Form', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
       '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
-      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Repository',
+      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Directory',
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
       '/content-library': 'Learning Library', '/assessments': 'Assessments and Feedback',
       '/certificates': 'Certificate Templates',
