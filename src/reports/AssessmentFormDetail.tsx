@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Popover, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Popover, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { ReportBarChart } from './ReportCharts';
 import { ReportFilterPanel, type FilterSpec, type ReportFilters } from './ReportComponents';
 import { formatDate } from '../dateFormat';
@@ -198,12 +198,14 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
 
   return <Stack spacing={1.5}>
     <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1}>
-      <Box>
-        <Typography variant="h5" fontWeight={800}>{participantOnly ? 'Report - Participant Wise' : form.stage === 'pre' ? 'Pre-Assessment Form - Detailed Report' : `${form.title} - Detailed Report`}</Typography>
-        <Typography variant="body2" color="text.secondary">{participantOnly ? `${filteredSubmissions.length} participant response(s)` : `Consolidated response analysis for ${form.title} · ${filteredSubmissions.length} submission(s)`}</Typography>
-      </Box>
+      <Stack direction="row" spacing={1} alignItems="flex-start">
+        {!participantOnly && <IconButton size="small" aria-label="Back to Submissions Details" title="Back to Submissions Details" onClick={onBack} sx={{ mt: 0.35, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></IconButton>}
+        <Box>
+          <Typography variant="h5" fontWeight={800}>{participantOnly ? 'Report - Participant Wise' : form.title === 'Teacher Training Feedback Form' ? 'Detailed Feedback From Report' : form.stage === 'pre' ? 'Pre-Assessment Form - Detailed Report' : `${form.title} - Detailed Report`}</Typography>
+          <Typography variant="body2" color="text.secondary">{participantOnly ? `${filteredSubmissions.length} participant response(s)` : `Consolidated response analysis for ${form.title} · ${filteredSubmissions.length} submission(s)`}</Typography>
+        </Box>
+      </Stack>
       <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="flex-end">
-        {!participantOnly && <Button variant="outlined" onClick={onBack}>Back to submission details</Button>}
         <button type="button" className="filter-trigger" aria-expanded={Boolean(filterAnchor)} onClick={event => setFilterAnchor(event.currentTarget)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/><circle cx="15" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/></svg>Filters{(participantOnly ? participantFilterFields : filterFields).filter(field => Boolean(filters[field.key])).length > 0 && <span className="filter-count visible">{(participantOnly ? participantFilterFields : filterFields).filter(field => Boolean(filters[field.key])).length}</span>}</button>
         <button type="button" className="report-export-button" onClick={exportFilteredResponses} disabled={exporting || !filteredSubmissions.length}>{exporting ? 'Preparing Excel...' : 'Download Excel'}</button>
       </Stack>
