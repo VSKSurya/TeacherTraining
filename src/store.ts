@@ -6,8 +6,12 @@ type DashboardState = {
   filters: Record<string, string>;
   sidebarCollapsed: boolean;
 };
+const AUDIENCE_STORAGE_KEY = 'teacher-training-audience';
+function storedAudience(): DashboardState['audience'] {
+  try { return window.localStorage.getItem(AUDIENCE_STORAGE_KEY) === 'Student' ? 'Student' : 'Teacher'; } catch { return 'Teacher'; }
+}
 const initialState: DashboardState = {
-  audience: 'Teacher', selectedPhase: 3, sidebarCollapsed: false,
+  audience: storedAudience(), selectedPhase: 3, sidebarCollapsed: false,
   filters: { project: '', state: '', district: '', school: '', plan: '', batch: '', 'date-range': '' },
 };
 const dashboardSlice = createSlice({
@@ -22,5 +26,15 @@ const dashboardSlice = createSlice({
 });
 export const { setAudience, setPhase, setFilter, clearFilters, setSidebarCollapsed } = dashboardSlice.actions;
 export const store = configureStore({ reducer: { dashboard: dashboardSlice.reducer } });
+let persistedAudience = store.getState().dashboard.audience;
+store.subscribe(() => {
+  const audience = store.getState().dashboard.audience;
+  if (audience === persistedAudience) return;
+  persistedAudience = audience;
+  try { window.localStorage.setItem(AUDIENCE_STORAGE_KEY, audience); } catch { /* Keep the current audience in memory if storage is unavailable. */ }
+});
+if (typeof window !== 'undefined') window.addEventListener('storage', event => {
+  if (event.key === AUDIENCE_STORAGE_KEY && (event.newValue === 'Teacher' || event.newValue === 'Student')) store.dispatch(setAudience(event.newValue));
+});
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

@@ -35,13 +35,14 @@ const theme = createTheme({
 function DashboardFrame() {
   const { audience, selectedPhase, sidebarCollapsed, filters } = useSelector((state: RootState) => state.dashboard);
   const session = getSession();
+  const effectiveAudience = session?.role === 'sponsor-admin' ? audience : 'Teacher';
   useEffect(() => { document.body.classList.add('react-dashboard'); return () => document.body.classList.remove('react-dashboard'); }, []);
   if (session?.role === 'schoolnet-super-admin' || session?.role === 'schoolnet-project-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolnetDashboard /></ThemeProvider>;
   if (session?.role === 'state-admin') return <ThemeProvider theme={theme}><CssBaseline /><StateAdminDashboard /></ThemeProvider>;
   if (session?.role === 'school-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolAdminDashboard /></ThemeProvider>;
   if (session?.role === 'trainer') return <ThemeProvider theme={theme}><CssBaseline /><TrainerDashboard /></ThemeProvider>;
   if (session?.role === 'trainee') return <ThemeProvider theme={theme}><CssBaseline /><TraineeDashboard /></ThemeProvider>;
-  return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={audience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="main-content"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
+  return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={effectiveAudience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="main-content"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
   const [, setRouteVersion] = useState(0);

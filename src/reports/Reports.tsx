@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Popover, Snackbar } from '@mui/material';
+import { useSelector } from 'react-redux';
 import { batchRecords, locations, statusNames, trainers, uniqueSorted, type BatchRecord } from '../data/reportData';
 import { Sidebar, Topbar, Footer, type AppPage } from '../components/DashboardParts';
+import { getSession } from '../auth';
+import type { RootState } from '../store';
 import { ReportFilterPanel, ReportPanel, ReportTable, type FilterSpec, type ReportFilters, type TableColumn } from './ReportComponents';
 import AssessmentFeedbackReport from './AssessmentFeedbackReport';
 import { formatDate } from '../dateFormat';
@@ -78,6 +81,8 @@ function ShellBehavior({ onToast }: { onToast: (text: string) => void }) {
 }
 
 function BatchPerformance() {
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const ernetLogin = getSession()?.role === 'sponsor-admin';
   const [filters, setFilters] = useState<ReportFilters>(emptyBatchFilters);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string>('batch');
@@ -85,10 +90,13 @@ function BatchPerformance() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
+  useEffect(() => { setPage(1); }, [audience]);
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const blocks = useMemo(() => reportBlockOptions(filters.state, filters.district), [filters.state, filters.district]);
   const filteredTrainers = useMemo(() => reportTrainerOptions(filters.state, filters.district, filters.block), [filters.state, filters.district, filters.block]);
-  const rows = useMemo(() => batchRecords.filter(row => {
+  const rows = useMemo(() => {
+    const selectedParticipant = ernetLogin ? (audience === 'Teacher' ? 'Teacher' : 'Student') : filters.participant;
+    return batchRecords.filter(row => {
     if (filters.batch && !row.batch.toLowerCase().includes(filters.batch.trim().toLowerCase())) return false;
     if (filters.udise && !row.udise.toLowerCase().includes(filters.udise.trim().toLowerCase())) return false;
     if (filters.state && row.state !== filters.state) return false;
@@ -96,13 +104,27 @@ function BatchPerformance() {
     if (filters.block && row.block !== filters.block) return false;
     if (filters.phase && row.phase !== filters.phase) return false;
     if (filters.plan && row.trainingPlan !== filters.plan) return false;
-    if (filters.participant !== 'All' && filters.participant && row.participant !== filters.participant) return false;
+    if (selectedParticipant !== 'All' && selectedParticipant && row.participant !== selectedParticipant) return false;
     if (filters.trainer && row.trainer !== filters.trainer) return false;
     if (filters.start && row.startDate < new Date(`${filters.start}T00:00:00`)) return false;
     if (filters.end && row.startDate > new Date(`${filters.end}T23:59:59`)) return false;
     if (filters.status && row.status !== filters.status) return false;
-    return attendanceMatch(row.attendance, filters.attendance);
-  }), [filters]);
+    const selectedAttendance = ernetLogin
+      ? row.dashboardStatus === 'Scheduled' ? 0 : Math.max(0, Math.min(100, row.dashboardAttendance + (audience === 'Teacher' ? 2 : -2)))
+      : row.attendance;
+    return attendanceMatch(selectedAttendance, filters.attendance);
+    }).map(row => {
+      if (!ernetLogin) return row;
+      const teacher = audience === 'Teacher';
+      const planned = teacher ? row.teacherParticipants : row.studentParticipants;
+      const scheduled = row.status === 'Scheduled';
+      const registered = scheduled ? Math.round(planned * (teacher ? 0.95 : 0.91)) : planned;
+      const attendanceRate = scheduled ? 0 : Math.max(0, Math.min(100, row.dashboardAttendance + (teacher ? 2 : -2)));
+      const completionRate = scheduled ? 0 : row.status === 'Completed' ? 100 : Math.max(0, Math.min(100, row.dashboardCompletion + (teacher ? 2 : -2)));
+      const attended = Math.min(registered, Math.round(planned * attendanceRate / 100));
+      return { ...row, capacity: planned, registered, attended, completed: Math.round(planned * completionRate / 100), attendance: registered ? attended / registered * 100 : 0 };
+    });
+  }, [filters, audience, ernetLogin]);
   const columns: TableColumn<BatchRecord>[] = [
     { key: 'batch', label: 'Batch ID' },
     { key: 'udise', label: 'School UDISE (Venue)' },
@@ -159,7 +181,7 @@ function BatchPerformance() {
   });
   const changeFilter = (key: string, value: string) => { setValue(key, value); setPage(1); };
   const clearFilters = () => { setFilters(emptyBatchFilters); setPage(1); };
-  const resolvedFilterFields = batchFilters.map(field => field.key === 'district' ? { ...field, options: districts, disabled: !filters.state } : field.key === 'block' ? { ...field, options: blocks, disabled: !filters.district } : field.key === 'trainer' ? { ...field, options: filteredTrainers, disabled: !filters.block } : field);
+  const resolvedFilterFields = batchFilters.filter(field => !(ernetLogin && field.key === 'participant')).map(field => field.key === 'district' ? { ...field, options: districts, disabled: !filters.state } : field.key === 'block' ? { ...field, options: blocks, disabled: !filters.district } : field.key === 'trainer' ? { ...field, options: filteredTrainers, disabled: !filters.block } : field);
   return <ReportPage kind="batch-performance">
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, px: { xs: 1, md: 2 }, mb: 1 }}><button type="button" className="filter-trigger" aria-expanded={Boolean(filterAnchor)} onClick={event => setFilterAnchor(event.currentTarget)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/><circle cx="15" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/></svg>Filters{Object.values(filters).filter(Boolean).length > 0 && <span className="filter-count visible">{Object.values(filters).filter(Boolean).length}</span>}</button><button className="report-export-button" type="button" onClick={exportToExcel} disabled={exporting || !orderedRows.length}>{exporting ? 'Preparing Excel…' : 'Download Excel'}</button></Box>
     <Popover disablePortal open={Boolean(filterAnchor)} anchorEl={filterAnchor} onClose={() => setFilterAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}><Box className="dashboard-filter-popup" sx={{ width: { xs: 'calc(100vw - 24px)', sm: 980 }, maxWidth: 'calc(100vw - 24px)', p: 1 }}><ReportFilterPanel fields={resolvedFilterFields} values={filters} onChange={changeFilter} onClear={clearFilters} dashboardStyle /></Box></Popover>
@@ -207,11 +229,14 @@ function dashboardParticipantMetrics(record: BatchRecord, audience: SummaryParti
   };
 }
 function TrainingSummary() {
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const ernetLogin = getSession()?.role === 'sponsor-admin';
   const [filters, setFilters] = useState<ReportFilters>(emptySummaryFilters);
   const [page, setPage] = useState(1);
   const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
   const [sortBy, setSortBy] = useState<SummarySortKey>('plan');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  useEffect(() => { setPage(1); }, [audience]);
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const blocks = useMemo(() => reportBlockOptions(filters.state, filters.district), [filters.state, filters.district]);
   const rows = useMemo(() => {
@@ -230,7 +255,8 @@ function TrainingSummary() {
     for (const record of source) {
       const name = asPlanLabel(record.plan);
       const row = grouped.get(name) ?? { plan: name, batchesPlanned: 0, registered: 0, ongoingBatches: 0, completedBatches: 0, usersCompleted: 0, attendance: 0, completion: 0 };
-      const metrics = dashboardParticipantMetrics(record, filters.participant as SummaryParticipant);
+      const participantMode = ernetLogin ? (audience === 'Teacher' ? 'Teachers' : 'Students') : filters.participant as SummaryParticipant;
+      const metrics = dashboardParticipantMetrics(record, participantMode);
       row.batchesPlanned++;
       row.registered += metrics.registered;
       if (record.dashboardStatus === 'Ongoing') row.ongoingBatches++;
@@ -240,7 +266,7 @@ function TrainingSummary() {
       grouped.set(name, row);
     }
     return [...grouped.values()].sort((a, b) => a.plan.localeCompare(b.plan)).map(row => ({ ...row, attendance: row.registered ? row.attendance / row.registered * 100 : 0, completion: row.registered ? row.usersCompleted / row.registered * 100 : 0 }));
-  }, [filters]);
+  }, [filters, audience, ernetLogin]);
   const sortedRows = useMemo(() => [...rows].sort((left, right) => {
     const leftValue = left[sortBy];
     const rightValue = right[sortBy];
@@ -269,24 +295,25 @@ function TrainingSummary() {
   const clearFilters = () => { setFilters(emptySummaryFilters); setPage(1); };
   const matchingBatches = sortedRows.reduce((total, row) => total + row.batchesPlanned, 0);
   const sortControls = <div className="summary-sort-controls card-sort-controls"><label htmlFor="training-summary-sort">Sort by</label><select id="training-summary-sort" value={sortBy} onChange={event => { setSortBy(event.target.value as SummarySortKey); setPage(1); }}>{summarySortOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select><div className="summary-sort-direction" role="group" aria-label="Sort direction"><button type="button" aria-pressed={sortDirection === 'asc'} className={sortDirection === 'asc' ? 'active' : ''} onClick={() => { setSortDirection('asc'); setPage(1); }}>Ascending</button><button type="button" aria-pressed={sortDirection === 'desc'} className={sortDirection === 'desc' ? 'active' : ''} onClick={() => { setSortDirection('desc'); setPage(1); }}>Descending</button></div></div>;
-  const filterFields = summaryFilters.map(field => field.key === 'district'
+  const filterFields = summaryFilters.filter(field => !(ernetLogin && field.key === 'participant')).map(field => field.key === 'district'
     ? { ...field, options: districts, disabled: !filters.state }
     : field.key === 'block' ? { ...field, options: blocks, disabled: !filters.district } : field);
   return <ReportPage kind="training-summary"><Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: { xs: 1, md: 2 }, mb: 1 }}><button type="button" className="filter-trigger" aria-expanded={Boolean(filterAnchor)} onClick={event => setFilterAnchor(event.currentTarget)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/><circle cx="15" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/></svg>Filters{Object.values(filters).filter(Boolean).length > 0 && <span className="filter-count visible">{Object.values(filters).filter(Boolean).length}</span>}</button></Box><Popover disablePortal open={Boolean(filterAnchor)} anchorEl={filterAnchor} onClose={() => setFilterAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}><Box className="dashboard-filter-popup" sx={{ width: { xs: 'calc(100vw - 24px)', sm: 980 }, maxWidth: 'calc(100vw - 24px)', p: 1 }}><ReportFilterPanel fields={filterFields} values={filters} onChange={changeFilter} onClear={clearFilters} dashboardStyle /></Box></Popover><ReportPanel title="Training summary details" description={reportMeta['training-summary'].note} count={`${rows.length} training plans from ${matchingBatches.toLocaleString()} batches`}>{sortControls}<ReportTable columns={columns} rows={pageRows} rowKey={row => row.plan} emptyMessage="No training plans match these filters." tableClassName="summary-table" pagination={{ total: rows.length, page: currentPage, pageSize: REPORT_PAGE_SIZE, onPageChange: setPage }} /></ReportPanel></ReportPage>;
 }
 
-type AttendanceRecord = AttendancePersonDetail & { batch: string; batchIndex: number; plan: string; udise: string; school: string; state: string; district: string; block: string; trainer: string; date: Date; totalTrainingDays: number };
+type AttendanceRecord = AttendancePersonDetail & { batch: string; batchIndex: number; participant: 'Teacher' | 'Student'; plan: string; udise: string; school: string; state: string; district: string; block: string; trainer: string; date: Date; totalTrainingDays: number };
 type AttendanceSummary = AttendanceBatchDetail & { batchIndex: number; plan: string; totalPresent: number; totalPossible: number };
 const attendanceTrainingDays = 4;
 const firstNames = ['Aarav', 'Aditi', 'Ananya', 'Arjun', 'Divya', 'Farhan', 'Ishita', 'Kiran', 'Lakshmi', 'Manoj', 'Nisha', 'Pavan', 'Priya', 'Rahul', 'Sana', 'Sanjay', 'Sita', 'Varun', 'Vijay', 'Zoya'];
 const lastNames = ['Rao', 'Sharma', 'Kumar', 'Reddy', 'Nair', 'Patel', 'Das', 'Singh', 'Iyer', 'Khan', 'Devi', 'Joshi', 'Menon', 'Gupta', 'Naidu', 'Pillai'];
-const attendanceRows: AttendanceRecord[] = batchRecords.filter(batch => batch.status !== 'Scheduled').flatMap(batch => Array.from({ length: batch.registered }, (_, personIndex) => {
+const attendanceRows: AttendanceRecord[] = batchRecords.filter(batch => batch.status !== 'Scheduled').flatMap(batch => Array.from({ length: batch.participant === 'Teacher' ? batch.teacherParticipants : batch.studentParticipants }, (_, personIndex) => {
   const first = firstNames[(batch.index + personIndex * 3) % firstNames.length];
   const last = lastNames[(batch.index * 5 + personIndex * 7) % lastNames.length];
-  const days = Array.from({ length: attendanceTrainingDays }, (_, dayIndex) => ((batch.index * 11 + personIndex * 29 + dayIndex * 17) % 100) < batch.attendance);
+  const participantAttendance = batch.dashboardStatus === 'Scheduled' ? 0 : Math.max(0, Math.min(100, batch.dashboardAttendance + (batch.participant === 'Teacher' ? 2 : -2)));
+  const days = Array.from({ length: attendanceTrainingDays }, (_, dayIndex) => ((batch.index * 11 + personIndex * 29 + dayIndex * 17) % 100) < participantAttendance);
   const userId = `user${String(personIndex + 1).padStart(3, '0')}`;
   return {
-    batch: batch.batch, batchIndex: batch.index, plan: asPlanLabel(batch.plan), udise: batch.udise, school: batch.school,
+    batch: batch.batch, batchIndex: batch.index, participant: batch.participant, plan: asPlanLabel(batch.plan), udise: batch.udise, school: batch.school,
     state: batch.state, district: batch.district, block: batch.block, trainer: batch.trainer, date: batch.startDate,
     totalTrainingDays: attendanceTrainingDays, userId, name: `${first} ${last}`, mobileMasked: `98xxxx${980 + personIndex}`,
     emailMasked: `us******${personIndex + 1}@hxxx.co`, days, daysPresent: days.filter(Boolean).length,
@@ -294,14 +321,18 @@ const attendanceRows: AttendanceRecord[] = batchRecords.filter(batch => batch.st
 }));
 
 function AttendanceReport() {
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const ernetLogin = getSession()?.role === 'sponsor-admin';
   const [filters, setFilters] = useState<ReportFilters>(emptyAttendanceFilters);
   const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AttendanceSummary | null>(null);
+  useEffect(() => { setPage(1); setSelected(null); }, [audience]);
   const districts = useMemo(() => reportDistrictOptions(filters.state), [filters.state]);
   const batchRows = useMemo<AttendanceSummary[]>(() => {
     const groups = new Map<number, AttendanceRecord[]>();
-    for (const record of attendanceRows) groups.set(record.batchIndex, [...(groups.get(record.batchIndex) ?? []), record]);
+    const selectedRows = ernetLogin ? attendanceRows.filter(record => record.participant === audience) : attendanceRows;
+    for (const record of selectedRows) groups.set(record.batchIndex, [...(groups.get(record.batchIndex) ?? []), record]);
     return [...groups.entries()].map(([batchIndex, users]) => {
       const first = users[0];
       const totalPresent = users.reduce((sum, user) => sum + user.daysPresent, 0);
@@ -315,7 +346,7 @@ function AttendanceReport() {
         attendance: totalPossible ? totalPresent / totalPossible * 100 : 0, totalPresent, totalPossible, users: users.map(({ batch: _batch, batchIndex: _batchIndex, plan: _plan, udise: _udise, school: _school, state: _state, district: _district, block: _block, trainer: _trainer, date: _date, totalTrainingDays: _days, ...user }) => user),
       };
     });
-  }, []);
+  }, [audience, ernetLogin]);
   const rows = useMemo(() => batchRows.filter(row => {
     if (filters.plan && row.plan !== filters.plan) return false;
     if (filters.state && row.state !== filters.state) return false;

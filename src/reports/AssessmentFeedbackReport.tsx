@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Container, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { useSelector } from 'react-redux';
 import { Footer, Sidebar, Topbar } from '../components/DashboardParts';
+import { getSession } from '../auth';
+import type { RootState } from '../store';
 import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportCharts';
 import { ReportPagination } from './ReportComponents';
 import { formatDate } from '../dateFormat';
@@ -10,15 +13,18 @@ import { batchCodeForRecord } from '../batchCodes';
 const PAGE_SIZE = 10;
 
 type Row = Record<string, unknown>;
-type Result = { id: string; formId: string; formTitle: string; kind: string; stage: string; traineeId: string; batchCode: string; planCode: string; day: string; date: string; submittedAt: string; answers: Record<string, string>; score?: number; maxMarks?: number; passed?: boolean; learningGain?: number; status: string };
+type Result = { id: string; formId: string; formTitle: string; kind: string; stage: string; traineeId: string; participantType: string; batchCode: string; planCode: string; day: string; date: string; submittedAt: string; answers: Record<string, string>; score?: number; maxMarks?: number; passed?: boolean; learningGain?: number; status: string };
 function text(value: unknown) { return typeof value === 'string' ? value : ''; }
 function readRows(key: string): Row[] { try { const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value.filter(item => item && typeof item === 'object') as Row[] : []; } catch { return []; } }
 
 export default function AssessmentFeedbackReport({ participantOnly = false }: { participantOnly?: boolean }) {
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const ernetLogin = getSession()?.role === 'sponsor-admin';
   const [kind, setKind] = useState('all');
   const [view, setView] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
   const [selectedForm, setSelectedForm] = useState<{ id: string; title: string; kind: string; stage: string; planCode?: string; day?: number; questions: { id: string; prompt: string; options?: string[]; correctIndex?: number; points?: number }[] } | null>(null);
+  useEffect(() => { setPage(1); setSelectedForm(null); }, [audience]);
   const formDefinitions = useMemo(() => readRows('teacher-training-assessment-form-master'), []);
   const results = useMemo<Result[]>(() => {
     const sourceRows: Row[] = [
@@ -26,9 +32,19 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
       ...readRows('teacher-training-feedback-records').map(row => ({ ...row, kind: 'feedback' })),
     ];
     const batchRows = readRows('teacher-training-batch-plan-uses');
-    return sourceRows.map(row => ({ id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId: text(row.traineeId ?? row.userId), batchCode: batchCodeForRecord(row, batchRows), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') })).sort((a, b) => b.date.localeCompare(a.date));
+    const categories = new Map<string, string>();
+    for (const participant of [...readRows('teacher-training-trainees'), ...readRows('teacher-training-registrations')]) {
+      const category = text(participant.category ?? participant.participantType ?? participant.participantCategory ?? participant.type).trim().toLowerCase();
+      if (!category) continue;
+      for (const id of [participant.id, participant.traineeId, participant.userId, participant.participantId]) if (typeof id === 'string' && id.trim()) categories.set(id.trim().toLowerCase(), category);
+    }
+    return sourceRows.map(row => {
+      const traineeId = text(row.traineeId ?? row.userId);
+      const participantType = text(row.category ?? row.participantType ?? row.participantCategory ?? row.type) || categories.get(traineeId.toLowerCase()) || '';
+      return { id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId, participantType: participantType.toLowerCase(), batchCode: batchCodeForRecord(row, batchRows), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') };
+    }).sort((a, b) => b.date.localeCompare(a.date));
   }, []);
-  const rows = results.filter(row => (participantOnly ? row.kind === 'feedback' : kind === 'all' || row.kind === kind) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()));
+  const rows = results.filter(row => (participantOnly ? row.kind === 'feedback' : kind === 'all' || row.kind === kind) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()) && (!ernetLogin || row.participantType.includes(audience.toLowerCase())));
   const groupedRows = [...rows.reduce((groups, row, index) => {
     const groupKey = participantOnly
       ? JSON.stringify([row.formId || row.formTitle, row.kind, row.stage])
@@ -60,7 +76,7 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
   const directForm = directFeedbackRow ? { id: text(directDefinition?.id) || directFeedbackRow.formId || directFeedbackRow.formTitle, title: text(directDefinition?.title) || directFeedbackRow.formTitle, kind: 'feedback', stage: text(directDefinition?.stage) || directFeedbackRow.stage, planCode: text(directDefinition?.planCode) || directFeedbackRow.planCode, day: Number(directDefinition?.day) || Number(directFeedbackRow.day) || 1, questions: Array.isArray(directDefinition?.questions) ? directDefinition.questions as { id: string; prompt: string; options?: string[]; correctIndex?: number; points?: number }[] : [] } : null;
   const activeForm = selectedForm ?? directForm;
   if (activeForm) {
-    const formSubmissions = results.filter(row => (activeForm.id === row.formId || (!row.formId && row.formTitle.trim().toLowerCase() === activeForm.title.trim().toLowerCase())) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()));
+    const formSubmissions = rows.filter(row => (activeForm.id === row.formId || (!row.formId && row.formTitle.trim().toLowerCase() === activeForm.title.trim().toLowerCase())));
     return <div className="app report-app"><Sidebar activePage={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} /><main className="main report-main"><Topbar title={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} description={participantOnly ? 'Review individual participant feedback responses.' : 'Consolidated form responses and question analysis.'} /><Container maxWidth="xl" sx={{ py: 2.5 }}><AssessmentFormDetail form={activeForm} submissions={formSubmissions} onBack={() => participantOnly ? window.location.assign(`${import.meta.env.BASE_URL}#/reports/assessment-feedback`) : setSelectedForm(null)} participantOnly={participantOnly} /></Container><Footer /></main></div>;
   }
   return <div className="app report-app"><Sidebar activePage={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} /><main className="main report-main"><Topbar title={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} description={participantOnly ? 'Review participant feedback responses.' : 'Review completion, graded outcomes, and learning gain from recorded submissions.'} /><Container maxWidth="xl" sx={{ py: 2.5 }}><Stack spacing={1.5}>

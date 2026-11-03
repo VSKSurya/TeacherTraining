@@ -2,7 +2,6 @@
   const infoPopup=document.querySelector('#info-popup');
   document.querySelectorAll('.kpi').forEach(card=>{
     const label=card.querySelector('.kpi-label')?.textContent.trim();
-    if(['Upcoming Batches','Active Batches','Completed Batches'].includes(label))card.classList.add('kpi-hidden');
   });
   let activeInfoButton=null;
   function showInfo(button){
@@ -72,9 +71,9 @@
       const date=`${String(day).padStart(2,'0')}-${month}-2026`;
       return {index,id:`B-${String(1001+index).padStart(4,'0')}`,status,phaseNumber:index%batchPhases.length+1,phase:batchPhases[index%batchPhases.length],district,state,block,school,udise,location:`${district}, ${state}`,trainer:batchTrainers[index%batchTrainers.length],teacherParticipants,studentParticipants,participants,attendance,completion,attendedParticipants:Math.round(participants*attendance/100),completedParticipants:Math.round(participants*completion/100),date};
   });
-  let selectedAudience=document.querySelector('.audience-button[aria-pressed="true"]')?.dataset.audience||'Student';
+  let selectedAudience=document.querySelector('.app')?.dataset.audience||'Teacher';
   const currentPhaseCard=document.querySelector('.phase-card.current');
-  let selectedPhase=selectedAudience==='Teacher'&&currentPhaseCard?Number(currentPhaseCard.querySelector('.phase-number').textContent.match(/\d+/)?.[0])||null:null;
+  let selectedPhase=selectedAudience==='Teacher'&&currentPhaseCard?Number(currentPhaseCard.querySelector('.phase-number').textContent.match(/\d+/)?.[0])||3:selectedAudience==='Student'?1:null;
   document.querySelectorAll('.phase-card, .student-module-card').forEach(card=>{
     const isCurrent=selectedAudience==='Teacher'&&card===currentPhaseCard;
     card.classList.toggle('selected',isCurrent);
@@ -118,7 +117,7 @@
       const card=[...document.querySelectorAll('.kpi')].find(item=>item.querySelector('.kpi-label')?.textContent.trim()===label);
       if(!card)return;
       card.querySelector('.kpi-value').textContent=value;
-      if(sub!==null){const element=card.querySelector('.kpi-sub');if(element){element.textContent=sub;element.classList.toggle('target-breakdown',label==='Target Participants');element.classList.toggle('batch-breakdown',['Active Batches','Completed Batches','Upcoming Batches'].includes(label))}}
+      if(sub!==null){const element=card.querySelector('.kpi-sub');if(element){element.textContent=sub;element.classList.toggle('target-breakdown',label==='Target Participants')}}
     }
     const trainedText=totalCompleted.toLocaleString('en-IN');
     const targetParticipants=selectedAudience==='Teacher'?7500:75000;
@@ -151,17 +150,19 @@
     const arc=2.827*completionPercent;donutCircles[1].setAttribute('stroke-dasharray',`${arc} ${282.7-arc}`);donutCircles[2].setAttribute('stroke-dasharray',`${282.7-arc} ${arc}`);donutCircles[2].setAttribute('stroke-dashoffset',String(-arc));
     const donut=targetChart.closest('.target-layout').querySelector('.donut');
     donut.setAttribute('aria-label',`${selectedAudience} achievement ${completionPercent.toFixed(1)} percent`);
-    renderAudienceAttendance(attendancePercent);
+    renderAudienceAttendance();
   }
-  function renderAudienceAttendance(attendancePercent){
+  function renderAudienceAttendance(){
     const svg=document.querySelector('#attendance .line-chart');
-    const x=[50,135,220,306],rates=x.map((_,index)=>Math.max(0,Math.min(100,attendancePercent+(1.5-index)*1.2)));
-    const y=rates.map(rate=>145-rate*1.2),coords=x.map((value,index)=>`${value} ${y[index].toFixed(1)}`);
+    const x=[75,135,195,255,315],rates=[60,63,66,69,70.5];
+    const y=rates.map(rate=>84-rate*.68),coords=x.map((value,index)=>`${value} ${y[index].toFixed(1)}`);
     svg.querySelector('.line-path').setAttribute('d',`M${coords.join(' L')}`);
-    svg.querySelector('.line-area').setAttribute('d',`M${coords.join(' L')} L306 145 H50 Z`);
+    svg.querySelector('.line-area').setAttribute('d',`M${coords.join(' L')} L315 84 H75 Z`);
     svg.querySelectorAll('.line-dot').forEach((dot,index)=>dot.setAttribute('cy',y[index].toFixed(1)));
-    svg.querySelectorAll('.line-value text').forEach((label,index)=>{label.textContent=`${rates[index].toFixed(1)}%`;label.setAttribute('y',(y[index]-10).toFixed(1))});
-    svg.setAttribute('aria-label',`${selectedAudience} attendance trend, averaging ${attendancePercent.toFixed(1)} percent`);
+    svg.querySelectorAll('.line-value text').forEach((label,index)=>{const rateLabel=Number.isInteger(rates[index])?rates[index].toFixed(0):rates[index].toFixed(1);label.textContent=`${rateLabel}%`;label.setAttribute('x',String(x[index]));label.setAttribute('y',(y[index]-8).toFixed(1))});
+    svg.querySelectorAll('.line-dot').forEach((dot,index)=>dot.setAttribute('cx',String(x[index])));
+    svg.querySelectorAll('.line-label text').forEach((label,index)=>label.setAttribute('x',String(x[index])));
+    svg.setAttribute('aria-label',`${selectedAudience} attendance trend rises from ${rates[0]} percent on day 1 to ${rates[rates.length-1]} percent on day 5`);
     document.querySelector('#attendance .panel-title').lastChild.textContent='Attendance Trend';
   }
   function renderBatchModal(){
@@ -310,9 +311,9 @@
     const button=event.target.closest('[data-crumb-depth]');if(!button||button.getAttribute('aria-current')==='page')return;
     locationPath=locationPath.slice(0,Number(button.dataset.crumbDepth));renderLocations();
   });
-  document.querySelectorAll('.audience-button').forEach(button=>button.addEventListener('click',()=>{
-    if(selectedAudience===button.dataset.audience)return;
-    selectedAudience=button.dataset.audience;
+  function setAudienceMode(nextAudience){
+    if(nextAudience!=='Teacher'&&nextAudience!=='Student'||selectedAudience===nextAudience)return;
+    selectedAudience=nextAudience;
     selectedPhase=selectedAudience==='Teacher'
       ?Number(currentPhaseCard?.querySelector('.phase-number')?.textContent.match(/\d+/)?.[0])||3
       :1;
@@ -322,11 +323,12 @@
       card.classList.toggle('selected',selected);
       card.setAttribute('aria-pressed',String(selected));
     });
-    document.querySelectorAll('.audience-button').forEach(toggle=>toggle.setAttribute('aria-pressed',String(toggle===button)));
+    document.querySelectorAll('.audience-button').forEach(toggle=>toggle.setAttribute('aria-pressed',String(toggle.dataset.audience===selectedAudience)));
     renderBatchStatusTotals();renderLocations();
     if(!batchModalLayer.hidden)renderBatchModal();
     if(!participantModalLayer.hidden&&selectedBatch)openParticipantModal(selectedBatch,activeBatchTrigger);
-  }));
+  }
+  window.addEventListener('dashboard-audience-change',event=>setAudienceMode(event.detail));
   renderLocations();
 
   document.querySelectorAll('[data-export]').forEach(button=>button.addEventListener('click',()=>{

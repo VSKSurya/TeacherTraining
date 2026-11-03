@@ -30,7 +30,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     .replace('class="side-link" href="#attendance"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="#/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="#/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="#/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
-  html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Directory' ? ' active' : ''}" href="#/trainers"${activePage === 'Trainer Directory' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Directory</span></a><a class="side-link${activePage === 'Uploaded Documents' ? ' active' : ''}" href="#/trainer-evidence"${activePage === 'Uploaded Documents' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Uploaded Documents</span></a><a class="side-link${activePage === 'Upload Documents' ? ' active' : ''}" href="#/upload-documents"${activePage === 'Upload Documents' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Upload Documents</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="#/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
+  html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Directory' ? ' active' : ''}" href="#/trainers"${activePage === 'Trainer Directory' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Directory</span></a><a class="side-link${activePage === 'Uploaded Documents' ? ' active' : ''}" href="#/trainer-evidence"${activePage === 'Uploaded Documents' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm8 0v5h5M8 12h7m-7 3h4m1 3 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Uploaded Documents</span></a><a class="side-link${activePage === 'Upload Documents' ? ' active' : ''}" href="#/upload-documents"${activePage === 'Upload Documents' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Upload Documents</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="#/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
   html = html.replace('href="#effectiveness">Feedback Report</a>', 'href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a>');
   html = html.replace('href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a>', 'href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a><a href="#/reports/participant-feedback">Participant Wise Feedback Report</a>');
   const reportLinks: Record<string, string> = { 'Batch Performance': '#/reports/batch-performance', 'Training Summary': '#/reports/training-summary', 'Attendance Report': '#/reports/attendance-report', 'Assessment & Feedback Report': '#/reports/assessment-feedback', 'Participant Wise Feedback Report': '#/reports/participant-feedback' };
@@ -87,7 +87,30 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     const placeSubmenu = (group: HTMLDetailsElement) => {
       const submenu = group.querySelector<HTMLElement>('.side-submenu');
       const summary = group.querySelector<HTMLElement>('summary');
-      if (!submenu || !summary || !group.open || !window.matchMedia('(max-width: 620px)').matches) return;
+      if (!submenu || !summary) return;
+      const mobile = window.matchMedia('(max-width: 620px)').matches;
+      const collapsedDesktop = !mobile && window.innerWidth > 900 && group.closest('.app')?.classList.contains('is-collapsed');
+      if (collapsedDesktop) {
+        const hoveredOrFocused = group.matches(':hover') || group.contains(document.activeElement);
+        if (!hoveredOrFocused) {
+          submenu.style.removeProperty('--submenu-left');
+          submenu.style.removeProperty('--submenu-top');
+          return;
+        }
+        const width = Math.min(230, window.innerWidth - 16);
+        const rect = summary.getBoundingClientRect();
+        const height = Math.min(submenu.scrollHeight, window.innerHeight - 16);
+        const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right + 8));
+        const top = Math.max(8, Math.min(window.innerHeight - height - 8, rect.top));
+        submenu.style.setProperty('--submenu-left', `${left}px`);
+        submenu.style.setProperty('--submenu-top', `${top}px`);
+        return;
+      }
+      if (!mobile || !group.open) {
+        submenu.style.removeProperty('--submenu-left');
+        submenu.style.removeProperty('--submenu-top');
+        return;
+      }
       const width = Math.min(220, window.innerWidth - 16);
       const rect = summary.getBoundingClientRect();
       const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left + rect.width / 2 - width / 2));
@@ -108,6 +131,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
         app.classList.toggle('is-expanded', !collapsed && tablet);
         collapseButton.setAttribute('aria-expanded', String(!collapsed));
         collapseButton.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+        groups().forEach(placeSubmenu);
         return;
       }
       const link = event.target.closest<HTMLAnchorElement>('.sidebar .side-submenu a');
@@ -116,8 +140,19 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
       if (group) {
         group.open = false;
         group.querySelector<HTMLElement>('.side-submenu')?.style.removeProperty('--submenu-left');
+        group.querySelector<HTMLElement>('.side-submenu')?.style.removeProperty('--submenu-top');
       }
     };
+    const onGroupPointerEnter = (event: Event) => placeSubmenu(event.currentTarget as HTMLDetailsElement);
+    const onGroupPointerLeave = (event: Event) => placeSubmenu(event.currentTarget as HTMLDetailsElement);
+    const onGroupFocusChange = (event: Event) => placeSubmenu(event.currentTarget as HTMLDetailsElement);
+    const sideGroups = groups();
+    sideGroups.forEach(group => {
+      group.addEventListener('pointerenter', onGroupPointerEnter);
+      group.addEventListener('pointerleave', onGroupPointerLeave);
+      group.addEventListener('focusin', onGroupFocusChange);
+      group.addEventListener('focusout', onGroupFocusChange);
+    });
     const onLayoutChange = () => groups().forEach(placeSubmenu);
     const sidebar = document.querySelector('.sidebar');
     document.addEventListener('toggle', onToggle, true);
@@ -127,6 +162,12 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     return () => {
       document.removeEventListener('toggle', onToggle, true);
       document.removeEventListener('click', onClick, true);
+      sideGroups.forEach(group => {
+        group.removeEventListener('pointerenter', onGroupPointerEnter);
+        group.removeEventListener('pointerleave', onGroupPointerLeave);
+        group.removeEventListener('focusin', onGroupFocusChange);
+        group.removeEventListener('focusout', onGroupFocusChange);
+      });
       window.removeEventListener('resize', syncResponsiveCollapse);
       window.removeEventListener('resize', onLayoutChange);
       sidebar?.removeEventListener('scroll', onLayoutChange);
@@ -135,21 +176,33 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   return <Markup html={html} />;
 }
 export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; description?: string; logoSrc?: string }) {
+  const dispatch = useDispatch<AppDispatch>();
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light');
   const [fontScale, setFontScale] = useState(readFontScale);
   const session = getSession();
   const roleLabel = session ? session.userId.toLowerCase() === 'demo1' && session.role === 'sponsor-admin' ? 'Ernet Admin' : ROLE_LABELS[session.role] : 'Guest';
+  const ernetLogin = session?.role === 'sponsor-admin';
   const initials = roleLabel.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
-  const fontScaleControls = `<div class="font-size-controls" role="group" aria-label="Text size controls"><svg class="font-size-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><button type="button" data-font-size="decrease" aria-label="Decrease text size" title="Decrease text size" ${fontScale <= MIN_FONT_SCALE ? 'disabled' : ''}>A<span aria-hidden="true">&minus;</span></button><button type="button" data-font-size="reset" aria-label="Reset text size to default (100 percent)" title="Reset text size to default (100 percent)">A</button><button type="button" data-font-size="increase" aria-label="Increase text size" title="Increase text size" ${fontScale >= MAX_FONT_SCALE ? 'disabled' : ''}>A<span aria-hidden="true">+</span></button><span class="sr-only" aria-live="polite" aria-atomic="true">Text size ${Math.round(fontScale * 100)} percent</span></div>`;
-  const themeSwitch = `<div class="theme-switch" role="group" aria-label="Choose color theme"><button class="theme-option${theme === 'light' ? ' active' : ''}" id="theme-light" type="button" aria-pressed="${theme === 'light'}" title="Light theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><span>Light</span></button><button class="theme-option${theme === 'dark' ? ' active' : ''}" id="theme-dark" type="button" aria-pressed="${theme === 'dark'}" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg><span>Dark</span></button></div>`;
   const heading = logoSrc ? `<h1><img src="${logoSrc}" alt="${title}" style="display:block;max-width:190px;max-height:48px;object-fit:contain" /></h1>` : `<h1>${title}</h1>`;
-  const html = topbarMarkup.replace('<h1>Dashboard</h1>', heading).replace('<span class="divider" aria-hidden="true"></span>', `${fontScaleControls}${themeSwitch}<span class="divider" aria-hidden="true"></span>`)
+  const audienceToggle = ernetLogin ? '<div class="audience-switch topbar-audience-switch" role="group" aria-label="Dashboard audience"><button class="audience-button topbar-audience-button" type="button" data-audience="Teacher" aria-pressed="false">Teacher</button><button class="audience-button topbar-audience-button" type="button" data-audience="Student" aria-pressed="false">Student</button></div>' : '';
+  const html = topbarMarkup.replace('<h1>Dashboard</h1>', heading).replace('<div class="top-actions">', `<div class="top-actions">${audienceToggle}`)
     .replace('aria-label="Project Sponsor account"', `aria-label="${roleLabel} account"`)
     .replace('<span class="avatar">PS</span><span>Project Sponsor</span>', `<span class="avatar">${initials}</span><span>${roleLabel}</span>`);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [accessibilityAnchor, setAccessibilityAnchor] = useState<HTMLElement | null>(null);
+  const [accessibility, setAccessibility] = useState<{ contrast: 'normal' | 'high'; textSpacing: boolean; lineHeight: boolean; hideImages: boolean; bigCursor: boolean; screenReader: boolean }>(() => {
+    const defaults = { contrast: 'normal' as 'normal' | 'high', textSpacing: false, lineHeight: false, hideImages: false, bigCursor: false, screenReader: false };
+    try { return { ...defaults, ...JSON.parse(window.localStorage.getItem('teacher-training-accessibility') ?? '{}') }; } catch { return defaults; }
+  });
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const updateFontScale = (action: 'increase' | 'decrease' | 'reset') => {
+    const current = readFontScale();
+    const next = action === 'reset' ? DEFAULT_FONT_SCALE : action === 'increase' ? current + 0.1 : current - 0.1;
+    setFontScale(applyFontScale(next));
+  };
   const [lastLogin] = useState(() => {
     const stored = window.localStorage.getItem('teacher-training-last-login');
     return stored ? new Date(stored) : null;
@@ -162,26 +215,80 @@ export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; descr
     window.localStorage.setItem('teacher-training-theme', theme);
   }, [theme]);
   useEffect(() => {
+    if (!ernetLogin) return;
+    document.querySelectorAll<HTMLButtonElement>('.topbar-audience-button').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.audience === audience));
+    });
+  }, [audience, ernetLogin]);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.accessibilityContrast = accessibility.contrast;
+    root.classList.toggle('a11y-text-spacing', accessibility.textSpacing);
+    root.classList.toggle('a11y-line-height', accessibility.lineHeight);
+    root.classList.toggle('a11y-hide-images', accessibility.hideImages);
+    root.classList.toggle('a11y-big-cursor', accessibility.bigCursor);
+    window.localStorage.setItem('teacher-training-accessibility', JSON.stringify(accessibility));
+  }, [accessibility]);
+  useEffect(() => {
     const onNotificationClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      const fontButton = target.closest<HTMLButtonElement>('[data-font-size]');
-      const themeButton = target.closest<HTMLButtonElement>('#theme-light, #theme-dark');
+      const audienceButton = target.closest<HTMLButtonElement>('.topbar-audience-button');
+      const accessibilityButton = target.closest<HTMLButtonElement>('#accessibility-tools-button');
       const button = target.closest<HTMLElement>('#notifications');
       const profileButton = target.closest<HTMLElement>('#profile-button');
-      if (fontButton) {
-        event.stopPropagation();
-        const current = readFontScale();
-        const next = fontButton.dataset.fontSize === 'reset' ? DEFAULT_FONT_SCALE : fontButton.dataset.fontSize === 'increase' ? current + 0.1 : current - 0.1;
-        setFontScale(applyFontScale(next));
+      if (audienceButton && ernetLogin) {
+        const nextAudience = audienceButton.dataset.audience;
+        if (nextAudience === 'Teacher' || nextAudience === 'Student') {
+          event.stopPropagation();
+          dispatch(setAudience(nextAudience));
+          dispatch(setPhase(nextAudience === 'Teacher' ? 3 : 1));
+        }
       }
-      else if (themeButton?.id === 'theme-light' || themeButton?.id === 'theme-dark') { event.stopPropagation(); setTheme(themeButton.id === 'theme-dark' ? 'dark' : 'light'); }
+      else if (accessibilityButton) { event.stopPropagation(); setAccessibilityAnchor(current => current ? null : accessibilityButton); setAnchor(null); setProfileAnchor(null); }
       else if (button) { event.stopPropagation(); setAnchor(current => current ? null : button); setProfileAnchor(null); }
       else if (profileButton) { event.stopPropagation(); setProfileAnchor(current => current ? null : profileButton); setAnchor(null); }
     };
     document.addEventListener('click', onNotificationClick, true);
     return () => document.removeEventListener('click', onNotificationClick, true);
   }, []);
-  return <><Markup html={html} /><Popover open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+  const accessButton = '<button class="icon-button accessibility-tools-trigger" type="button" id="accessibility-tools-button" aria-label="Open Accessibility Tools" aria-haspopup="dialog" title="Accessibility Tools"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="7.5" r="1.5" fill="currentColor"/><path d="M5.5 10h13M12 10v9m0-9-4 5m4-5 4 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  const topbarWithAccess = html.replace('<button class="icon-button notification"', `${accessButton}<button class="icon-button notification"`);
+  const setA11y = (key: keyof typeof accessibility, value: boolean | 'normal' | 'high') => setAccessibility(current => ({ ...current, [key]: value }));
+  const changeAccessibilityText = updateFontScale;
+  const speakPage = () => {
+    if (!('speechSynthesis' in window)) { setToast('Screen reading is not supported by this browser.'); return; }
+    window.speechSynthesis.cancel();
+    if (!accessibility.screenReader) {
+      const pageText = document.querySelector('main')?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 5000) || document.title;
+      const utterance = new SpeechSynthesisUtterance(pageText);
+      window.speechSynthesis.speak(utterance);
+      setA11y('screenReader', true);
+    } else {
+      setA11y('screenReader', false);
+    }
+  };
+  const topbarWithA11y = topbarWithAccess;
+  return <><Markup html={topbarWithA11y} /><Popover open={Boolean(accessibilityAnchor)} anchorEl={accessibilityAnchor} onClose={() => setAccessibilityAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} marginThreshold={12} PaperProps={{ role: 'dialog', 'aria-labelledby': 'accessibility-tools-title', sx: { width: { xs: 'min(390px, calc(100vw - 24px))', sm: 410 }, maxHeight: 'calc(100vh - 64px)', overflowY: 'auto', p: 1.5, border: '1px solid #dce4ec', borderRadius: 2.5, bgcolor: 'background.paper', boxShadow: '0 12px 36px #142a3f26' } }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}><Typography id="accessibility-tools-title" variant="h6" sx={{ fontSize: 16, fontWeight: 650 }}>Accessibility Tools</Typography><IconButton aria-label="Close Accessibility Tools" size="small" onClick={() => setAccessibilityAnchor(null)}>×</IconButton></Box>
+    <Typography component="h2" sx={{ mt: 1, pb: 0.4, borderBottom: '1px solid', borderColor: 'text.primary', fontSize: 14, fontWeight: 700 }}>Contrast Adjustment</Typography>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5, mt: 0.75 }}>
+      {([{ key: 'high', label: 'High Contrast', icon: '◐' }, { key: 'normal', label: 'Normal', icon: '☼' }] as const).map(item => <Box key={item.key} component="button" type="button" aria-pressed={accessibility.contrast === item.key} onClick={() => setA11y('contrast', item.key)} sx={{ minHeight: 68, display: 'grid', placeItems: 'center', alignContent: 'center', gap: 0.35, border: '1px solid', borderColor: accessibility.contrast === item.key ? '#e53b48' : '#dce4ec', borderRadius: 2, bgcolor: 'transparent', color: 'text.primary', font: 'inherit', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}><Box component="span" aria-hidden="true" sx={{ fontSize: 27, lineHeight: 1 }}>{item.icon}</Box><Box component="span">{item.label}</Box></Box>)}
+    </Box>
+    <Typography component="h2" sx={{ mt: 1, pb: 0.4, borderBottom: '1px solid', borderColor: 'text.primary', fontSize: 14, fontWeight: 700 }}>Themes</Typography>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5, mt: 0.75 }}>
+      {([{ mode: 'light', label: 'Light', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.7"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg> }, { mode: 'dark', label: 'Dark', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> }] as const).map(item => <Box key={item.mode} component="button" type="button" aria-pressed={theme === item.mode} onClick={() => setTheme(item.mode)} sx={{ minHeight: 64, display: 'grid', placeItems: 'center', alignContent: 'center', gap: 0.35, border: '1px solid', borderColor: theme === item.mode ? '#176fba' : '#dce4ec', borderRadius: 2, bgcolor: theme === item.mode ? 'action.selected' : 'transparent', color: 'text.primary', font: 'inherit', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}><Box component="span" aria-hidden="true" sx={{ display: 'grid', placeItems: 'center' }}>{item.icon}</Box><Box component="span">{item.label}</Box></Box>)}
+    </Box>
+    <Typography component="h2" sx={{ mt: 1, pb: 0.4, borderBottom: '1px solid', borderColor: 'text.primary', fontSize: 14, fontWeight: 700 }}>Text Size</Typography>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.5, mt: 0.75 }}>
+      {([{ action: 'increase', label: 'Increase Text' }, { action: 'decrease', label: 'Decrease Text' }, { action: 'reset', label: 'Reset Text' }] as const).map(item => <Box key={item.action} component="button" type="button" disabled={item.action === 'increase' ? fontScale >= MAX_FONT_SCALE : item.action === 'decrease' ? fontScale <= MIN_FONT_SCALE : false} onClick={() => changeAccessibilityText(item.action)} sx={{ minHeight: 68, display: 'grid', placeItems: 'center', alignContent: 'center', gap: 0.35, border: '1px solid #dce4ec', borderRadius: 2, bgcolor: 'transparent', color: 'text.primary', font: 'inherit', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' }, '&:disabled': { cursor: 'default', opacity: 0.45 } }}><Box component="span" aria-hidden="true" sx={{ display: 'grid', placeItems: 'center', width: 30, height: 30, fontSize: 16, fontWeight: 700, lineHeight: 1 }}>{item.action === 'reset' ? <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M20 11a8 8 0 1 0 1 4M20 4v7h-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 16l2-6h1l2 6m-4-2h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> : <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M3 19 8 5h2l5 14M5 14h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d={item.action === 'increase' ? 'M18 13V5m-3 3 3-3 3 3' : 'M18 5v8m-3-3 3 3 3-3'} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}</Box><Box component="span">{item.label}</Box></Box>)}
+      {([{ key: 'textSpacing', label: 'Text Spacing', icon: 'T↔' }, { key: 'lineHeight', label: 'Line Height', icon: '↕' }] as const).map(item => <Box key={item.key} component="button" type="button" aria-pressed={accessibility[item.key]} onClick={() => setA11y(item.key, !accessibility[item.key])} sx={{ minHeight: 68, display: 'grid', placeItems: 'center', alignContent: 'center', gap: 0.35, border: '1px solid', borderColor: accessibility[item.key] ? '#176fba' : '#dce4ec', borderRadius: 2, bgcolor: accessibility[item.key] ? 'action.selected' : 'transparent', color: 'text.primary', font: 'inherit', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}><Box component="span" aria-hidden="true" sx={{ fontSize: 25, lineHeight: 1 }}>{item.icon}</Box><Box component="span">{item.label}</Box></Box>)}
+    </Box>
+    <Typography component="h2" sx={{ mt: 1, pb: 0.4, borderBottom: '1px solid', borderColor: 'text.primary', fontSize: 14, fontWeight: 700 }}>Others</Typography>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.5, mt: 0.75 }}>
+      {([{ key: 'hideImages', label: accessibility.hideImages ? 'Show Images' : 'Hide Images', icon: '▧' }, { key: 'bigCursor', label: 'Big Cursor', icon: '➤' }] as const).map(item => <Box key={item.key} component="button" type="button" aria-pressed={accessibility[item.key]} onClick={() => setA11y(item.key, !accessibility[item.key])} sx={{ minHeight: 68, display: 'grid', placeItems: 'center', alignContent: 'center', gap: 0.35, border: '1px solid', borderColor: accessibility[item.key] ? '#176fba' : '#dce4ec', borderRadius: 2, bgcolor: accessibility[item.key] ? 'action.selected' : 'transparent', color: 'text.primary', font: 'inherit', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}><Box component="span" aria-hidden="true" sx={{ fontSize: 26, lineHeight: 1 }}>{item.icon}</Box><Box component="span">{item.label}</Box></Box>)}
+      <Box component="button" type="button" aria-pressed={accessibility.screenReader} onClick={speakPage} sx={{ minHeight: 68, display: 'grid', placeItems: 'center', alignContent: 'center', gap: 0.35, border: '1px solid', borderColor: accessibility.screenReader ? '#176fba' : '#dce4ec', borderRadius: 2, bgcolor: accessibility.screenReader ? 'action.selected' : 'transparent', color: 'text.primary', font: 'inherit', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}><Box component="span" aria-hidden="true" sx={{ fontSize: 26, lineHeight: 1 }}>◖))</Box><Box component="span">Screen Reader</Box></Box>
+    </Box>
+  </Popover><Popover open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
     <Box sx={{ width: { xs: 300, sm: 360 }, p: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 750, color: '#12365c' }}>Notifications</Typography>
       <Typography variant="body2" sx={{ mt: 0.5, mb: 1.5, color: '#71839a' }}>Updates and shortcuts for your training dashboard</Typography>
@@ -215,7 +322,7 @@ const studentModules = [
   'Digital Creativity',
   'AI Awareness',
 ];
-const teacherDashboardMarkup = dashboardMarkup.replace(
+const teacherDashboardMarkup = dashboardMarkup.replace(/<div class="audience-switch"[\s\S]*?<\/div>/, '').replace(
   'id="phase-overview-title">Phase wise Training</h2>',
   'id="phase-overview-title">Phases of Teacher Capacity Building (25 hours)</h2>',
 ).replace(
@@ -245,24 +352,26 @@ const dashboardWithStudentOverview = teacherDashboardMarkup.replace(
 
 export function DashboardContent() {
   const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const effectiveAudience = getSession()?.role === 'sponsor-admin' ? audience : 'Teacher';
   useEffect(() => {
     const teacherOverview = document.querySelector<HTMLElement>('.main .phase-overview:not(.student-overview)');
     const studentOverview = document.querySelector<HTMLElement>('.main .student-overview');
-    if (teacherOverview) teacherOverview.hidden = audience === 'Student';
+    if (teacherOverview) teacherOverview.hidden = effectiveAudience === 'Student';
     if (studentOverview) {
-      studentOverview.hidden = audience === 'Teacher';
-      studentOverview.setAttribute('aria-hidden', String(audience === 'Teacher'));
+      studentOverview.hidden = effectiveAudience === 'Teacher';
+      studentOverview.setAttribute('aria-hidden', String(effectiveAudience === 'Teacher'));
     }
-    document.querySelectorAll<HTMLButtonElement>('.dashboard-controls .audience-button').forEach(button => {
-      button.setAttribute('aria-pressed', String(button.dataset.audience === audience));
-    });
-  }, [audience]);
+  }, [effectiveAudience]);
   return <Markup html={dashboardWithStudentOverview} />;
 }
 export function DashboardModals() { return <Markup html={modalMarkup} />; }
 
 export function DashboardBridge() {
   const dispatch = useDispatch<AppDispatch>();
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('dashboard-audience-change', { detail: audience }));
+  }, [audience]);
   useEffect(() => {
     window.KGBV_SCHOOLS = kgbvSchools;
     const script = document.createElement('script');
@@ -271,11 +380,6 @@ export function DashboardBridge() {
     document.body.appendChild(script);
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      const audience = target.closest<HTMLElement>('[data-audience]')?.dataset.audience;
-      if (audience === 'Teacher' || audience === 'Student') {
-        dispatch(setAudience(audience));
-        dispatch(setPhase(audience === 'Teacher' ? 3 : 1));
-      }
       const selectableCard = target.closest<HTMLElement>('.phase-card, .student-module-card');
       if (selectableCard) {
         const phase = Number(selectableCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
