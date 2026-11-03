@@ -1,5 +1,5 @@
 :root {
-    font-family: "Segoe UI", Arial, sans-serif;
+    font-family: Poppins, "Segoe UI", Arial, sans-serif;
     color: #173553;
     background: #f4f7fb;
     font-synthesis: none;
@@ -1445,7 +1445,7 @@ dialog::backdrop {
 }
 
 .content-main {
-    font-family: "Segoe UI", Arial, sans-serif
+    font-family: Poppins, "Segoe UI", Arial, sans-serif
 }
 
 .library-preview-paper {

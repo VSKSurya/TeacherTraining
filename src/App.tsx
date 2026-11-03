@@ -21,6 +21,7 @@ import OpenRegistration from './components/OpenRegistration';
 import RegistrationRequests from './components/RegistrationRequests';
 import RecoverTraineeId from './components/RecoverTraineeId';
 import TrainerRepository from './components/TrainerRepository';
+import TrainerEvidence from './components/TrainerEvidence';
 import AssessmentFeedback from './components/AssessmentFeedback';
 import CertificateTemplates from './components/CertificateTemplates';
 import ComplianceChecklist from './ComplianceChecklist';
@@ -60,13 +61,13 @@ function AppContent() {
     const pages: Record<string, string> = {
       '/login': 'Dashboard', '/privacy-policy': 'Privacy Policy', '/consent-form': 'Consent Form', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
       '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
-      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Directory',
+      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Directory', '/trainer-evidence': 'Trainer Evidence', '/upload-documents': 'Upload Documents',
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
       '/content-library': 'Learning Library', '/assessments': 'Assessments and Feedback',
       '/certificates': 'Certificate Templates',
       '/compliance': 'GIGW 3.0 Compliance Checklist',
       '/reports/batch-performance': 'Batch Performance', '/reports/training-summary': 'Training Summary',
-      '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report',
+      '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report', '/reports/participant-feedback': 'Participant Wise Feedback Report',
     };
     const role = session ? ROLE_LABELS[session.role] : '';
     const page = pages[path] ?? 'Dashboard';
@@ -96,6 +97,8 @@ function AppContent() {
   if (path === '/batches') return <Batches />;
   if (path === '/registration-requests') return <RegistrationRequests />;
   if (path === '/trainers') return <TrainerRepository />;
+  if (path === '/trainer-evidence') return <TrainerEvidence />;
+  if (path === '/upload-documents') return <TrainerEvidence />;
   if (path === '/attendance') return <Attendance />;
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;

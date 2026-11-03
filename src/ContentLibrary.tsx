@@ -18,9 +18,9 @@ const categories = ['All', 'Presentation', 'Video', 'Documents', 'Forms'] as con
 const languages = ['All Languages', 'English', 'Hindi'];
 const formStorageKey = 'teacher-training-assessment-form-master';
 function readLibraryForms(): FormRow[] { try { const value: unknown = JSON.parse(localStorage.getItem(formStorageKey) ?? '[]'); return Array.isArray(value) ? value.filter(row => row && typeof row === 'object') as FormRow[] : []; } catch { return []; } }
-const resourcesForCategory = (category: string) => resources.filter(resource => resource.category === category);
-const categoryOf = (resource: Resource) => resource.format === 'FORM' ? 'form' : resource.format === 'PDF' ? 'pdf' : resource.format === 'MP4' ? 'video' : resource.format === 'PPTX' ? 'presentation' : resource.format === 'PNG' || resource.format === 'JPG' ? 'image' : '';
-const labelOf = (resource: Resource) => resource.format === 'FORM' ? 'Form' : resource.format === 'PDF' ? 'Manual & PDF' : resource.format === 'PPTX' ? 'Presentation' : resource.format === 'MP4' ? 'Video' : resource.format === 'PNG' || resource.format === 'JPG' ? 'Image' : 'Document';
+const resourcesForCategory = (category: string, extra: Resource[] = []) => [...resources, ...extra].filter(resource => resource.category === category);
+const categoryOf = (resource: Resource) => resource.format === 'FORM' ? 'form' : resource.format === 'PDF' ? 'pdf' : ['MP4', 'MOV', 'WEBM'].includes(resource.format) ? 'video' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(resource.format) ? 'presentation' : ['PNG', 'JPG', 'WEBP'].includes(resource.format) ? 'image' : '';
+const labelOf = (resource: Resource) => resource.format === 'FORM' ? 'Form' : resource.format === 'PDF' ? 'PDF' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(resource.format) ? 'Presentation' : ['MP4', 'MOV', 'WEBM'].includes(resource.format) ? 'Video' : ['PNG', 'JPG', 'WEBP'].includes(resource.format) ? 'Image' : 'Document';
 
 let sampleScriptPromise: Promise<ContentSample[]> | undefined;
 function loadContentSamples(): Promise<ContentSample[]> {
@@ -83,6 +83,17 @@ export default function ContentLibrary() {
   const [collapsed, setCollapsed] = useState(false);
   const [toast, setToast] = useState('');
   const [formRecords, setFormRecords] = useState<FormRow[]>(readLibraryForms);
+  const [approvedResources, setApprovedResources] = useState<Resource[]>(() => {
+    try {
+      const records = JSON.parse(localStorage.getItem('teacher-training-trainer-evidence') ?? '[]') as Array<{ id: string; status: string; trainer: string; batch: string; date: string; reviewedBy?: string; files: Array<{ name: string; type: string; size: number; data: string }> }>;
+      return records.filter(record => record.status === 'Approved').flatMap(record => record.files.map((file, index) => {
+        const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
+        const category: Category = ['MP4', 'MOV', 'WEBM'].includes(ext) ? 'Video' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(ext) ? 'Presentation' : 'Documents';
+        const format = ext === 'JPEG' ? 'JPG' : ext;
+        return { id: `evidence-${record.id}-${index}`, title: file.name.replace(/\.[^.]+$/, ''), file: file.name, category, format, size: `${Math.max(1, Math.round(file.size / 1024))} KB`, language: 'English', tags: ['Trainer evidence', record.trainer, record.batch, record.date], url: file.data };
+      }));
+    } catch { return []; }
+  });
   const formResources = useMemo(() => formRecords.map((form, index) => {
     const questions = Array.isArray(form.questions) ? form.questions as FormRow[] : [];
     const rawTitle = typeof form.title === 'string' ? form.title : 'Untitled form';
@@ -99,13 +110,13 @@ export default function ContentLibrary() {
     return { id: String(form.id ?? `form-${index}`), title, file: `${kind} · ${stage}`, category: 'Forms' as const, format: 'FORM', size: `${questions.length} questions`, language: 'English', tags: [kind, stage, planCode], url: publicAsset('/assessments'), text: summary, questions, planCode, day: Number(form.day) || 1 };
   }), [formRecords]);
   const filtered = useMemo(() => {
-    const source = category === 'Forms' ? formResources : category === 'All' ? [...resources, ...formResources] : resourcesForCategory(category);
+    const source = category === 'Forms' ? formResources : category === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(category, approvedResources);
     return source.filter(resource => (category === 'Forms' || language === 'All Languages' || resource.language === language) && (!query.trim() || `${resource.title} ${resource.file} ${resource.language} ${resource.tags.join(' ')} ${resource.text ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())));
-  }, [category, formResources, language, query]);
+  }, [approvedResources, category, formResources, language, query]);
   const counts = useMemo(() => Object.fromEntries(categories.map(item => {
-    const source = item === 'Forms' ? formResources : item === 'All' ? [...resources, ...formResources] : resourcesForCategory(item);
+    const source = item === 'Forms' ? formResources : item === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(item, approvedResources);
     return [item, source.filter(resource => item === 'Forms' || language === 'All Languages' || resource.language === language).length];
-  })), [formResources, language]);
+  })), [approvedResources, formResources, language]);
   const previewResource = useCallback(async (resource: Resource) => {
     setPreview(resource);
     setPreviewAnswers({});
@@ -127,7 +138,19 @@ export default function ContentLibrary() {
       else if (target.closest('#profile-button')) setToast('Signed in as Project Sponsor.');
     };
     document.addEventListener('click', onClick);
-    const onStorage = (event: StorageEvent) => { if (event.key === formStorageKey) setFormRecords(readLibraryForms()); };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === formStorageKey) setFormRecords(readLibraryForms());
+      if (event.key === 'teacher-training-trainer-evidence') {
+        try {
+          const records = JSON.parse(event.newValue ?? '[]') as Array<{ id: string; status: string; trainer: string; batch: string; date: string; files: Array<{ name: string; type: string; size: number; data: string }> }>;
+          setApprovedResources(records.filter(record => record.status === 'Approved').flatMap(record => record.files.map((file, index) => {
+            const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
+            const category: Category = ['MP4', 'MOV', 'WEBM'].includes(ext) ? 'Video' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(ext) ? 'Presentation' : 'Documents';
+            return { id: `evidence-${record.id}-${index}`, title: file.name.replace(/\.[^.]+$/, ''), file: file.name, category, format: ext === 'JPEG' ? 'JPG' : ext, size: `${Math.max(1, Math.round(file.size / 1024))} KB`, language: 'English', tags: ['Trainer evidence', record.trainer, record.batch, record.date], url: file.data };
+          })));
+        } catch { setApprovedResources([]); }
+      }
+    };
     window.addEventListener('storage', onStorage);
     return () => { document.removeEventListener('click', onClick); window.removeEventListener('storage', onStorage); };
   }, []);
@@ -145,7 +168,7 @@ export default function ContentLibrary() {
     </main>
     <Dialog open={showDialog} onClose={() => setPreview(null)} maxWidth={false} PaperProps={{ className: 'library-preview-paper' }}>
       {preview && <><div className="dialog-head"><h2>{preview.title}</h2><IconButton className="close" aria-label="Close preview" onClick={() => setPreview(null)}>×</IconButton></div><div className="dialog-content"><div className="preview-toolbar"><span>{preview.format} · {preview.size}</span>{preview.format !== 'FORM' && <a className="preview-download" href={preview.url} download={preview.file}>Download file</a>}</div>
-        {preview.format === 'FORM' ? <div className="form-preview"><p className="form-preview-meta">{preview.planCode} · Day {preview.day} · {preview.questions?.length ?? 0} question(s)</p><p className="form-preview-note">Preview only. Answers entered here will not be submitted.</p>{preview.questions?.map((question, index) => { const questionId = String(question.id ?? index); const options = Array.isArray(question.options) ? question.options.filter((option): option is string => typeof option === 'string') : []; const prompt = typeof question.prompt === 'string' ? question.prompt : `Question ${index + 1}`; return <section className="form-preview-question" key={questionId}><h3>{index + 1}. {prompt}{question.required ? ' *' : ''}</h3>{question.selection === 'multiple' && options.length ? options.map((option, optionIndex) => { let selected: number[] = []; try { selected = JSON.parse(previewAnswers[questionId] ?? '[]'); } catch { /* Empty selection */ } return <label className="form-preview-option" key={optionIndex}><input type="checkbox" checked={selected.includes(optionIndex)} onChange={event => setPreviewAnswers(current => ({ ...current, [questionId]: JSON.stringify(event.target.checked ? [...selected, optionIndex] : selected.filter(item => item !== optionIndex)) }))} />{option}</label>; }) : options.length ? options.map((option, optionIndex) => <label className="form-preview-option" key={optionIndex}><input type="radio" name={`form-preview-${questionId}`} checked={previewAnswers[questionId] === String(optionIndex)} onChange={() => setPreviewAnswers(current => ({ ...current, [questionId]: String(optionIndex) }))} />{option}</label>) : <textarea value={previewAnswers[questionId] ?? ''} onChange={event => setPreviewAnswers(current => ({ ...current, [questionId]: event.target.value }))} placeholder="Type your response" rows={2} />}</section>; })}</div> : preview.format === 'MP4' ? <video className="preview-video" controls autoPlay src={preview.url} /> : preview.format === 'PDF' ? <iframe className="preview-media" style={{ height: '65vh' }} src={preview.url} title={`Preview: ${preview.title}`} /> : preview.format === 'PNG' || preview.format === 'JPG' ? <img className="preview-media" src={preview.url} alt={preview.title} /> : <pre className="preview-text">{previewText || 'Loading preview…'}</pre>}
+        {preview.format === 'FORM' ? <div className="form-preview"><p className="form-preview-meta">{preview.planCode} · Day {preview.day} · {preview.questions?.length ?? 0} question(s)</p><p className="form-preview-note">Preview only. Answers entered here will not be submitted.</p>{preview.questions?.map((question, index) => { const questionId = String(question.id ?? index); const options = Array.isArray(question.options) ? question.options.filter((option): option is string => typeof option === 'string') : []; const prompt = typeof question.prompt === 'string' ? question.prompt : `Question ${index + 1}`; return <section className="form-preview-question" key={questionId}><h3>{index + 1}. {prompt}{question.required ? ' *' : ''}</h3>{question.selection === 'multiple' && options.length ? options.map((option, optionIndex) => { let selected: number[] = []; try { selected = JSON.parse(previewAnswers[questionId] ?? '[]'); } catch { /* Empty selection */ } return <label className="form-preview-option" key={optionIndex}><input type="checkbox" checked={selected.includes(optionIndex)} onChange={event => setPreviewAnswers(current => ({ ...current, [questionId]: JSON.stringify(event.target.checked ? [...selected, optionIndex] : selected.filter(item => item !== optionIndex)) }))} />{option}</label>; }) : options.length ? options.map((option, optionIndex) => <label className="form-preview-option" key={optionIndex}><input type="radio" name={`form-preview-${questionId}`} checked={previewAnswers[questionId] === String(optionIndex)} onChange={() => setPreviewAnswers(current => ({ ...current, [questionId]: String(optionIndex) }))} />{option}</label>) : <textarea value={previewAnswers[questionId] ?? ''} onChange={event => setPreviewAnswers(current => ({ ...current, [questionId]: event.target.value }))} placeholder="Type your response" rows={2} />}</section>; })}</div> : preview.category === 'Video' ? <video className="preview-video" controls autoPlay src={preview.url} /> : preview.format === 'PDF' ? <iframe className="preview-media" style={{ height: '65vh' }} src={preview.url} title={`Preview: ${preview.title}`} /> : ['PNG', 'JPG', 'WEBP'].includes(preview.format) ? <img className="preview-media" src={preview.url} alt={preview.title} /> : <pre className="preview-text">{previewText || 'Loading preview…'}</pre>}
       </div></>}
     </Dialog>
     <Snackbar open={Boolean(toast)} autoHideDuration={2800} onClose={() => setToast('')} message={toast} />

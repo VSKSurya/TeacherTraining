@@ -7,8 +7,8 @@ type ChartType = 'line' | 'cluster' | 'pie' | 'bar';
 
 export function ReportViewToggle({ view, onChange }: { view: ReportView; onChange: (next: ReportView) => void }) {
   return <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, next: ReportView | null) => { if (next) onChange(next); }} aria-label="Choose table or graph representation" sx={{ bgcolor: '#fff', '& .MuiToggleButton-root': { px: 1.75, textTransform: 'none', fontWeight: 700, color: '#49657e', borderColor: '#dce6ef' }, '& .Mui-selected': { color: '#145b91 !important', bgcolor: '#eaf4fc !important' } }}>
-    <ToggleButton value="graph" aria-label="Graphical representation">Graph view</ToggleButton>
     <ToggleButton value="table" aria-label="Table representation">Table view</ToggleButton>
+    <ToggleButton value="graph" aria-label="Graphical representation">Graph view</ToggleButton>
   </ToggleButtonGroup>;
 }
 

@@ -1,4 +1,5 @@
 import { formatDate } from '../dateFormat';
+import { downloadExcelWorkbook } from './exportExcel';
 import './attendance-detail.css';
 
 export type AttendancePersonDetail = {
@@ -28,17 +29,11 @@ export type AttendanceBatchDetail = {
   users: AttendancePersonDetail[];
 };
 
-function downloadAttendanceCsv(batch: AttendanceBatchDetail) {
+async function downloadAttendanceExcel(batch: AttendanceBatchDetail) {
   const headers = ['User Name', 'Name of user', 'Mobile', 'Email', ...Array.from({ length: batch.totalTrainingDays }, (_, index) => `Day ${index + 1}`), 'Total Days Present'];
-  const escapeCsv = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
-  const lines = [headers, ...batch.users.map(user => [user.userId, user.name, user.mobileMasked, user.emailMasked, ...user.days.map(present => present ? 'Present' : 'Absent'), user.daysPresent])];
-  const blob = new Blob([`\uFEFF${lines.map(row => row.map(escapeCsv).join(',')).join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `attendance-${batch.batch}.csv`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const rows = batch.users.map(user => [user.userId, user.name, user.mobileMasked, user.emailMasked, ...user.days.map(present => present ? 'Present' : 'Absent'), user.daysPresent]);
+  const safeBatchName = batch.batch.replace(/[^a-z0-9-_]+/gi, '-');
+  await downloadExcelWorkbook(`attendance-${safeBatchName}.xlsx`, 'Attendance', headers, rows);
 }
 
 export default function AttendanceDetail({ batch, onBack }: { batch: AttendanceBatchDetail; onBack: () => void }) {
@@ -51,7 +46,7 @@ export default function AttendanceDetail({ batch, onBack }: { batch: AttendanceB
   ] as const;
 
   return <section className="attendance-detail" aria-labelledby="attendance-detail-title">
-    <div className="attendance-detail-toolbar"><button className="attendance-back-button" type="button" onClick={onBack}>Back to Attendance Reports</button><button className="attendance-back-button" type="button" onClick={() => downloadAttendanceCsv(batch)}>Download CSV</button></div>
+    <div className="attendance-detail-toolbar"><button className="attendance-back-button" type="button" onClick={onBack}>Back to Attendance Reports</button><button className="report-export-button" type="button" onClick={() => void downloadAttendanceExcel(batch)}>Download Excel</button></div>
     <h2 id="attendance-detail-title">Attendance Details - {batch.batch}</h2>
     <dl className="attendance-detail-meta">{metadata.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
     <div className="attendance-detail-table-wrap"><table className="attendance-detail-table"><thead><tr><th scope="col">User Name</th><th scope="col">Name of user</th><th scope="col">Mobile</th><th scope="col">Email</th>{Array.from({ length: batch.totalTrainingDays }, (_, index) => <th scope="col" key={index}>Day {index + 1}</th>)}<th scope="col">Total Days Present</th></tr></thead>

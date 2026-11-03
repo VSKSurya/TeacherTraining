@@ -70,3 +70,26 @@
 :root[data-theme="dark"] .topbar .avatar{color:#fff}
 :root[data-theme="dark"] .sidebar :focus-visible,:root[data-theme="dark"] .topbar :focus-visible{outline-color:#74b8ef}
 @media(max-width:620px){:root[data-theme="dark"] .sidebar{border-color:#31475c}}
+
+/* Bring MUI surfaces and controls into the same dark palette as the custom dashboard. */
+:root[data-theme="dark"] .MuiPaper-root{background-color:#17283a;color:#e5edf5;border-color:#31475c}
+:root[data-theme="dark"] .MuiTableCell-root{border-color:#31475c;color:#dce8f3}
+:root[data-theme="dark"] .MuiTableHead-root .MuiTableCell-root{background-color:#21364a;color:#e5edf5}
+:root[data-theme="dark"] .MuiTableBody-root .MuiTableRow-root:hover .MuiTableCell-root{background-color:#20374e}
+:root[data-theme="dark"] .MuiOutlinedInput-root,:root[data-theme="dark"] .MuiFilledInput-root{background-color:#102033;color:#e5edf5}
+:root[data-theme="dark"] .MuiOutlinedInput-notchedOutline{border-color:#40566c}
+:root[data-theme="dark"] .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline{border-color:#7892aa}
+:root[data-theme="dark"] .MuiInputLabel-root,:root[data-theme="dark"] .MuiFormLabel-root{color:#a6b7c9}
+:root[data-theme="dark"] .MuiInputBase-input,:root[data-theme="dark"] .MuiSelect-select{color:#e5edf5}
+:root[data-theme="dark"] .MuiSvgIcon-root{color:inherit}
+:root[data-theme="dark"] .MuiMenu-paper,:root[data-theme="dark"] .MuiPopover-paper{background-color:#17283a;color:#e5edf5}
+:root[data-theme="dark"] .MuiMenuItem-root{color:#dce8f3}
+:root[data-theme="dark"] .MuiMenuItem-root:hover,:root[data-theme="dark"] .MuiMenuItem-root.Mui-selected{background-color:#263c50}
+:root[data-theme="dark"] .MuiChip-root{background-color:#263c50;color:#dce8f3}
+:root[data-theme="dark"] .MuiChip-colorSuccess{background-color:#164838;color:#a8e4c8}
+:root[data-theme="dark"] .MuiChip-colorError{background-color:#542d36;color:#ffc1c7}
+:root[data-theme="dark"] .MuiChip-colorWarning{background-color:#594625;color:#ffe0a3}
+:root[data-theme="dark"] .MuiAlert-root{background-color:#20364b;color:#e5edf5}
+:root[data-theme="dark"] .trainer-evidence-dropzone{border-color:#40566c!important;background-color:#14263a!important}
+:root[data-theme="dark"] .report-app .participant-filter-popup .participant-dashboard-filters .filter label,:root[data-theme="dark"] .report-app .dashboard-filter-popup .participant-dashboard-filters .filter label{color:#c9d8e7}
+:root[data-theme="dark"] .report-app .participant-filter-popup .participant-dashboard-filters .filter select,:root[data-theme="dark"] .report-app .participant-filter-popup .participant-dashboard-filters .filter input,:root[data-theme="dark"] .report-app .dashboard-filter-popup .participant-dashboard-filters .filter select,:root[data-theme="dark"] .report-app .dashboard-filter-popup .participant-dashboard-filters .filter input{border-color:#40566c;background:#102033;color:#e5edf5}

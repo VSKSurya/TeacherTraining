@@ -20,7 +20,9 @@ export type MenuKey =
   | 'certificates'
   | 'mis-reports'
   | 'holiday-master'
-  | 'trainer-repository';
+  | 'trainer-repository'
+  | 'trainer-evidence'
+  | 'upload-documents';
 
 export type UserRecord = { userId: string; role: UserRole; active: boolean; password?: string };
 export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
@@ -28,7 +30,7 @@ export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
 export const DEMO_PASSWORD = 'demo1@123';
 export const TRAINER_DEFAULT_PASSWORD = 'Pass@123';
 export const ROLE_LABELS: Record<UserRole, string> = {
-  'sponsor-admin': 'Sponsor Admin',
+  'sponsor-admin': 'ERnet Admin',
   'schoolnet-super-admin': 'Schoolnet Super Admin',
   'schoolnet-project-admin': 'Schoolnet Project Admin',
   'state-admin': 'State Admin',
@@ -41,12 +43,12 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLES = Object.keys(ROLE_LABELS) as UserRole[];
 
 const ROLE_MENUS: Record<UserRole, readonly MenuKey[]> = {
-  'sponsor-admin': ['dashboard', 'content-library', 'assessment-feedback', 'mis-reports', 'trainer-repository'],
-  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository'],
-  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository'],
-  'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'assessment-feedback', 'mis-reports', 'trainer-repository'],
+  'sponsor-admin': ['dashboard', 'content-library', 'assessment-feedback', 'mis-reports', 'trainer-repository', 'trainer-evidence'],
+  'schoolnet-super-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'holiday-master', 'trainer-repository', 'trainer-evidence'],
+  'schoolnet-project-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'certificates', 'mis-reports', 'trainer-repository', 'trainer-evidence'],
+  'state-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'assessment-feedback', 'mis-reports', 'trainer-repository', 'trainer-evidence'],
   'school-admin': ['dashboard', 'projects', 'training-plans', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
-  trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository'],
+  trainer: ['dashboard', 'projects', 'batches', 'attendance', 'content-library', 'assessment-feedback', 'trainer-repository', 'upload-documents'],
   trainee: ['dashboard', 'projects', 'content-library', 'assessments', 'assessment-feedback', 'certificates'],
   'reporting-audit-user': ['dashboard', 'projects', 'mis-reports'],
 };
@@ -60,6 +62,8 @@ export function canAccessRoute(role: UserRole, path: string) {
   if (path === '/certificates') return ['sponsor-admin', 'schoolnet-super-admin', 'schoolnet-project-admin', 'trainee'].includes(role);
   if (path === '/assessments') return canAccessMenu(role, 'assessment-feedback');
   if (path === '/trainers') return canAccessMenu(role, 'trainer-repository');
+  if (path === '/trainer-evidence') return canAccessMenu(role, 'trainer-evidence');
+  if (path === '/upload-documents') return canAccessMenu(role, 'upload-documents');
   if (path === '/registration-requests') return ['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin', 'trainer'].includes(role);
   if (!path || path === '/') return canAccessMenu(role, 'dashboard');
   if (path === '/holiday-master') return canAccessMenu(role, 'holiday-master');

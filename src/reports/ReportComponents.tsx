@@ -5,6 +5,14 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from
 export type FilterOption = { label: string; value: string };
 export type FilterSpec = { key: string; label: string; type: 'select' | 'search' | 'date'; placeholder?: string; options?: FilterOption[]; disabled?: boolean };
 export type ReportFilters = Record<string, string>;
+function FilterFieldIcon({ name }: { name: string }) {
+  if (name === 'state') return <><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2" /></>;
+  if (name === 'district' || name === 'block') return <path d="M4 20V8l4-4 4 4v12m0-8h8v8M2 20h20M7 10h2m-2 4h2m-2 4h2m9-1h1" />;
+  if (name === 'trainer') return <><circle cx="9" cy="8" r="3" /><path d="M3 20v-1a6 6 0 0 1 12 0v1H3Zm13-9a3 3 0 1 0 0-6m1 9a5 5 0 0 1 4 5" /></>;
+  if (name === 'phase' || name === 'start' || name === 'end') return <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 10h18m-13 4h2m3 0h2m-7 3h2" /></>;
+  if (name === 'status') return <><path d="M8 6h12M8 12h12M8 18h12" /><path d="m3 6 1 1 2-2m-3 7 1 1 2-2m-3 7 1 1 2-2" /></>;
+  return <><rect x="4" y="4" width="16" height="17" rx="2" /><path d="M8 2v4m8-4v4M4 9h16m-11 4h6m-6 4h4" /></>;
+}
 function DateFilterInput({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
   const [text, setText] = useState(() => formatDate(value));
   const picker = useRef<HTMLInputElement>(null);
@@ -18,14 +26,14 @@ function DateFilterInput({ id, value, onChange }: { id: string; value: string; o
   }} /><button type="button" aria-label="Choose date" onClick={() => { const input = picker.current; if (!input) return; if (input.showPicker) input.showPicker(); else input.focus(); }}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg></button><input ref={picker} className="native-date-picker" type="date" aria-label={`${id} calendar picker`} value={value} onChange={event => { const next = event.target.value; setText(formatDate(next)); onChange(next); }} /></div>;
 }
 
-export function ReportFilterPanel({ fields, values, onChange, onClear }: {
-  fields: FilterSpec[]; values: ReportFilters; onChange: (key: string, value: string) => void; onClear: () => void;
+export function ReportFilterPanel({ fields, values, onChange, onClear, title = 'Filters', dashboardStyle = false }: {
+  fields: FilterSpec[]; values: ReportFilters; onChange: (key: string, value: string) => void; onClear: () => void; title?: string; dashboardStyle?: boolean;
 }) {
-  return <div className="dashboard-controls"><div className="filter-control"><section className="filters report-filters" aria-label="Report filters"><h2>Filters</h2><div className="filter-grid">
-    {fields.map(field => <div className="filter" key={field.key}><label htmlFor={`filter-${field.key}`}>{field.label}</label>{field.type === 'select'
+  return <div className="dashboard-controls"><div className="filter-control"><section className={`filters ${dashboardStyle ? 'open participant-dashboard-filters' : 'report-filters'}`} aria-label="Report filters">{!dashboardStyle && <h2>{title}</h2>}<div className="filter-grid">
+    {fields.map(field => <div className="filter" key={field.key}><label htmlFor={`filter-${field.key}`}>{dashboardStyle && <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><FilterFieldIcon name={field.key} /></svg>}{field.label}</label>{field.type === 'select'
       ? <select id={`filter-${field.key}`} value={values[field.key] ?? ''} disabled={field.disabled} onChange={event => onChange(field.key, event.target.value)}><option value="">{field.placeholder ?? `All ${field.label.toLowerCase()}`}</option>{field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
       : field.type === 'date' ? <DateFilterInput id={`filter-${field.key}`} value={values[field.key] ?? ''} onChange={value => onChange(field.key, value)} /> : <input id={`filter-${field.key}`} type="search" placeholder={field.placeholder} value={values[field.key] ?? ''} onChange={event => onChange(field.key, event.target.value)} />}</div>)}
-  </div><div className="filter-actions"><button type="button" onClick={onClear}>Clear all</button></div></section></div></div>;
+  </div>{dashboardStyle ? <div className="filter-footer"><span className="filter-hint">Filters apply to report data</span><button className="clear-filters" type="button" onClick={onClear}>Clear filters</button></div> : <div className="filter-actions"><button type="button" onClick={onClear}>Clear all</button></div>}</section></div></div>;
 }
 
 export type TableColumn<T> = { key: keyof T | string; label: string; align?: 'left' | 'center' | 'right'; render?: (row: T, index: number) => ReactNode };
