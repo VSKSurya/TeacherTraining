@@ -261,8 +261,11 @@
     const blockNode=getOrCreateLocationNode(districtNode.children,sourceSchool.block);
     locationSchoolNodes.push(getOrCreateLocationNode(blockNode.children,sourceSchool.school));
   });
-  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV school list, Table 1. Click State, District, or Block rows to drill down to schools.';
-  batchData.forEach((batch,index)=>locationSchoolNodes[index]?.assignedBatches.push(batch));
+  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV school list, Table 1. Click State, District, or Block rows to drill down to schools, then click a school to see its trainer details.';
+  batchData.forEach((batch,index)=>{
+    const schoolNode=locationSchoolNodes[index];if(!schoolNode)return;
+    getOrCreateLocationNode(schoolNode.children,batch.trainer).assignedBatches.push(batch);
+  });
   function locationTotals(node){
     if(!node.children.length){
       const batches=node.assignedBatches.filter(batch=>!selectedPhase||batch.phaseNumber===selectedPhase),completedBatches=batches.filter(batch=>batch.status==='completed').length;
@@ -274,7 +277,7 @@
   let locationPath=[];
   let locationSortDirection='desc';
   let locationSortKey='completedPercent';
-  const locationRows=document.querySelector('#location-rows'),locationSortBy=document.querySelector('#location-sort-by'),locationLabels=['State','District','Block','School'];
+  const locationRows=document.querySelector('#location-rows'),locationSortBy=document.querySelector('#location-sort-by'),locationLabels=['State','District','Block','School','Trainer Details'];
   function renderLocations(){
     const level=locationPath.length,nodes=level===0?locationTree:locationPath[level-1].children;
     document.querySelector('#location-level-heading').textContent=locationLabels[level];
@@ -292,7 +295,7 @@
       return locationSortDirection==='asc'?a.sortValue-b.sortValue||a.node.name.localeCompare(b.node.name):b.sortValue-a.sortValue||a.node.name.localeCompare(b.node.name);
     });
     locationRows.innerHTML=sortedNodes.map(({node,index,stats,batchCompletionPercent,completedPercent})=>{
-      const name=level<3?`<button type="button" class="location-name-button" data-location-index="${index}" aria-label="Show ${locationLabels[level+1]} locations for ${node.name}">${node.name}</button>`:node.name;
+      const name=level<4?`<button type="button" class="location-name-button" data-location-index="${index}" aria-label="Show ${locationLabels[level+1]} for ${node.name}">${node.name}</button>`:node.name;
       return `<tr><td>${name}</td><td>${stats.scheduled.toLocaleString('en-IN')}</td><td>${stats.ongoing.toLocaleString('en-IN')}</td><td>${stats.completedBatches.toLocaleString('en-IN')}</td><td>${meter(batchCompletionPercent)}</td><td>${stats.plannedUsers.toLocaleString('en-IN')}</td><td>${stats.registeredUsers.toLocaleString('en-IN')}</td><td>${stats.completedUsers.toLocaleString('en-IN')}</td><td>${meter(completedPercent,'orange')}</td></tr>`;
     }).join('');
   }
