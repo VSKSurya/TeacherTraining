@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { formatDate, parseDisplayDate } from '../dateFormat';
+import { phaseNames } from '../data/reportData';
+import { useDispatch, useSelector } from 'react-redux';
+import { setPhase, type AppDispatch, type RootState } from '../store';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 export type FilterOption = { label: string; value: string };
 export type FilterSpec = { key: string; label: string; type: 'select' | 'search' | 'date'; placeholder?: string; options?: FilterOption[]; disabled?: boolean };
 export type ReportFilters = Record<string, string>;
+export function PhaseSelectionSummary({ selectedPhase, selectedFilters = {}, onPhaseChange }: { selectedPhase: number | null; selectedFilters?: Record<string, string>; onPhaseChange?: (phase: number | null) => void }) {
+  const dispatch = useDispatch<AppDispatch>();
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const options = audience === 'Student' ? ['Cyber Safety and Digital Responsibility', 'Digital Creativity', 'AI Awareness'] : phaseNames;
+  const activeFilters = Object.entries(selectedFilters).filter(([, value]) => Boolean(value));
+  return <div className="selected-filter-summary"><strong>Phase</strong><select aria-label="Dashboard phase" value={selectedPhase ?? ''} onChange={event => { const phase = event.target.value ? Number(event.target.value) : null; dispatch(setPhase(phase)); onPhaseChange?.(phase); }}><option value="">All phases</option>{options.map((name, index) => <option value={index + 1} key={name}>{index + 1}: {name}</option>)}</select>{activeFilters.length > 0 && <><strong>Selected Filters:</strong>{activeFilters.map(([key, value]) => <span className="selected-filter-chip" key={key}>{key === 'phase' ? 'Phase filter' : key}: {value}</span>)}</>}</div>;
+}
 function FilterFieldIcon({ name }: { name: string }) {
   if (name === 'state') return <><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2" /></>;
   if (name === 'district' || name === 'block') return <path d="M4 20V8l4-4 4 4v12m0-8h8v8M2 20h20M7 10h2m-2 4h2m-2 4h2m9-1h1" />;
@@ -63,5 +73,5 @@ export function ReportPagination({ total, page, pageSize, onPageChange }: Report
 }
 
 export function ReportPanel({ title, description, count, children }: { title: string; description: string; count: string; children: ReactNode }) {
-  return <section className="report-panel"><div className="panel-heading"><div><h2>{title}</h2>{description && <p>{description}</p>}</div><span className="record-count" aria-live="polite">{count}</span></div>{children}</section>;
+  return <section className="report-panel">{(title || description || count) && <div className="panel-heading">{(title || description) && <div>{title && <h2>{title}</h2>}{description && <p>{description}</p>}</div>}{count && <span className="record-count" aria-live="polite">{count}</span>}</div>}{children}</section>;
 }

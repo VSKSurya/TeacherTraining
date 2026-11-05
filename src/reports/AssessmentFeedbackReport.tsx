@@ -1,30 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Container, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Box, Button, Container, Paper, Popover, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { Footer, Sidebar, Topbar } from '../components/DashboardParts';
 import { getSession } from '../auth';
 import type { RootState } from '../store';
-import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportCharts';
-import { ReportPagination } from './ReportComponents';
+import { ReportBarChart, type ReportView } from './ReportCharts';
+import { PhaseSelectionSummary, ReportFilterPanel, ReportPagination, type FilterSpec, type ReportFilters } from './ReportComponents';
 import { formatDate } from '../dateFormat';
 import AssessmentFormDetail from './AssessmentFormDetail';
 import { batchCodeForRecord } from '../batchCodes';
+import { phaseNames } from '../data/reportData';
 
 const PAGE_SIZE = 10;
 
 type Row = Record<string, unknown>;
-type Result = { id: string; formId: string; formTitle: string; kind: string; stage: string; traineeId: string; participantType: string; batchCode: string; planCode: string; day: string; date: string; submittedAt: string; answers: Record<string, string>; score?: number; maxMarks?: number; passed?: boolean; learningGain?: number; status: string };
+type Result = { id: string; formId: string; formTitle: string; kind: string; stage: string; traineeId: string; participantType: string; batchCode: string; phaseNumber?: number; planCode: string; day: string; date: string; submittedAt: string; answers: Record<string, string>; score?: number; maxMarks?: number; passed?: boolean; learningGain?: number; status: string };
 function text(value: unknown) { return typeof value === 'string' ? value : ''; }
 function readRows(key: string): Row[] { try { const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value.filter(item => item && typeof item === 'object') as Row[] : []; } catch { return []; } }
 
 export default function AssessmentFeedbackReport({ participantOnly = false }: { participantOnly?: boolean }) {
   const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const selectedPhase = useSelector((state: RootState) => state.dashboard.selectedPhase);
   const ernetLogin = getSession()?.role === 'sponsor-admin';
-  const [kind, setKind] = useState('all');
-  const [view, setView] = useState<ReportView>('table');
+  const [view] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<ReportFilters>({ form: '', batch: '', stage: '', from: '', to: '' });
+  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
   const [selectedForm, setSelectedForm] = useState<{ id: string; title: string; kind: string; stage: string; planCode?: string; day?: number; questions: { id: string; prompt: string; options?: string[]; correctIndex?: number; points?: number }[] } | null>(null);
-  useEffect(() => { setPage(1); setSelectedForm(null); }, [audience]);
+  useEffect(() => { setPage(1); }, [audience, selectedPhase]);
+  useEffect(() => { setSelectedForm(null); }, [audience]);
   const formDefinitions = useMemo(() => readRows('teacher-training-assessment-form-master'), []);
   const results = useMemo<Result[]>(() => {
     const sourceRows: Row[] = [
@@ -32,6 +36,7 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
       ...readRows('teacher-training-feedback-records').map(row => ({ ...row, kind: 'feedback' })),
     ];
     const batchRows = readRows('teacher-training-batch-plan-uses');
+    const projects = readRows('teacher-training-projects');
     const categories = new Map<string, string>();
     for (const participant of [...readRows('teacher-training-trainees'), ...readRows('teacher-training-registrations')]) {
       const category = text(participant.category ?? participant.participantType ?? participant.participantCategory ?? participant.type).trim().toLowerCase();
@@ -41,10 +46,27 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
     return sourceRows.map(row => {
       const traineeId = text(row.traineeId ?? row.userId);
       const participantType = text(row.category ?? row.participantType ?? row.participantCategory ?? row.type) || categories.get(traineeId.toLowerCase()) || '';
-      return { id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId, participantType: participantType.toLowerCase(), batchCode: batchCodeForRecord(row, batchRows), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') };
+      const recordBatchRef = text(row.batchId ?? row.batchCode ?? row.batchUniqueId);
+      const batch = batchRows.find(item => [item.id, item.batchCode, item.uniqueId, ...(Array.isArray(item.legacyBatchCodes) ? item.legacyBatchCodes : [])].some(value => String(value ?? '') === recordBatchRef));
+      const project = projects.find(item => text(item.id) === text(batch?.projectId));
+      const phaseList = Array.isArray(project?.phases) ? project.phases as Row[] : [];
+      const batchPhase = phaseList.find(item => text(item.id) === text(batch?.phaseId));
+      const phaseText = text(batchPhase?.name ?? row.phase ?? row.phaseName);
+      const namedPhase = phaseNames.findIndex(name => name.toLowerCase() === phaseText.toLowerCase());
+      const phaseNumber = Number(batchPhase?.sequence) || (batchPhase ? phaseList.indexOf(batchPhase) + 1 : Number(phaseText.match(/\d+/)?.[0]) || (namedPhase >= 0 ? namedPhase + 1 : undefined));
+      return { id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId, participantType: participantType.toLowerCase(), batchCode: batchCodeForRecord(row, batchRows), ...(phaseNumber ? { phaseNumber } : {}), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') };
     }).sort((a, b) => b.date.localeCompare(a.date));
   }, []);
-  const rows = results.filter(row => (participantOnly ? row.kind === 'feedback' : kind === 'all' || row.kind === kind) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()) && (!ernetLogin || row.participantType.includes(audience.toLowerCase())));
+  const rows = results.filter(row => (participantOnly ? row.kind === 'feedback' : true) && (!ernetLogin || !selectedPhase || row.phaseNumber === selectedPhase) && ((!filters.form || row.formTitle.toLowerCase().includes(filters.form.toLowerCase())) && (!filters.batch || row.batchCode.toLowerCase().includes(filters.batch.toLowerCase())) && (!filters.stage || row.stage.toLowerCase().includes(filters.stage.toLowerCase())) && (!filters.from || row.date >= filters.from) && (!filters.to || row.date <= filters.to)) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()) && (!ernetLogin || row.participantType.includes(audience.toLowerCase())));
+  const filterFields: FilterSpec[] = [
+    { key: 'form', label: 'Form', type: 'search', placeholder: 'Search forms' },
+    { key: 'batch', label: 'Batch', type: 'search', placeholder: 'Search batch code' },
+    { key: 'stage', label: 'Stage', type: 'search', placeholder: 'Search stage' },
+    { key: 'from', label: 'From submission date', type: 'date' },
+    { key: 'to', label: 'To submission date', type: 'date' },
+  ];
+  const changeFilter = (key: string, value: string) => { setFilters(previous => ({ ...previous, [key]: value })); setPage(1); };
+  const clearFilters = () => { setFilters({ form: '', batch: '', stage: '', from: '', to: '' }); setPage(1); };
   const groupedRows = [...rows.reduce((groups, row, index) => {
     const groupKey = participantOnly
       ? JSON.stringify([row.formId || row.formTitle, row.kind, row.stage])
@@ -80,15 +102,16 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
     return <div className="app report-app"><Sidebar activePage={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} /><main className="main report-main"><Topbar title={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} description={participantOnly ? 'Review individual participant feedback responses.' : 'Consolidated form responses and question analysis.'} /><Container maxWidth="xl" sx={{ py: 2.5 }}><AssessmentFormDetail form={activeForm} submissions={formSubmissions} onBack={() => participantOnly ? window.location.assign(`${import.meta.env.BASE_URL}#/reports/assessment-feedback`) : setSelectedForm(null)} participantOnly={participantOnly} /></Container><Footer /></main></div>;
   }
   return <div className="app report-app"><Sidebar activePage={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} /><main className="main report-main"><Topbar title={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} description={participantOnly ? 'Review participant feedback responses.' : 'Review completion, graded outcomes, and learning gain from recorded submissions.'} /><Container maxWidth="xl" sx={{ py: 2.5 }}><Stack spacing={1.5}>
-    {!participantOnly && <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><TextField select size="small" label="Result type" value={kind} onChange={event => { setKind(event.target.value); setPage(1); }} sx={{ minWidth: 200 }}><MenuItem value="all">All results</MenuItem><MenuItem value="assessment">Assessments</MenuItem><MenuItem value="feedback">Feedback</MenuItem></TextField></Box>}
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><button type="button" className="filter-trigger" aria-expanded={Boolean(filterAnchor)} onClick={event => setFilterAnchor(event.currentTarget)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/><circle cx="15" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/></svg>Filters{Object.values(filters).filter(Boolean).length > 0 && <span className="filter-count visible">{Object.values(filters).filter(Boolean).length}</span>}</button></Box><Popover disablePortal open={Boolean(filterAnchor)} anchorEl={filterAnchor} onClose={() => setFilterAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}><Box className="dashboard-filter-popup" sx={{ width: { xs: 'calc(100vw - 24px)', sm: 560 }, maxWidth: 'calc(100vw - 24px)', p: 1 }}><ReportFilterPanel fields={filterFields} values={filters} onChange={changeFilter} onClear={clearFilters} dashboardStyle /></Box></Popover>
+    {ernetLogin && <PhaseSelectionSummary selectedPhase={selectedPhase} selectedFilters={filters} />}
     {!participantOnly && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
       <Summary label="Submissions" value={rows.length} />
       <Summary label="Graded" value={graded.length} />
       <Summary label="Pass rate" value={graded.length ? `${Math.round(passed / graded.length * 100)}%` : '—'} />
       <Summary label="Feedback responses" value={feedbackCount} />
     </Box>}
-    {!participantOnly && <><Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><ReportViewToggle view={view} onChange={setView} /></Box>
-    {view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}><ReportBarChart title="Submission mix" description="Assessment and feedback submissions under the selected result filter" series={[{ label: 'Assessments', color: '#2584b9' }, { label: 'Feedback', color: '#815bb3' }]} rows={[{ label: 'Submissions', values: [assessmentCount, feedbackCount] }]} chartType="pie" /><ReportBarChart title="Graded assessment outcomes" description="Pass and not-passed counts; non-graded forms are excluded" series={[{ label: 'Passed', color: '#16945b' }, { label: 'Not passed', color: '#dd6670' }]} rows={[{ label: 'Graded assessments', values: [passed, graded.length - passed] }]} chartType="pie" /><ReportBarChart title="Average learning gain" description="Mean post-assessment minus pre-assessment marks where comparable scores are available" series={[{ label: 'Learning gain', color: '#e69a32' }]} rows={byStage} formatter={value => `${value > 0 ? '+' : ''}${value.toFixed(1)}`} signed /></Box> : <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf1', borderRadius: 2 }}><Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Submission details · {rows.length}</Typography>{groupedRows.length ? <><TableContainer><Table size="small"><TableHead><TableRow><TableCell>Form</TableCell><TableCell align="right">Total submitted</TableCell><TableCell>Batch</TableCell><TableCell>Plan / day</TableCell><TableCell>Date of Submitted</TableCell></TableRow></TableHead><TableBody>{pageRows.map(group => <TableRow key={group.key}><TableCell><Button size="small" onClick={() => openDetailedReport(group.row)} sx={{ p: 0, minWidth: 0, justifyContent: 'flex-start', textTransform: 'none', fontWeight: 700 }}>{group.row.formTitle}</Button><Typography variant="caption" display="block" color="text.secondary">{group.row.kind} · {group.row.stage}</Typography></TableCell><TableCell align="right">{group.participants.size}</TableCell><TableCell>{group.row.batchCode || '—'}</TableCell><TableCell>{group.row.planCode || '—'}{group.row.day ? ` · Day ${group.row.day}` : ''}</TableCell><TableCell>{formatDate(group.latestSubmittedAt.slice(0, 10)) || '—'}</TableCell></TableRow>)}</TableBody></Table></TableContainer><ReportPagination total={groupedRows.length} page={currentPage} pageSize={PAGE_SIZE} onPageChange={setPage} /></> : <Typography color="text.secondary">No assessment or feedback submissions match this filter.</Typography>}</Paper>}</>}
+    {!participantOnly && <>
+    {view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}><ReportBarChart title="Submission mix" description="Assessment and feedback submissions" series={[{ label: 'Assessments', color: '#2584b9' }, { label: 'Feedback', color: '#815bb3' }]} rows={[{ label: 'Submissions', values: [assessmentCount, feedbackCount] }]} chartType="pie" /><ReportBarChart title="Graded assessment outcomes" description="Pass and not-passed counts; non-graded forms are excluded" series={[{ label: 'Passed', color: '#16945b' }, { label: 'Not passed', color: '#dd6670' }]} rows={[{ label: 'Graded assessments', values: [passed, graded.length - passed] }]} chartType="pie" /><ReportBarChart title="Average learning gain" description="Mean post-assessment minus pre-assessment marks where comparable scores are available" series={[{ label: 'Learning gain', color: '#e69a32' }]} rows={byStage} formatter={value => `${value > 0 ? '+' : ''}${value.toFixed(1)}`} signed /></Box> : <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf1', borderRadius: 2 }}><Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Submission details · {rows.length}</Typography>{groupedRows.length ? <><TableContainer><Table size="small"><TableHead><TableRow><TableCell>Form</TableCell><TableCell align="right">Total submitted</TableCell><TableCell>Batch</TableCell><TableCell>Plan / day</TableCell><TableCell>Date of Submitted</TableCell></TableRow></TableHead><TableBody>{pageRows.map(group => <TableRow key={group.key}><TableCell><Button size="small" onClick={() => openDetailedReport(group.row)} sx={{ p: 0, minWidth: 0, justifyContent: 'flex-start', textTransform: 'none', fontWeight: 700 }}>{group.row.formTitle}</Button><Typography variant="caption" display="block" color="text.secondary">{group.row.kind} · {group.row.stage}</Typography></TableCell><TableCell align="right">{group.participants.size}</TableCell><TableCell>{group.row.batchCode || '—'}</TableCell><TableCell>{group.row.planCode || '—'}{group.row.day ? ` · Day ${group.row.day}` : ''}</TableCell><TableCell>{formatDate(group.latestSubmittedAt.slice(0, 10)) || '—'}</TableCell></TableRow>)}</TableBody></Table></TableContainer><ReportPagination total={groupedRows.length} page={currentPage} pageSize={PAGE_SIZE} onPageChange={setPage} /></> : <Typography color="text.secondary">No assessment or feedback submissions match this filter.</Typography>}</Paper>}</>}
     {participantOnly && <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf1', borderRadius: 2 }}><Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Feedback forms · {rows.length}</Typography>{groupedRows.length ? <><TableContainer><Table size="small"><TableHead><TableRow><TableCell>Form</TableCell><TableCell align="right">Total submitted</TableCell><TableCell>Batch</TableCell><TableCell>Plan / day</TableCell><TableCell>Date submitted</TableCell></TableRow></TableHead><TableBody>{pageRows.map(group => <TableRow key={group.key}><TableCell><Button size="small" onClick={() => openDetailedReport(group.row)} sx={{ p: 0, minWidth: 0, justifyContent: 'flex-start', textTransform: 'none', fontWeight: 700 }}>{group.row.formTitle}</Button><Typography variant="caption" display="block" color="text.secondary">{group.row.stage}</Typography></TableCell><TableCell align="right">{group.participants.size}</TableCell><TableCell>{group.row.batchCode || '—'}</TableCell><TableCell>{group.row.planCode || '—'}{group.row.day ? ` · Day ${group.row.day}` : ''}</TableCell><TableCell>{formatDate(group.latestSubmittedAt.slice(0, 10)) || '—'}</TableCell></TableRow>)}</TableBody></Table></TableContainer><ReportPagination total={groupedRows.length} page={currentPage} pageSize={PAGE_SIZE} onPageChange={setPage} /></> : <Typography color="text.secondary">No participant feedback submissions are available.</Typography>}</Paper>}
   </Stack></Container><Footer /></main></div>;
 }

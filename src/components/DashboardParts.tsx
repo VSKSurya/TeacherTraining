@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { Box, Dialog, IconButton, Popover, Snackbar, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../store';
-import { setAudience, setFilter, setPhase, clearFilters } from '../store';
+import { setAudience, setFilter, setPhase, clearFilters, store } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
 import { locations } from '../data/locations';
 import { kgbvSchools } from '../data/kgbvSchools';
@@ -369,6 +369,7 @@ export function DashboardModals() { return <Markup html={modalMarkup} />; }
 export function DashboardBridge() {
   const dispatch = useDispatch<AppDispatch>();
   const audience = useSelector((state: RootState) => state.dashboard.audience);
+  const selectedPhase = useSelector((state: RootState) => state.dashboard.selectedPhase);
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('dashboard-audience-change', { detail: audience }));
   }, [audience]);
@@ -377,6 +378,8 @@ export function DashboardBridge() {
     const script = document.createElement('script');
     script.src = `${import.meta.env.BASE_URL}legacy-dashboard.js`;
     script.async = false;
+    const syncPhase = () => window.dispatchEvent(new CustomEvent('dashboard-phase-change', { detail: store.getState().dashboard.selectedPhase }));
+    script.addEventListener('load', syncPhase);
     document.body.appendChild(script);
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -405,9 +408,13 @@ export function DashboardBridge() {
       document.removeEventListener('click', onClick, true);
       document.removeEventListener('change', onChange, true);
       document.removeEventListener('keydown', onKeyDown, true);
+      script.removeEventListener('load', syncPhase);
       script.remove();
       delete window.KGBV_SCHOOLS;
     };
   }, [dispatch]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('dashboard-phase-change', { detail: selectedPhase }));
+  }, [selectedPhase]);
   return null;
 }

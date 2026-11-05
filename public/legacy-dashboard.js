@@ -344,9 +344,8 @@
 
   document.querySelector('#notifications').addEventListener('click',()=>showToast('You’re all caught up on dashboard notifications.'));
   document.querySelector('#profile-button').addEventListener('click',()=>showToast('Signed in as Project Sponsor.'));
-  function selectPhase(phase){
-    const phaseNumber=Number(phase.querySelector('.phase-number').textContent.match(/\d+/)?.[0]);
-    selectedPhase=selectedPhase===phaseNumber?null:phaseNumber;
+  function applySelectedPhase(phaseNumber){
+    selectedPhase=phaseNumber;
     document.querySelectorAll('.phase-card, .student-module-card').forEach(card=>{
       const cardPhaseNumber=Number(card.querySelector('.phase-number').textContent.match(/\d+/)?.[0]);
       const selected=selectedPhase!==null&&cardPhaseNumber===selectedPhase;
@@ -358,6 +357,11 @@
     if(!batchModalLayer.hidden)renderBatchModal();
     if(!participantModalLayer.hidden&&selectedBatch)openParticipantModal(selectedBatch,activeBatchTrigger);
   }
+  function selectPhase(phase){
+    const phaseNumber=Number(phase.querySelector('.phase-number').textContent.match(/\d+/)?.[0]);
+    applySelectedPhase(selectedPhase===phaseNumber?null:phaseNumber);
+  }
+  window.addEventListener('dashboard-phase-change',event=>applySelectedPhase(event.detail));
   document.querySelectorAll('.phase-card, .student-module-card').forEach(phase=>{
     phase.addEventListener('click',()=>selectPhase(phase));
     phase.addEventListener('keydown',event=>{

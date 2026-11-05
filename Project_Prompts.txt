@@ -158,3 +158,239 @@ In Teacher Training Feedback Form – Detailed Report, add filters for Training 
 [2026-11-02]
 The detailed feedback report displays a literal “\n” between the filters and Report Summary. Please remove it and publish the corrected page.
 [Work log: Removed the unintended visible newline escape from the report JSX so the summary follows the filter card without stray text.]
+
+[2026-11-04]
+Where i am now?
+
+please inspected it
+
+Add New menu Trainer for Ernet Admin, Schoolnet Super Admin, Schoolnet Project Admin, State Admin login is Demo1, Demo2, Demo3, Demo4.
+
+In this whatever that Trainer Upload the Documents, Presentation, short videos, photos and scanned attendance sheet of the training to verify and evidences of uploaded.
+
+These Login can see what Trainer has uploaded. So, those can be Accept or Reject as an Evidences by the these logins. Once it is Approved it will go to the Content Library, In that Short Video, Documents, Presentations, PDF files.
+
+Whatever Screen is done, Now it will be for the Trainer Login Add Menu as Upload Documents.
+
+In Content Library under Document we will have Docx, Doc, PDF, Images etc., we do not required PDF Separate Tab in it.
+
+These format will be store after approved by these Ernet Admin(Demo1), Schoolnet Super Admin(Demo2), Schoolnet Project Admin(Demo3), State Admin(Demo4).
+
+It will reflect in all Users Logins Globally these Content Library Can seen
+
+Rename Menu Trainer into "Uploaded Documents" for the Login Demo1 - Demo4, but in Trainer Login(Demo6) Name should  Upload Documents only no change init.
+
+Add trainer submission we need to remove and add Filter for these login Demo1 - Demo4
+
+Filter should be Training Plan | State | District | Block |  Phase | Trainer Name | From Start Date | To Start Date | Status
+
+Filter Look and feel should be like Batch Performance
+
+1. Header shoul be Filter not "Filter Submissions" rename it
+2. Remove the tag under Submitted evidence that is "Open submitted files, then approve or reject each submission."
+3. Date Format should after approved dd-MMM-yyyy
+4. Whenever we Reject the Evidence file they should note need to update by approver.
+   When he/she click on reject then Textarea will popups then reason for rejection that go's into Note for the Reference
+
+"Trainer / batch" and also "Evidence Files" Wrap the Text for the Column. Complete table look Proper
+
+Under Trainer Login under Menu Upload Documents remove heading "Add trainer submission".
+Form control can be Match with Batch Performance. it Looks title is big and Heavy controls
+
+Need to do the better look and feel of the form
+
+Some issues when i click on the Dark theme. Some of the Components still white background not as matching with Dark theme
+
+Under Reports we need to Table View then Graph View
+Wherever we have Download CSV into Download Excel
+
+In MIS Reports under Training Summary in filter Participant Type remove the Option All Participant Type
+
+Keep All option in the Participant Type
+
+Remove only "All Participant Type" from the Filter Participant Type keep "All"
+
+Under MIS Report -> Assessment & Feedback Report -> Click on the Form we are showing - "Participant-wise Answers"
+
+need to Move as Separate Menu Under MIS Reports as "Participant Feedback Report" With the Filter which are showing in "Teacher Training Feedback Form - Detailed Report" keep how we show in the filter in Dashboard like Button click on it popup with filter
+
+In MIS Reports Under Participant Feedback Report
+
+1. Rename the Menu From "Participant Feedback Report" into "Participant Wise Feedback Report"
+2. Enable the Filter in the Page look and feel should lik Dashboard filter only
+    Filter are: Training Plan | State | District | Block |  Phase | Trainer Name | From Start Date | To Start Date | Status
+3. Don't Show the Feedback form 3 When i clik on the "Participant Wise Feedback Report" directly Participant Feedback Report · Teacher Training Feedback Form
+4. "Participant Feedback Report · Teacher Training Feedback Form" change this heading into "Report - Participant Wise"
+
+Remove the "Button Back to Feedback forms" and Filter are not show in the Participant Wise Feedback Report
+
+1. Remove the "Participant-wise Answers"
+2. Filter buttons should align with Download Excel button
+3. Filter design not align with Dashboard
+
+Show the filter which we showin the dasbhoard same in the "Participant Wise Feedback Report"
+
+design of the Filter are not look and feel is not aligned with dashboard
+
+[Attached screenshot: dashboard filter panel layout.]
+Filters should look like this in the "Participant Wise Feedback Report"
+
+In MIS Report under "Batch Performance" In need to change the design for the Filters as button click that open the Popup with currently filtes
+
+Look and feel is not proper
+
+Remove the Tabs for for Table veiw  and Graph View in this
+
+Keep "Download Excel" deside the filters
+
+In MIS Reports under Training Summary, update the filters just like Batch Performance
+Remove the Table View and Graph View
+
+Keep or Update Font-family Accross the app - "Poppins, "Segoe UI", Arial, sans-serif;"
+
+In MIS Reports under attendance Report, update the filters just like Batch Performance
+
+Remove the Table View and Graphs View
+
+In Batch Performance & Training Summary by default showing one Filter has been selected can you deselete it
+
+In Batch performance we have "Download Excel" look and feel should be same in all the place for "Download Excel"
+
+Update the Filters in "Uploaded Documents" like Batch Performance
+
+In Filter we need to add the Batch
+
+Update the Page title as Trainer Uploaded Documents from Dashboard
+
+Remove the page level " Trainer Uploaded Documents
+Review evidence submitted by trainers. Approved items are published to the Content Library."
+
+In Upload Documents
+
+push the code into git and publish it and deploy it
+
+Dashboard of the Ernet Admin
+
+1. Alignment of the "info-button" not correctly align
+2. Remove "kpi-icon" on dashboard
+3. Update the below style
+.phase-overview:not(.student-overview) .phase-card .phase-status {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 0px;
+    font-size: 10px;
+}
+
+.phase-overview:not(.student-overview) .phase-facts {
+    grid-column: 2;
+    grid-row: 4;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 9px;
+    width: auto;
+    margin: 1px 0 0;
+    font-size: 10px;
+}
+
+[Attached screenshot: info icon in a circle.]
+Word i is align in center of the Circle bottom of the cricle can place properly
+
+In Ernet Dashboard - Attendance Trend We have in Y-axis 0%, 20%, 40%, 60%, 100% can we show the 0% 50% and 100% so that height can be redused to card size I can size of the Batch Status.
+
+[Attached screenshot: Attendance Trend chart.]
+Graph is not align properly
+
+Still i can same issue has not resolved
+
+In Sidebar When it is Collapse Icons are not in aligned properly. When collapse the sidebar When Mouse over on the MIS Report if it has Sub-menu popup onover it is collapse
+
+[Attached screenshot: collapsed sidebar with MIS Reports submenu.]
+When i click on the MIS Reports is z-index is not properly set whenever any pages
+
+In Sidebar update the icon for the Uploaded Documents which it will suitable. Current one not looking good
+
+indicate of the Attendance Trend line chart can be like Day 1 - 60%, Day 2 -  63%, Day 3 - 66%, Day 4 - 69% and Day 5 - 70.5%
+
+remove the KPI - "Upcoming Batches", "Active Batches", and "Completed Batches" which we hide it.
+
+[Attached screenshot: Accessibility Tools panel.]
+this Accessibility Tool for th APP this need to keep in topbar for all the pages with Proper icon.
+
+Whatever the functionlity "font-size-controls" has to applied in Accessibility Tools for Increasing Text, Decrease Test and Reset Text and also set these icons for the exit icons of Accessibility Tools
+
+[Attached screenshot: Accessibility Tools popup positioned at top left.]
+When i click on the Increase Text, Decrease Text, and Reset Text position of the popup is going to 0/0 [Image #1] which is not proper
+Remove the font-size-controls on topbar
+
+And also Update the  Accessibility Tools add one Section Themes
+
+[Attached screenshot: Accessibility Tools with Light and Dark options.]
+When i click onthe Accessibility Tools click on Light and Dark options. Popup Poisition is getting change 0/0 which is not proper. Please update it
+
+[Attached screenshot: Accessibility Tools with large spacing.]
+Marign of each icon can be redused so that i can all the icon of Accessibility Tool in one go
+
+And also Reduce the font-size of the Accessibility Tools to 16px; Contrast Adjustment, Themes, Text Size, Others - to 14px;
+
+theme-option Remove from the Dashboard
+
+Move the Teacher / Student toggle to the top navigation bar (Topbar), exclusively for the ERNET Login.
+
+Functional Requirements:
+
+Toggle Visibility
+
+Display the Teacher / Student toggle in the topbar only when the user logs in through ERNET.
+Hide this toggle for all other login types and user roles.
+
+Student Selection
+
+When the user selects Student, all pages, dashboards, reports, tables, charts, and statistics must display Student-related data only.
+The selected Student mode must remain active while navigating between pages.
+
+Teacher Selection
+
+When the user selects Teacher, all pages, dashboards, reports, tables, charts, and statistics must display Teacher-related data only.
+The selected Teacher mode must remain active while navigating between pages.
+
+Global Data Synchronization
+
+The toggle must work globally across the entire ERNET portal.
+Whenever the selection changes, all relevant page data must refresh automatically based on the selected mode.
+The user should not need to refresh the browser manually.
+Ensure that Student and Teacher data are not mixed.
+
+UI/UX Requirements
+
+Position the toggle in the topbar with clear labels: Teacher | Student.
+Highlight the currently selected option.
+Maintain the selected mode during navigation and page reloads.
+
+Expected Result:
+
+For ERNET Login, switching between Teacher and Student from the topbar should dynamically update the entire portal to display data corresponding to the selected category, consistently across all pages, without affecting other login types.
+
+push the code the into git and publish it and deploy it
+
+can you deploy it
+
+In Ernet Admin Dashboard when i click on the Batch Status - Click on the Upcoming open the Modal popup show the data. Can that design convert into Tables
+
+push the code in to git and publish it and deploy it
+
+In Location Performance we have drill till school we need to add another drill Trainer details. When i click on the School need to show these details
+
+"phase-card current selected" instead of border need border bottom with border color #17365d with 2px
+
+"phase-card current selected" instead of border bottom with 4px
+
+In "Teacher Training Feedback Form - Detailed Report" filter to match Batch Performance a filters button opens the filter popup
+
+I need to change the Heading of the page from "Teacher Training Feedback Form - Detailed Report" to "Detailed Feedback From Report"
+"Back to Submissions Details" button can be small with same button style
+
+Can we give the Back arrow as button besides to "Detailed Feedback From Report" this will work as Back to Submissions Details
+
+push the code into git publish it and deploy it
+
+Whatever i given the prompt please append all those in my Project_Prompts.txt file

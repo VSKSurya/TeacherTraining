@@ -1,17 +1,19 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Popover, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
-import { ReportBarChart } from './ReportCharts';
-import { ReportFilterPanel, type FilterSpec, type ReportFilters } from './ReportComponents';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Popover, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { PhaseSelectionSummary, ReportFilterPanel, type FilterSpec, type ReportFilters } from './ReportComponents';
 import { formatDate } from '../dateFormat';
 import { batchCodeForRecord, batchIdentifiers } from '../batchCodes';
 import { kgbvSchools } from '../data/kgbvSchools';
 import { downloadExcelWorkbook } from './exportExcel';
+import { ReportBarChart, ReportViewToggle, type ReportView } from './ReportCharts';
+import { useSelector } from 'react-redux';
+import { getSession } from '../auth';
+import type { RootState } from '../store';
 
 type Row = Record<string, any>;
 type FormQuestion = { id: string; prompt: string; options?: string[]; correctIndex?: number; points?: number; selection?: 'multiple' };
 type FormRecord = { id: string; title: string; kind: string; stage: string; planCode?: string; day?: number; questions: FormQuestion[] };
 type Submission = Row & { id: string; formId?: string; formTitle?: string; traineeId?: string; userId?: string; registrationId?: string; batchId?: string; batchCode?: string; planCode?: string; submittedAt?: string; score?: number; maxMarks?: number; passed?: boolean; answers?: Record<string, string> };
-const COLORS = ['#2584b9', '#16945b', '#e69a32', '#815bb3', '#dd6670', '#36a6a0', '#657c92', '#c17d3c'];
 const text = (value: unknown) => typeof value === 'string' ? value : '';
 const hiddenFeedbackPrompts = new Set(['name of the school', 'name of the teacher', 'contact number']);
 const visibleQuestions = (form: FormRecord) => form.kind === 'feedback'
@@ -30,9 +32,11 @@ function findAnswerIndex(question: FormQuestion, raw: unknown) {
 function optionPercent(count: number, total: number) { return total ? `${(count / total * 100).toFixed(1)}%` : '0.0%'; }
 
 export default function AssessmentFormDetail({ form, submissions, onBack, participantOnly = false }: { form: FormRecord; submissions: Submission[]; onBack: () => void; participantOnly?: boolean }) {
-  const [view, setView] = useState<'combined' | 'table' | 'chart'>('combined');
+  const selectedPhase = useSelector((state: RootState) => state.dashboard.selectedPhase);
+  const ernetLogin = getSession()?.role === 'sponsor-admin';
   const [participant, setParticipant] = useState<Submission | null>(null);
-  const [filters, setFilters] = useState<ReportFilters>({ plan: '', batchId: '', udise: '', state: '', district: '', block: '', phase: '', trainer: '', start: '', end: '', status: '' });
+  const [view, setView] = useState<ReportView>('table');
+  const [filters, setFilters] = useState<ReportFilters>({ plan: '', batchId: '', udise: '', state: '', district: '', block: '', trainer: '', start: '', end: '', status: '' });
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
@@ -42,14 +46,21 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
   const registrations = useMemo(() => read('teacher-training-registrations'), []);
   const trainees = useMemo(() => read('teacher-training-trainees'), []);
   const associations = useMemo(() => read('teacher-training-project-plan-associations'), []);
+  const phaseNumberForBatch = (batch: Row) => {
+    const project = projects.find(item => text(item.id) === text(batch.projectId));
+    const phases = Array.isArray(project?.phases) ? project.phases : [];
+    const phase = phases.find((item: Row) => text(item.id) === text(batch.phaseId));
+    return Number(phase?.sequence) || (phase ? phases.indexOf(phase) + 1 : Number(text(batch.phaseName ?? batch.phase).match(/\d+/)?.[0]) || 0);
+  };
   const assignedBatches = batches.filter(batch => {
     const association = associations.find(item => text(item.id) === text(batch.projectPlanAssociationId));
     const plan = plans.find(item => text(item.id) === text(batch.trainingPlanId ?? association?.trainingPlanId) || text(item.code) === getBatchPlanCode(batch, undefined));
     const code = getBatchPlanCode(batch, plan);
     const linked = Array.isArray(plan?.resourceAssignments) && plan.resourceAssignments.some((item: Row) => text(item.formId) === form.id);
-    return linked || text(form.planCode) === '*' || (!!text(form.planCode) && (text(form.planCode) === code || text(form.planCode) === text(plan?.code)));
+    const assignedToForm = linked || text(form.planCode) === '*' || (!!text(form.planCode) && (text(form.planCode) === code || text(form.planCode) === text(plan?.code)));
+    return assignedToForm && (!ernetLogin || !selectedPhase || phaseNumberForBatch(batch) === selectedPhase);
   });
-  const reportBatches = assignedBatches.length ? assignedBatches : batches.filter(batch => submissions.some(row => refs(batch).some(ref => refs(row).includes(ref))));
+  const reportBatches = assignedBatches.length ? assignedBatches : batches.filter(batch => submissions.some(row => refs(batch).some(ref => refs(row).includes(ref))) && (!ernetLogin || !selectedPhase || phaseNumberForBatch(batch) === selectedPhase));
   const metadataForBatch = (batch: Row) => {
     const association = associations.find(item => text(item.id) === text(batch.projectPlanAssociationId));
     const plan = plans.find(item => text(item.id) === text(batch.trainingPlanId ?? association?.trainingPlanId) || text(item.code) === getBatchPlanCode(batch, undefined));
@@ -69,7 +80,7 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
     (!filters.plan || metadata.planCode === filters.plan) && (!filters.batchId || metadata.batchId === filters.batchId) &&
     (!filters.udise || metadata.udise === filters.udise) && (!filters.state || metadata.state === filters.state) &&
     (!filters.district || metadata.district === filters.district) && (!filters.block || metadata.block === filters.block) &&
-    (!filters.phase || metadata.phase === filters.phase) && (!filters.trainer || metadata.trainer === filters.trainer) &&
+    (!filters.trainer || metadata.trainer === filters.trainer) &&
     (!filters.start || (metadata.startDate && metadata.startDate >= filters.start)) && (!filters.end || (metadata.startDate && metadata.startDate <= filters.end)) &&
     (!filters.status || metadata.status === filters.status);
   const filteredBatches = reportBatches.filter(batch => batchMatches(metadataForBatch(batch)));
@@ -98,29 +109,18 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
     { key: 'state', label: 'State', type: 'select', placeholder: 'All states', options: optionList(availableMetadata.map(item => item.state)) },
     { key: 'district', label: 'District', type: 'select', placeholder: 'Select a state first', options: districtOptions, disabled: !filters.state },
     { key: 'block', label: 'Block', type: 'select', placeholder: 'Select a district first', options: blocks, disabled: !filters.district },
-    { key: 'phase', label: 'Phase', type: 'select', placeholder: 'All phases', options: optionList(availableMetadata.map(item => item.phase)) },
     { key: 'trainer', label: 'Trainer Name', type: 'select', placeholder: 'All trainers', options: trainers },
     { key: 'start', label: 'From Start Date', type: 'date' }, { key: 'end', label: 'To Start Date', type: 'date' },
     { key: 'status', label: 'Status', type: 'select', placeholder: 'All statuses', options: optionList(availableMetadata.map(item => item.status)) },
   ];
-  const participantFilterFields = filterFields.filter(field => ['plan', 'state', 'district', 'block', 'phase', 'trainer', 'start', 'end', 'status'].includes(field.key));
+  const participantFilterFields = filterFields.filter(field => ['plan', 'state', 'district', 'block', 'trainer', 'start', 'end', 'status'].includes(field.key));
   const changeFilter = (key: string, value: string) => setFilters(previous => {
     const next = { ...previous, [key]: value };
     if (key === 'state') { next.district = ''; next.block = ''; }
     if (key === 'district') next.block = '';
     return next;
   });
-  const clearFilters = () => setFilters({ plan: '', batchId: '', udise: '', state: '', district: '', block: '', phase: '', trainer: '', start: '', end: '', status: '' });
-  const batchRefsSet = new Set(filteredBatches.flatMap(refs));
-  const registered = registrations.filter(row => refs(row).some(ref => batchRefsSet.has(ref)) && !['rejected', 'cancelled', 'withdrawn'].includes(text(row.status ?? row.registrationStatus ?? row.approvalStatus).toLowerCase()));
-  const registeredIds = new Set(registered.map(row => identityRefs(row).find(Boolean)).filter(Boolean));
-  const submittedIds = new Set(filteredSubmissions.map(row => identityRefs(row).find(Boolean) || row.id).filter(Boolean));
-  const submittedCount = submittedIds.size;
-  const totalRegistered = registeredIds.size || (registered.length ? registered.length : submittedCount);
-  const pendingCount = Math.max(0, totalRegistered - submittedCount);
-  const submissionPercentage = totalRegistered ? submittedCount / totalRegistered * 100 : 0;
-  const scored = filteredSubmissions.filter(row => typeof row.score === 'number' && typeof row.maxMarks === 'number' && row.maxMarks > 0);
-  const averageScore = scored.length ? scored.reduce((sum, row) => sum + (row.score! / row.maxMarks! * 100), 0) / scored.length : null;
+  const clearFilters = () => setFilters({ plan: '', batchId: '', udise: '', state: '', district: '', block: '', trainer: '', start: '', end: '', status: '' });
   const reportQuestions = visibleQuestions(form);
   const reportQuestionNumber = (index: number) => form.stage === 'pre' ? index + 6 : index + 1;
   const questionStats = reportQuestions.map((question, questionIndex) => {
@@ -153,14 +153,6 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
       : freeText.map(item => ({ label: item.value, count: item.count, correct: false }));
     return { question, questionIndex, optionCounts, correct, incorrect, skipped, answeredCount, freeText, answerRows, questionType };
   });
-  const objectiveStats = questionStats.filter(item => item.question.correctIndex !== undefined);
-  const summaryBatches = filteredBatches;
-  const projectNames = [...new Set(summaryBatches.map(batch => text(batch.projectName)).filter(Boolean))];
-  const batchNames = [...new Set(summaryBatches.map(batch => text(batch.batchCode ?? batch.name ?? batch.id)).filter(Boolean))];
-  const states = [...new Set(summaryBatches.map(batch => text(batch.state)).filter(Boolean))];
-  const districts = [...new Set(summaryBatches.map(batch => text(batch.district)).filter(Boolean))];
-  const schools = [...new Set(summaryBatches.map(batch => text(batch.schoolName ?? batch.name)).filter(Boolean))];
-  const trainingDates = [...new Set(summaryBatches.flatMap(batch => Array.isArray(batch.trainingDates) ? batch.trainingDates.map(text) : [text(batch.trainingStartDate)].filter(Boolean)))];
   const responseProfile = (row: Submission) => {
     const keys = identityRefs(row);
     const registration = registrations.find(item => (row.registrationId && text(item.id) === row.registrationId) || identityRefs(item).some(key => keys.includes(key)));
@@ -206,58 +198,55 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
         </Box>
       </Stack>
       <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="flex-end">
+        {!participantOnly && <ReportViewToggle view={view} onChange={setView} />}
         <button type="button" className="filter-trigger" aria-expanded={Boolean(filterAnchor)} onClick={event => setFilterAnchor(event.currentTarget)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/><circle cx="15" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/></svg>Filters{(participantOnly ? participantFilterFields : filterFields).filter(field => Boolean(filters[field.key])).length > 0 && <span className="filter-count visible">{(participantOnly ? participantFilterFields : filterFields).filter(field => Boolean(filters[field.key])).length}</span>}</button>
         <button type="button" className="report-export-button" onClick={exportFilteredResponses} disabled={exporting || !filteredSubmissions.length}>{exporting ? 'Preparing Excel...' : 'Download Excel'}</button>
       </Stack>
     </Stack>
+    {ernetLogin && <PhaseSelectionSummary selectedPhase={selectedPhase} selectedFilters={filters} />}
     {exportError && <Alert severity="error" onClose={() => setExportError('')}>{exportError}</Alert>}
-    {!participantOnly && <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}><Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Report Summary</Typography><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
-      <SummaryItem label="Project Name" value={projectNames.join(', ') || '—'} /><SummaryItem label="Batch Name / Code" value={batchNames.join(', ') || '—'} /><SummaryItem label="State / District / School" value={[states.join(', '), districts.join(', '), schools.join(', ')].filter(Boolean).join(' / ') || '—'} /><SummaryItem label="Training Date" value={trainingDates.map(date => formatDate(date)).join(', ') || '—'} /><SummaryItem label="Total Registered Participants" value={totalRegistered} /><SummaryItem label="Total Submitted Responses" value={submittedCount} /><SummaryItem label="Pending Responses" value={pendingCount} /><SummaryItem label="Submission Percentage" value={`${submissionPercentage.toFixed(1)}%`} /><SummaryItem label="Average Assessment Score" value={averageScore === null ? 'Not scored' : `${averageScore.toFixed(1)}%`} />
-    </Box></Paper>}
     {!filteredSubmissions.length && <Alert severity="info">No submitted responses match the selected filters.</Alert>}
-    {!participantOnly && <Stack direction="row" justifyContent="flex-end"><ToggleButtonGroup size="small" exclusive value={view} onChange={(_, next) => { if (next) setView(next); }} aria-label="Report display mode"><ToggleButton value="table">Table View</ToggleButton><ToggleButton value="chart">Chart View</ToggleButton><ToggleButton value="combined">Combined View</ToggleButton></ToggleButtonGroup></Stack>}
-    {!participantOnly && (view === 'table' || view === 'combined') && <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}>
+    {!participantOnly && (view === 'graph' ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}>
+      {questionStats.map(({ question, questionIndex, answerRows }) => {
+        const isChoiceQuestion = Boolean(question.options?.length);
+        const colors = ['#2584b9', '#815bb3', '#16945b', '#e69a32', '#dd6670', '#36a6a0', '#577590', '#b56576'];
+        return <ReportBarChart key={question.id} title={`Q${reportQuestionNumber(questionIndex)}: ${question.prompt}`} description="Responses by answer" series={isChoiceQuestion ? answerRows.map((answer, index) => ({ label: answer.label, color: colors[index % colors.length] })) : [{ label: 'Responses', color: '#2584b9' }]} rows={isChoiceQuestion ? [{ label: 'Responses', values: answerRows.map(answer => answer.count) }] : answerRows.map(answer => ({ label: answer.label, values: [answer.count] }))} chartType={isChoiceQuestion ? 'pie' : 'bar'} />;
+      })}
+    </Box> : <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}>
       <Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Question-wise Answer Analysis</Typography>
       <Stack spacing={1.5}>
-        {questionStats.map(({ question, questionIndex, answerRows, correct, incorrect, skipped, answeredCount, questionType }) => {
+        {questionStats.map(({ question, questionIndex, answerRows, answeredCount }) => {
           const answerOptions = answerRows.map(answer => answer.label.replace(/^[A-Z]\.\s*/, ''));
           const counts = answerRows.map(answer => answer.count);
           const tableMinWidth = Math.max(700, 220 + answerOptions.length * 145);
           return <TableContainer key={question.id} sx={{ overflowX: 'auto' }}>
             <Table size="small" aria-label={`Answer counts and percentages for question ${reportQuestionNumber(questionIndex)}`} sx={{ minWidth: tableMinWidth }}>
               <TableHead>
-                <TableRow><TableCell colSpan={answerOptions.length + 2} sx={{ backgroundColor: '#fff', color: '#173c64', fontSize: 14, fontWeight: 700 }}>
-                  Question {reportQuestionNumber(questionIndex)}: {question.prompt}
-                  <Typography component="span" variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 400 }}>{questionType} · Skipped: {skipped} · Correct: {question.correctIndex === undefined ? 'Not configured' : correct} · Incorrect: {question.correctIndex === undefined ? 'Not configured' : incorrect}</Typography>
+                <TableRow><TableCell colSpan={answerOptions.length + 1} sx={{ backgroundColor: '#fff', color: '#173c64', fontSize: '16px', fontWeight: 700 }}>
+                  Q{reportQuestionNumber(questionIndex)}: {question.prompt}
                 </TableCell></TableRow>
                 <TableRow>
-                  <TableCell aria-label="Measure" />
-                  {answerOptions.map((option, index) => <TableCell key={`${question.id}-option-${index}`} align="center" sx={{ minWidth: 145, whiteSpace: 'normal' }}>{option}</TableCell>)}
+                  {answerOptions.map((option, index) => <TableCell key={`${question.id}-option-${index}`} align="center" sx={{ minWidth: 145, whiteSpace: 'normal', fontSize: '0.775rem', fontWeight: 600 }}>{option}</TableCell>)}
                   <TableCell align="center" sx={{ minWidth: 90 }}>Total</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 <TableRow>
-                  <TableCell aria-label="Selected count" />
                   {counts.map((count, index) => <TableCell key={`${question.id}-count-${index}`} align="right">{count}</TableCell>)}
                   <TableCell align="right" sx={{ fontWeight: 750 }}>{answeredCount}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell aria-label="Percentage" />
                   {counts.map((count, index) => <TableCell key={`${question.id}-percentage-${index}`} align="right">{optionPercent(count, answeredCount)}</TableCell>)}
-                  <TableCell />
+                  <TableCell align="right">{optionPercent(counts.reduce((total, count) => total + count, 0), answeredCount)}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </TableContainer>;
         })}
       </Stack>
-    </Paper>}
-    {!participantOnly && (view === 'chart' || view === 'combined') && <><Typography variant="h6" fontWeight={750}>Graphical Representation</Typography>{objectiveStats.length > 0 && <ReportBarChart title="Question-wise correct and incorrect comparison" description="Objective response counts across submitted participants" series={[{ label: 'Correct', color: '#16945b' }, { label: 'Incorrect', color: '#dd6670' }]} rows={objectiveStats.map(item => ({ label: `Q${reportQuestionNumber(item.questionIndex)}`, values: [item.correct, item.incorrect] }))} chartType="cluster" />}<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,minmax(0,1fr))' }, gap: 1.25 }}>{questionStats.map(({ question, questionIndex, optionCounts, answeredCount, freeText }) => { const questionNumber = reportQuestionNumber(questionIndex); const optionNames = (question.options ?? []).map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`); const chartNames = optionNames.length ? optionNames : freeText.map(item => item.value); const chartValues = optionNames.length ? optionCounts : freeText.map(item => item.count); return <ReportBarChart key={`charts-${question.id}`} title={`Question ${questionNumber}: ${question.prompt}`} description={`Answer distribution · ${answeredCount} answered response(s); skipped: ${filteredSubmissions.length - answeredCount}`} series={chartNames.map((label, index) => ({ label, color: COLORS[index % COLORS.length] }))} rows={[{ label: `Question ${questionNumber}`, values: chartValues }]} formatter={value => `${value} (${optionPercent(value, answeredCount)})`} chartType="pie" />; })}</Box></>}
+    </Paper>)}
     {participantOnly && <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}>{filteredSubmissions.length ? <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Participant Name</TableCell><TableCell>Participant Unique ID</TableCell><TableCell>State / District / School</TableCell><TableCell>Batch Code</TableCell><TableCell>Submission Date</TableCell><TableCell>Total Score</TableCell><TableCell /></TableRow></TableHead><TableBody>{filteredSubmissions.map(row => { const { registration, trainee, batch } = responseProfile(row); return <TableRow key={row.id}><TableCell>{text(registration?.traineeName ?? registration?.name ?? trainee?.name) || 'Participant'}</TableCell><TableCell>{text(row.traineeId ?? row.userId) || '—'}</TableCell><TableCell>{[text(registration?.state ?? trainee?.state ?? batch?.state), text(registration?.district ?? trainee?.district ?? batch?.district), text(registration?.schoolName ?? trainee?.schoolName ?? batch?.schoolName)].filter(Boolean).join(' / ') || '—'}</TableCell><TableCell>{batchCodeForRecord(row, batches) || text(batch?.batchCode) || '—'}</TableCell><TableCell>{row.submittedAt ? formatDate(text(row.submittedAt)) : '—'}</TableCell><TableCell>{typeof row.score === 'number' ? `${row.score}/${row.maxMarks ?? '—'}` : '—'}</TableCell><TableCell><Button size="small" onClick={() => setParticipant(row)}>View answer sheet</Button></TableCell></TableRow>; })}</TableBody></Table></TableContainer> : <Typography color="text.secondary">No participant submissions for this form.</Typography>}</Paper>}
     <Popover disablePortal open={Boolean(filterAnchor)} anchorEl={filterAnchor} onClose={() => setFilterAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}><Box className="dashboard-filter-popup" sx={{ width: { xs: 'calc(100vw - 24px)', sm: 980 }, maxWidth: 'calc(100vw - 24px)', p: 1 }}><ReportFilterPanel fields={participantOnly ? participantFilterFields : filterFields} values={filters} onChange={changeFilter} onClear={clearFilters} dashboardStyle /></Box></Popover>
     <Dialog open={Boolean(participant)} onClose={() => setParticipant(null)} maxWidth="md" fullWidth><DialogTitle>Submitted answer sheet · {text(participant?.traineeId ?? participant?.userId)}</DialogTitle><DialogContent><Stack spacing={1} sx={{ pt: 1 }}>{reportQuestions.map((question, index) => { const raw = participant?.answers?.[question.id]; const selectedIndex = findAnswerIndex(question, raw); const correct = question.correctIndex === undefined ? null : selectedIndex === question.correctIndex; return <Paper key={question.id} variant="outlined" sx={{ p: 1.25 }}><Typography fontWeight={700}>Q{reportQuestionNumber(index)}. {question.prompt}</Typography><Typography variant="body2" sx={{ mt: .5 }}>Selected answer: {answerFor(participant ?? { id: '' }, question)}</Typography>{correct !== null && <Chip size="small" sx={{ mt: .5 }} color={correct ? 'success' : 'error'} label={correct ? 'Correct' : selectedIndex < 0 ? 'Skipped' : 'Incorrect'} />}</Paper>; })}<Typography fontWeight={750}>Total score: {typeof participant?.score === 'number' ? `${participant.score}/${participant.maxMarks ?? '—'}` : 'Not scored'}</Typography></Stack></DialogContent><DialogActions><Button onClick={() => setParticipant(null)}>Close</Button></DialogActions></Dialog>
   </Stack>;
 }
-
-function SummaryItem({ label, value }: { label: string; value: string | number }) { return <Paper variant="outlined" sx={{ p: 1.25, minWidth: 0 }}><Typography variant="caption" color="text.secondary" fontWeight={700}>{label}</Typography><Typography variant="body2" fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{value}</Typography></Paper>; }
