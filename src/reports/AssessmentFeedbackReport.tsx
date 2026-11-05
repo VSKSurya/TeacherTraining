@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Container, Paper, Popover, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Button, Container, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { Footer, Sidebar, Topbar } from '../components/DashboardParts';
 import { getSession } from '../auth';
 import type { RootState } from '../store';
 import { ReportBarChart, type ReportView } from './ReportCharts';
-import { PhaseSelectionSummary, ReportFilterPanel, ReportPagination, type FilterSpec, type ReportFilters } from './ReportComponents';
+import { PhaseSelectionSummary, ReportPagination } from './ReportComponents';
 import { formatDate } from '../dateFormat';
 import AssessmentFormDetail from './AssessmentFormDetail';
 import { batchCodeForRecord } from '../batchCodes';
@@ -24,8 +24,6 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
   const ernetLogin = getSession()?.role === 'sponsor-admin';
   const [view] = useState<ReportView>('table');
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<ReportFilters>({ form: '', batch: '', stage: '', from: '', to: '' });
-  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
   const [selectedForm, setSelectedForm] = useState<{ id: string; title: string; kind: string; stage: string; planCode?: string; day?: number; questions: { id: string; prompt: string; options?: string[]; correctIndex?: number; points?: number }[] } | null>(null);
   useEffect(() => { setPage(1); }, [audience, selectedPhase]);
   useEffect(() => { setSelectedForm(null); }, [audience]);
@@ -57,16 +55,7 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
       return { id: text(row.id), formId: text(row.formId), formTitle: text(row.formTitle ?? row.title ?? row.name) || 'Form', kind: text(row.kind) || 'assessment', stage: text(row.stage), traineeId, participantType: participantType.toLowerCase(), batchCode: batchCodeForRecord(row, batchRows), ...(phaseNumber ? { phaseNumber } : {}), planCode: text(row.planCode), day: String(row.day ?? ''), date: text(row.submittedAt).slice(0, 10), submittedAt: text(row.submittedAt), answers: row.answers && typeof row.answers === 'object' ? row.answers as Record<string, string> : {}, ...(typeof row.score === 'number' ? { score: row.score } : {}), ...(typeof row.maxMarks === 'number' ? { maxMarks: row.maxMarks } : {}), ...(typeof row.passed === 'boolean' ? { passed: row.passed } : {}), ...(typeof row.learningGain === 'number' ? { learningGain: row.learningGain } : {}), status: text(row.status) || (row.completed ? 'submitted' : 'pending') };
     }).sort((a, b) => b.date.localeCompare(a.date));
   }, []);
-  const rows = results.filter(row => (participantOnly ? row.kind === 'feedback' : true) && (!ernetLogin || !selectedPhase || row.phaseNumber === selectedPhase) && ((!filters.form || row.formTitle.toLowerCase().includes(filters.form.toLowerCase())) && (!filters.batch || row.batchCode.toLowerCase().includes(filters.batch.toLowerCase())) && (!filters.stage || row.stage.toLowerCase().includes(filters.stage.toLowerCase())) && (!filters.from || row.date >= filters.from) && (!filters.to || row.date <= filters.to)) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()) && (!ernetLogin || row.participantType.includes(audience.toLowerCase())));
-  const filterFields: FilterSpec[] = [
-    { key: 'form', label: 'Form', type: 'search', placeholder: 'Search forms' },
-    { key: 'batch', label: 'Batch', type: 'search', placeholder: 'Search batch code' },
-    { key: 'stage', label: 'Stage', type: 'search', placeholder: 'Search stage' },
-    { key: 'from', label: 'From submission date', type: 'date' },
-    { key: 'to', label: 'To submission date', type: 'date' },
-  ];
-  const changeFilter = (key: string, value: string) => { setFilters(previous => ({ ...previous, [key]: value })); setPage(1); };
-  const clearFilters = () => { setFilters({ form: '', batch: '', stage: '', from: '', to: '' }); setPage(1); };
+  const rows = results.filter(row => (participantOnly ? row.kind === 'feedback' : true) && (!ernetLogin || !selectedPhase || row.phaseNumber === selectedPhase) && !['pending', 'in progress', 'not started'].includes(row.status.toLowerCase()) && (!ernetLogin || row.participantType.includes(audience.toLowerCase())));
   const groupedRows = [...rows.reduce((groups, row, index) => {
     const groupKey = participantOnly
       ? JSON.stringify([row.formId || row.formTitle, row.kind, row.stage])
@@ -102,8 +91,7 @@ export default function AssessmentFeedbackReport({ participantOnly = false }: { 
     return <div className="app report-app"><Sidebar activePage={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} /><main className="main report-main"><Topbar title={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} description={participantOnly ? 'Review individual participant feedback responses.' : 'Consolidated form responses and question analysis.'} /><Container maxWidth="xl" sx={{ py: 2.5 }}><AssessmentFormDetail form={activeForm} submissions={formSubmissions} onBack={() => participantOnly ? window.location.assign(`${import.meta.env.BASE_URL}#/reports/assessment-feedback`) : setSelectedForm(null)} participantOnly={participantOnly} /></Container><Footer /></main></div>;
   }
   return <div className="app report-app"><Sidebar activePage={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} /><main className="main report-main"><Topbar title={participantOnly ? 'Participant Wise Feedback Report' : 'Assessment & Feedback Report'} description={participantOnly ? 'Review participant feedback responses.' : 'Review completion, graded outcomes, and learning gain from recorded submissions.'} /><Container maxWidth="xl" sx={{ py: 2.5 }}><Stack spacing={1.5}>
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><button type="button" className="filter-trigger" aria-expanded={Boolean(filterAnchor)} onClick={event => setFilterAnchor(event.currentTarget)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="8" cy="6" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/><circle cx="15" cy="12" r="2" fill="white" stroke="currentColor" strokeWidth="1.8"/></svg>Filters{Object.values(filters).filter(Boolean).length > 0 && <span className="filter-count visible">{Object.values(filters).filter(Boolean).length}</span>}</button></Box><Popover disablePortal open={Boolean(filterAnchor)} anchorEl={filterAnchor} onClose={() => setFilterAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}><Box className="dashboard-filter-popup" sx={{ width: { xs: 'calc(100vw - 24px)', sm: 560 }, maxWidth: 'calc(100vw - 24px)', p: 1 }}><ReportFilterPanel fields={filterFields} values={filters} onChange={changeFilter} onClear={clearFilters} dashboardStyle /></Box></Popover>
-    {ernetLogin && <PhaseSelectionSummary selectedPhase={selectedPhase} selectedFilters={filters} />}
+    {ernetLogin && <PhaseSelectionSummary selectedPhase={selectedPhase} />}
     {!participantOnly && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,minmax(0,1fr))', md: 'repeat(4,minmax(0,1fr))' }, gap: 1.25 }}>
       <Summary label="Submissions" value={rows.length} />
       <Summary label="Graded" value={graded.length} />
