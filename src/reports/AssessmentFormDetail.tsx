@@ -222,7 +222,7 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
           return <TableContainer key={question.id} sx={{ overflowX: 'auto' }}>
             <Table size="small" aria-label={`Answer counts and percentages for question ${reportQuestionNumber(questionIndex)}`} sx={{ minWidth: tableMinWidth }}>
               <TableHead>
-                <TableRow><TableCell colSpan={answerOptions.length + 1} sx={{ backgroundColor: '#fff', color: '#173c64', fontSize: '16px', fontWeight: 700 }}>
+                <TableRow><TableCell colSpan={answerOptions.length + 1} sx={{ backgroundColor: '#fff', color: '#173c64', fontSize: '16px', fontWeight: 700, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
                   Q{reportQuestionNumber(questionIndex)}: {question.prompt}
                 </TableCell></TableRow>
                 <TableRow>

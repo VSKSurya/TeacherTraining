@@ -72,6 +72,6 @@ export function ReportPagination({ total, page, pageSize, onPageChange }: Report
   return <div className="pagination"><span>Showing {start}-{end} of {total.toLocaleString()}</span><div><button type="button" aria-label="Previous page" disabled={currentPage <= 1} onClick={() => onPageChange(currentPage - 1)}>Previous</button><span className="pagination-page" aria-live="polite">Page {currentPage} of {pageCount}</span><button type="button" aria-label="Next page" disabled={currentPage >= pageCount} onClick={() => onPageChange(currentPage + 1)}>Next</button></div></div>;
 }
 
-export function ReportPanel({ title, description, count, children }: { title: string; description: string; count: string; children: ReactNode }) {
-  return <section className="report-panel">{(title || description || count) && <div className="panel-heading">{(title || description) && <div>{title && <h2>{title}</h2>}{description && <p>{description}</p>}</div>}{count && <span className="record-count" aria-live="polite">{count}</span>}</div>}{children}</section>;
+export function ReportPanel({ title, description, count, actions, children }: { title: string; description: string; count: string; actions?: ReactNode; children: ReactNode }) {
+  return <section className="report-panel">{(title || description || count || actions) && <div className="panel-heading">{(title || description) && <div>{title && <h2>{title}</h2>}{description && <p>{description}</p>}</div>}<div className="panel-heading-actions">{actions}{count && <span className="record-count" aria-live="polite">{count}</span>}</div></div>}{children}</section>;
 }
