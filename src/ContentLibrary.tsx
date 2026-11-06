@@ -59,8 +59,7 @@ async function officePreview(resource: Resource) {
 function ResourceCard({ resource, onPreview }: { resource: Resource; onPreview: (resource: Resource) => void }) {
   return <article className="card">
     <div className="card-body"><div className="resource-meta-row"><div className={`file-icon-box ${categoryOf(resource)}`} aria-label={`${resource.format} file`} role="img"><FileTypeIcon format={resource.format} /></div><div className="card-meta"><span>{labelOf(resource)}</span><span>{resource.size}</span><span>{resource.language}</span></div></div><h3>{resource.title}</h3><p className="filename">{resource.file}</p>
-      <div className="tags" aria-label="Tags">{resource.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}</div>
-      <div className="actions"><button className="action" type="button" onClick={() => onPreview(resource)}>Preview</button>{resource.format !== 'FORM' && <a className="action download" href={resource.url} download={resource.file}>Download</a>}</div>
+      <div className="tags resource-tag-actions" aria-label="Tags and resource actions">{resource.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}<span className="resource-action-group"><button className="action tag-action" type="button" title="Preview" aria-label="Preview" onClick={() => onPreview(resource)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="2.7" stroke="currentColor" strokeWidth="1.8"/></svg></button>{resource.format !== 'FORM' && <a className="action download tag-action" title="Download" aria-label="Download" href={resource.url} download={resource.file}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v3h16v-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></a>}</span></div>
     </div>
   </article>;
 }
@@ -86,7 +85,7 @@ export default function ContentLibrary() {
   const [approvedResources, setApprovedResources] = useState<Resource[]>(() => {
     try {
       const records = JSON.parse(localStorage.getItem('teacher-training-trainer-evidence') ?? '[]') as Array<{ id: string; status: string; trainer: string; batch: string; date: string; reviewedBy?: string; files: Array<{ name: string; type: string; size: number; data: string }> }>;
-      return records.filter(record => record.status === 'Approved').flatMap(record => record.files.map((file, index) => {
+      return records.filter(record => record.status === 'Approved').flatMap(record => record.files.filter(file => file.name.toLowerCase() !== 'to.docx').map((file, index) => {
         const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
         const category: Category = ['MP4', 'MOV', 'WEBM'].includes(ext) ? 'Video' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(ext) ? 'Presentation' : 'Documents';
         const format = ext === 'JPEG' ? 'JPG' : ext;
@@ -143,7 +142,7 @@ export default function ContentLibrary() {
       if (event.key === 'teacher-training-trainer-evidence') {
         try {
           const records = JSON.parse(event.newValue ?? '[]') as Array<{ id: string; status: string; trainer: string; batch: string; date: string; files: Array<{ name: string; type: string; size: number; data: string }> }>;
-          setApprovedResources(records.filter(record => record.status === 'Approved').flatMap(record => record.files.map((file, index) => {
+          setApprovedResources(records.filter(record => record.status === 'Approved').flatMap(record => record.files.filter(file => file.name.toLowerCase() !== 'to.docx').map((file, index) => {
             const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
             const category: Category = ['MP4', 'MOV', 'WEBM'].includes(ext) ? 'Video' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(ext) ? 'Presentation' : 'Documents';
             return { id: `evidence-${record.id}-${index}`, title: file.name.replace(/\.[^.]+$/, ''), file: file.name, category, format: ext === 'JPEG' ? 'JPG' : ext, size: `${Math.max(1, Math.round(file.size / 1024))} KB`, language: 'English', tags: ['Trainer evidence', record.trainer, record.batch, record.date], url: file.data };

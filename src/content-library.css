@@ -458,6 +458,41 @@ input:focus-visible {
     margin-bottom: 9px
 }
 
+.resource-tag-actions {
+    align-items: center
+}
+
+.resource-action-group {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto
+}
+
+.resource-tag-actions .tag-action {
+    width: 32px;
+    min-height: 30px;
+    flex: 0 0 32px;
+    padding: 0;
+    border-color: #b8d2e8;
+    border-radius: 7px;
+    color: #14598f;
+    font-size: 10px;
+    white-space: nowrap
+}
+
+.resource-tag-actions .tag-action svg {
+    width: 17px;
+    height: 17px
+}
+
+.resource-tag-actions .tag-action.download {
+    border-color: #176fba;
+    background: #176fba;
+    color: #fff
+}
+
 .tag {
     display: inline-flex;
     align-items: center;

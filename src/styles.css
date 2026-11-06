@@ -1,6 +1,7 @@
 
     :root{--navy:#123b67;--navy-2:#0d3158;--blue:#1675c7;--blue-2:#2e8de0;--blue-pale:#eaf4fd;--green:#08a653;--orange:#ff861f;--red:#e84f3c;--ink:#173553;--muted:#52677d;--line:#e3ebf3;--surface:#fff;--canvas:#f4f7fb;--content:#f8fbff;--shadow:0 2px 10px #2143660a;--app-font-family:Poppins,"Segoe UI",Arial,sans-serif;font-family:var(--app-font-family);color:var(--ink);background:var(--canvas);font-synthesis:none;text-rendering:optimizeLegibility}
     body,button,input,select,textarea,.MuiTypography-root,.MuiButtonBase-root,.MuiInputBase-root,.MuiFormLabel-root{font-family:var(--app-font-family)}
+    .trainer-directory-page,.trainer-directory-page *{font-family:Poppins,"Segoe UI",Arial,sans-serif}
     .component-markup{display:contents}
     *{box-sizing:border-box}body{margin:0;min-width:320px;background:var(--canvas);font-size:13px}button,input,select,textarea{font:inherit}button,a,select{ -webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #075a99;outline-offset:2px}svg{display:block}.app{min-height:100vh;display:grid;grid-template-columns:212px minmax(0,1fr)}
     .sidebar {
