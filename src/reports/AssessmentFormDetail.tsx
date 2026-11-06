@@ -193,8 +193,8 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
       <Stack direction="row" spacing={1} alignItems="flex-start">
         {!participantOnly && <IconButton size="small" aria-label="Back to Submissions Details" title="Back to Submissions Details" onClick={onBack} sx={{ mt: 0.35, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></IconButton>}
         <Box>
-          <Typography variant="h5" fontWeight={800}>{participantOnly ? 'Report - Participant Wise' : form.title === 'Teacher Training Feedback Form' ? 'Detailed Feedback From Report' : form.stage === 'pre' ? 'Pre-Assessment Form - Detailed Report' : `${form.title} - Detailed Report`}</Typography>
-          <Typography variant="body2" color="text.secondary">{participantOnly ? `${filteredSubmissions.length} participant response(s)` : `Consolidated response analysis for ${form.title} · ${filteredSubmissions.length} submission(s)`}</Typography>
+          <Typography variant="h5" fontWeight={800} sx={form.title === 'Teacher Training Feedback Form' && !participantOnly ? { fontSize: '1.3rem' } : undefined}>{participantOnly ? 'Report - Participant Wise' : form.title === 'Teacher Training Feedback Form' ? 'Detailed Feedback From Report' : form.stage === 'pre' ? 'Pre-Assessment Form - Detailed Report' : `${form.title} - Detailed Report`}</Typography>
+          {participantOnly && <Typography variant="body2" color="text.secondary">{filteredSubmissions.length} participant response(s)</Typography>}
         </Box>
       </Stack>
       <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="flex-end">
@@ -213,7 +213,7 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
         return <ReportBarChart key={question.id} title={`Q${reportQuestionNumber(questionIndex)}: ${question.prompt}`} description="Responses by answer" series={isChoiceQuestion ? answerRows.map((answer, index) => ({ label: answer.label, color: colors[index % colors.length] })) : [{ label: 'Responses', color: '#2584b9' }]} rows={isChoiceQuestion ? [{ label: 'Responses', values: answerRows.map(answer => answer.count) }] : answerRows.map(answer => ({ label: answer.label, values: [answer.count] }))} chartType={isChoiceQuestion ? 'pie' : 'bar'} />;
       })}
     </Box> : <Paper elevation={0} sx={{ p: 2, border: '1px solid #e3ebf3', borderRadius: 2 }}>
-      <Typography variant="h6" fontWeight={750} sx={{ mb: 1 }}>Question-wise Answer Analysis</Typography>
+      <Typography variant="h6" fontWeight={750} sx={{ mb: 1, fontSize: '1.2rem' }}>Question-wise Answer Analysis</Typography>
       <Stack spacing={1.5}>
         {questionStats.map(({ question, questionIndex, answerRows, answeredCount }) => {
           const answerOptions = answerRows.map(answer => answer.label.replace(/^[A-Z]\.\s*/, ''));
@@ -222,11 +222,11 @@ export default function AssessmentFormDetail({ form, submissions, onBack, partic
           return <TableContainer key={question.id} sx={{ overflowX: 'auto' }}>
             <Table size="small" aria-label={`Answer counts and percentages for question ${reportQuestionNumber(questionIndex)}`} sx={{ minWidth: tableMinWidth }}>
               <TableHead>
-                <TableRow><TableCell colSpan={answerOptions.length + 1} sx={{ backgroundColor: '#fff', color: '#173c64', fontSize: '16px', fontWeight: 700, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
+                <TableRow><TableCell colSpan={answerOptions.length + 1} sx={{ backgroundColor: '#fff', color: '#173c64', fontSize: '14px', fontWeight: 700, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
                   Q{reportQuestionNumber(questionIndex)}: {question.prompt}
                 </TableCell></TableRow>
                 <TableRow>
-                  {answerOptions.map((option, index) => <TableCell key={`${question.id}-option-${index}`} align="center" sx={{ minWidth: 145, whiteSpace: 'normal', fontSize: '0.775rem', fontWeight: 600 }}>{option}</TableCell>)}
+                  {answerOptions.map((option, index) => <TableCell key={`${question.id}-option-${index}`} align="center" sx={{ minWidth: 145, whiteSpace: 'normal', fontSize: '0.8rem', fontWeight: 600 }}>{option}</TableCell>)}
                   <TableCell align="center" sx={{ minWidth: 90 }}>Total</TableCell>
                 </TableRow>
               </TableHead>
