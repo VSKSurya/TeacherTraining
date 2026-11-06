@@ -261,7 +261,7 @@
     const blockNode=getOrCreateLocationNode(districtNode.children,sourceSchool.block);
     locationSchoolNodes.push(getOrCreateLocationNode(blockNode.children,sourceSchool.school));
   });
-  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV school list, Table 1. Click State, District, or Block rows to drill down to schools, then click a school to see its trainer details.';
+  document.querySelector('#locations .info-button').dataset.info='Location Performance uses the 750 schools listed in KGBV school list, Table 1. Click State, District, or Block rows to drill down to schools, then click a school to see trainee details.';
   batchData.forEach((batch,index)=>{
     const schoolNode=locationSchoolNodes[index];if(!schoolNode)return;
     getOrCreateLocationNode(schoolNode.children,batch.trainer).assignedBatches.push(batch);
@@ -277,7 +277,7 @@
   let locationPath=[];
   let locationSortDirection='desc';
   let locationSortKey='completedPercent';
-  const locationRows=document.querySelector('#location-rows'),locationSortBy=document.querySelector('#location-sort-by'),locationLabels=['State','District','Block','School','Trainer Details'];
+  const locationRows=document.querySelector('#location-rows'),locationSortBy=document.querySelector('#location-sort-by'),locationLabels=['State','District','Block','School','Trainee Details'];
   function renderLocations(){
     const level=locationPath.length,nodes=level===0?locationTree:locationPath[level-1].children;
     document.querySelector('#location-level-heading').textContent=locationLabels[level];

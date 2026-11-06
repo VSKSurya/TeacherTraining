@@ -334,7 +334,7 @@ const studentOverviewMarkup = `<section class="phase-overview student-overview" 
 const dashboardWithStudentOverview = teacherDashboardMarkup.replace(
   /<section class="phase-overview"[\s\S]*?<\/section>/,
   teacherOverview => `${teacherOverview}${studentOverviewMarkup}`,
-);
+).replace(/<span class="counter-icon">[\s\S]*?<\/span>/g, '');
 
 export function DashboardContent() {
   const audience = useSelector((state: RootState) => state.dashboard.audience);
