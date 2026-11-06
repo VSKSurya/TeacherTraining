@@ -97,7 +97,7 @@ export default function TrainerEvidence() {
   ];
   const changeEvidenceFilter = (key: string, value: string) => setFilters(previous => ({ ...previous, [key]: value }));
 
-  return <div className="app"><Sidebar activePage={isTrainer ? 'Upload Documents' : 'Uploaded Documents'} /><main className="main" id="main-content"><Topbar title={isTrainer ? 'Upload Documents' : 'Trainer Uploaded Documents'} /><Box sx={{ p: { xs: 1, md: 2 }, maxWidth: 1500, mx: 'auto', width: '100%' }}>
+  return <div className="app"><Sidebar activePage={isTrainer ? 'Upload Documents' : 'Uploaded Documents'} /><main className="main" id="main-content"><Topbar title={isTrainer ? 'Upload Documents' : 'Trainer Uploaded Documents'} /><Box sx={{ p: { xs: 1, md: 2 }, pt: { xs: isTrainer ? 1 : 0.5, md: isTrainer ? 2 : 0.5 }, maxWidth: 1500, mx: 'auto', width: '100%' }}>
     <Stack spacing={2}>
       {isTrainer && <Box><Typography variant="h5" fontWeight={700}>Upload Documents</Typography><Typography variant="body2" color="text.secondary">Upload training documents, presentations, short videos, photos, and scanned attendance sheets for verification.</Typography></Box>}
       {isTrainer && <Paper component="form" onSubmit={submit} elevation={0} sx={{ p: { xs: 1.25, md: 1.75 }, border: '1px solid #dce7f1', borderRadius: 2, boxShadow: '0 2px 8px rgba(23,53,83,.04)' }}>
