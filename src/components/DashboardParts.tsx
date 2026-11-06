@@ -374,7 +374,8 @@ export function DashboardBridge() {
       const selectableCard = target.closest<HTMLElement>('.phase-card, .student-module-card');
       if (selectableCard) {
         const phase = Number(selectableCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
-        if (phase) window.setTimeout(() => dispatch(setPhase(selectableCard.classList.contains('selected') ? phase : null)), 0);
+        if (phase) dispatch(setPhase(store.getState().dashboard.selectedPhase === phase ? null : phase));
+        event.stopImmediatePropagation();
       }
       if (target.closest('#clear-filters')) dispatch(clearFilters());
     };
@@ -387,7 +388,9 @@ export function DashboardBridge() {
       const selectableCard = (event.target as HTMLElement).closest<HTMLElement>('.phase-card, .student-module-card');
       if (!selectableCard) return;
       const phase = Number(selectableCard.querySelector('.phase-number')?.textContent?.match(/\d+/)?.[0]);
-      if (phase) window.setTimeout(() => dispatch(setPhase(selectableCard.classList.contains('selected') ? phase : null)), 0);
+      if (phase) dispatch(setPhase(store.getState().dashboard.selectedPhase === phase ? null : phase));
+      event.preventDefault();
+      event.stopImmediatePropagation();
     };
     document.addEventListener('click', onClick, true);
     document.addEventListener('change', onChange, true);
