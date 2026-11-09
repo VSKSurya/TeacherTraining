@@ -45,7 +45,6 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     Certificates: 'certificates', 'MIS Reports': 'mis-reports', 'Holiday Master': 'holiday-master', 'Trainer Directory': 'trainer-repository', 'Uploaded Documents': 'trainer-evidence', 'Upload Documents': 'upload-documents',
   };
   const sidebarDocument = new DOMParser().parseFromString(html, 'text/html');
-  sidebarDocument.querySelector('a[href="#/upload-documents"]')?.remove();
   const activeReportHref = reportLinks[activePage];
   if (activeReportHref) {
     const reportGroup = sidebarDocument.querySelector<HTMLDetailsElement>('.side-group');
@@ -68,7 +67,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   }
   sidebarDocument.querySelectorAll<HTMLElement>('.side-nav > .side-link, .side-nav > .side-group').forEach(item => {
     const label = item.querySelector('span')?.textContent?.trim() ?? item.querySelector('summary')?.textContent?.trim() ?? '';
-    const href = item.querySelector<HTMLAnchorElement>('a')?.getAttribute('href');
+    const href = (item.matches('a') ? item : item.querySelector<HTMLAnchorElement>('a'))?.getAttribute('href');
     const menu = href === '#/upload-documents' ? 'upload-documents' : href === '#/trainer-evidence' ? 'trainer-evidence' : menuByLabel[label];
     if (menu && !canAccessMenu(role, menu)) item.remove();
   });
