@@ -649,7 +649,7 @@ dialog::backdrop {
     border-radius: 8px;
     background: #f9fbfd;
     color: #24384c;
-    font: 12px/1.55 Consolas, monospace;
+    font: 12px/1.55 Poppins, "Segoe UI", Arial, sans-serif;
     white-space: pre-wrap;
     overflow-wrap: anywhere
 }

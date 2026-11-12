@@ -52,7 +52,7 @@
     if(event.key==='Escape'){filterTrigger.setAttribute('aria-expanded','false');filterPopover.classList.remove('open');filterTrigger.focus()}
   });
   document.querySelector('#clear-filters').addEventListener('click',()=>{
-    document.querySelectorAll('.filter select, .filter input[type="date"]').forEach(field=>{if(field instanceof HTMLSelectElement)field.selectedIndex=0;else field.value=''});
+    document.querySelectorAll('.filter select').forEach(select=>{select.selectedIndex=0});
     const badge=document.querySelector('#filter-count');badge.textContent='0';badge.classList.remove('visible');showToast('Filters cleared.');
   });
   const batchStatusLabels={upcoming:'Upcoming',ongoing:'In Progress',completed:'Completed'};

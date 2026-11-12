@@ -348,9 +348,7 @@ const dashboardWithStudentOverview = teacherDashboardMarkup.replace(
 
 export function DashboardContent() {
   const audience = useSelector((state: RootState) => state.dashboard.audience);
-  const filters = useSelector((state: RootState) => state.dashboard.filters);
-  const isErnetAdmin = getSession()?.role === 'sponsor-admin';
-  const effectiveAudience = isErnetAdmin ? audience : 'Teacher';
+  const effectiveAudience = getSession()?.role === 'sponsor-admin' ? audience : 'Teacher';
   useEffect(() => {
     const teacherOverview = document.querySelector<HTMLElement>('.main .phase-overview:not(.student-overview)');
     const studentOverview = document.querySelector<HTMLElement>('.main .student-overview');
@@ -360,17 +358,7 @@ export function DashboardContent() {
       studentOverview.setAttribute('aria-hidden', String(effectiveAudience === 'Teacher'));
     }
   }, [effectiveAudience]);
-  useEffect(() => {
-    const breadcrumb = document.querySelector<HTMLElement>('#dashboard-filter-breadcrumbs');
-    if (!breadcrumb) return;
-    const filterLabels: Record<string, string> = { project: 'Project', state: 'State', district: 'District', school: 'School', plan: 'Training Plan', batch: 'Batch', 'from-start-date': 'From Start Date', 'to-start-date': 'To Start Date' };
-    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[character] ?? character);
-    const selectedFilters = isErnetAdmin ? Object.entries(filters).filter(([, value]) => Boolean(value)) : [];
-    breadcrumb.innerHTML = selectedFilters.map(([key, value]) => `<span class="filter-crumb"><span class="filter-crumb-label">${filterLabels[key] ?? key}</span><span class="filter-crumb-separator" aria-hidden="true">&#8250;</span><span class="filter-crumb-value">${escapeHtml(value)}</span></span>`).join('');
-    breadcrumb.hidden = selectedFilters.length === 0;
-  }, [filters, isErnetAdmin]);
-  const dashboardHtml = dashboardWithStudentOverview.replace(/(<button class="filter-trigger"[\s\S]*?<\/button>)/, '<nav class="filter-breadcrumbs" id="dashboard-filter-breadcrumbs" aria-label="Selected filters" hidden></nav>$1');
-  return <Markup html={dashboardHtml} />;
+  return <Markup html={dashboardWithStudentOverview} />;
 }
 export function DashboardModals() { return <Markup html={modalMarkup} />; }
 
@@ -400,11 +388,8 @@ export function DashboardBridge() {
       if (target.closest('#clear-filters')) dispatch(clearFilters());
     };
     const onChange = (event: Event) => {
-      const field = event.target as HTMLSelectElement | HTMLInputElement;
-      if (field.matches('.filter select, .filter input[type="date"]')) {
-        const value = field instanceof HTMLSelectElement ? (field.selectedIndex ? field.value : '') : field.value;
-        dispatch(setFilter({ key: field.id, value }));
-      }
+      const select = event.target as HTMLSelectElement;
+      if (select.matches('.filter select')) dispatch(setFilter({ key: select.id, value: select.selectedIndex ? select.value : '' }));
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
