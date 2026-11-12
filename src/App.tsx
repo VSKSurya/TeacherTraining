@@ -60,7 +60,7 @@ function AppContent() {
     const main = document.querySelector('main');
     if (main && !main.id) main.id = 'main-content';
     const pages: Record<string, string> = {
-      '/login': 'Dashboard', '/privacy-policy': 'Privacy Policy', '/consent-form': 'Consent Form', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
+      '/login': 'Sign In', '/privacy-policy': 'Privacy Policy', '/consent-form': 'Consent Form', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
       '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
       '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Directory', '/trainer-evidence': 'Trainer Evidence', '/upload-documents': 'Training Evidence',
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
@@ -71,8 +71,9 @@ function AppContent() {
       '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report', '/reports/participant-feedback': 'Participant Wise Feedback Report',
     };
     const role = session ? ROLE_LABELS[session.role] : '';
+    const loginView = path === '/login' || (!session && !['/privacy-policy', '/consent-form', '/register', '/recover-trainee'].includes(path));
     const page = pages[path] ?? 'Dashboard';
-    const title = path === '/login' ? 'Sign in | Teacher Training' : session ? `${role} · ${page} · ${session.userId} | Schoolnet` : `${page} | Schoolnet`;
+    const title = loginView ? 'Sign In | Teacher Training' : session ? `${role} · ${page} · ${session.userId} | Schoolnet` : `${page} | Schoolnet`;
     const roleDescription = session ? `Signed in as ${session.userId}, ${role}. Access the Schoolnet teacher training portal.` : 'Schoolnet teacher training portal for projects, training plans, batches, learning resources, and registration.';
     document.title = title;
     const updateMeta = (selector: string, attribute: string, value: string, create: () => HTMLMetaElement) => {
