@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import './login.css';
 import './login-scroll.css';
 import { signIn } from './auth';
-import { Button, IconButton, InputAdornment, Link, TextField } from '@mui/material';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -45,13 +44,13 @@ export default function Login() {
         <h2>Sign in</h2><p className="login-intro">Welcome back. Enter your details to continue.</p>
         <form onSubmit={submit}>
           <label htmlFor="login-identity">Email address or mobile number <span>*</span></label>
-          <div className="login-input-wrap"><TextField id="login-identity" name="identity" placeholder="you@example.com" autoComplete="username" defaultValue="Demo1" required fullWidth variant="outlined" inputProps={{ 'aria-label': 'Email address or mobile number' }} InputProps={{ endAdornment: <InputAdornment position="end"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M5.7 18c1.4-2.6 3.5-3.9 6.3-3.9s4.9 1.3 6.3 3.9"/></svg></InputAdornment> }} sx={{ '& .MuiOutlinedInput-root': { height: 46, borderRadius: '9px', backgroundColor: '#fff', color: '#243e58', fontSize: 13, '& fieldset': { border: 0 }, '&:hover fieldset': { border: 0 }, '&.Mui-focused fieldset': { border: 0 } }, '& .MuiOutlinedInput-input': { padding: '0 13px', '&::placeholder': { color: '#a5b2bf', opacity: 1 } } }} /></div>
-          <div className="password-label"><label htmlFor="login-password">Password <span>*</span></label><Button type="button" className="login-forgot" onClick={() => setMessage('Password reset instructions will be sent after you enter your email or mobile number.')}>Forgot password?</Button></div>
-          <div className="login-input-wrap"><TextField id="login-password" name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" autoComplete="current-password" required fullWidth variant="outlined" inputProps={{ 'aria-label': 'Password' }} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton className="password-toggle" type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.2-6 9.5-6 9.5 6 9.5 6-3.2 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></IconButton></InputAdornment> }} sx={{ '& .MuiOutlinedInput-root': { height: 46, borderRadius: '9px', backgroundColor: '#fff', color: '#243e58', fontSize: 13, '& fieldset': { border: 0 }, '&:hover fieldset': { border: 0 }, '&.Mui-focused fieldset': { border: 0 } }, '& .MuiOutlinedInput-input': { padding: '0 13px', '&::placeholder': { color: '#a5b2bf', opacity: 1 } } }} /></div>
-          <Button className="login-submit" type="submit" variant="contained" disableElevation>Sign in</Button>
+          <div className="login-input-wrap"><input id="login-identity" name="identity" type="text" placeholder="you@example.com" autoComplete="username" defaultValue="Demo1" required /><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M5.7 18c1.4-2.6 3.5-3.9 6.3-3.9s4.9 1.3 6.3 3.9"/></svg></div>
+          <div className="password-label"><label htmlFor="login-password">Password <span>*</span></label><button type="button" onClick={() => setMessage('Password reset instructions will be sent after you enter your email or mobile number.')}>Forgot password?</button></div>
+          <div className="login-input-wrap"><input id="login-password" name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" autoComplete="current-password" required /><button className="password-toggle" type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.2-6 9.5-6 9.5 6 9.5 6-3.2 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button></div>
+          <button className="login-submit" type="submit">Sign in</button>
           {message && <p className="login-message" role="status">{message}</p>}
         </form>
-        <p className="register-prompt">Click here to register. <Link href={`${import.meta.env.BASE_URL}register`}>Open Registration</Link><br /><Link href={`${import.meta.env.BASE_URL}recover-trainee`}>Forgot your Trainee ID? Recover it with OTP</Link></p>
+        <p className="register-prompt">Click here to register. <a href={`${import.meta.env.BASE_URL}register`}>Open Registration</a><br /><a href={`${import.meta.env.BASE_URL}recover-trainee`}>Forgot your Trainee ID? Recover it with OTP</a></p>
       </div>
       <footer className="login-footer"><nav aria-label="Policies"><a href={`${import.meta.env.BASE_URL}#/privacy-policy`}>Privacy policy</a></nav><span>© 2026 Schoolnet India Limited</span></footer>
     </section>

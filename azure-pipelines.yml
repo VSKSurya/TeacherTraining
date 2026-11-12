@@ -1,0 +1,84 @@
+
+# Azure DevOps - React + TypeScript + Vite
+# PR validation is configured using branch policies.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  nodeVersion: '24.x'
+
+steps:
+  # Step 1: Checkout repository
+  - checkout: self
+    clean: true
+
+  # Step 2: Install Node.js
+  - task: NodeTool@0
+    displayName: 'Use Node.js 24'
+    inputs:
+      versionSpec: '$(nodeVersion)'
+
+  # Step 3: Verify Node and NPM
+  - bash: |
+      set -euo pipefail
+      echo "Node version:"
+      node --version
+      echo "NPM version:"
+      npm --version
+    displayName: 'Verify Node and NPM'
+    workingDirectory: '$(Build.SourcesDirectory)'
+
+  # Step 4: Install dependencies
+  - bash: |
+      set -euo pipefail
+      echo "Installing dependencies..."
+      npm ci --legacy-peer-deps --no-audit --no-fund
+    displayName: 'Install Dependencies'
+    workingDirectory: '$(Build.SourcesDirectory)'
+
+  # Step 5: Build React application
+  - bash: |
+      set -euo pipefail
+
+      echo "Starting React production build..."
+      npm run build
+
+      echo "Checking production build output..."
+
+      if [ ! -f dist/index.html ]; then
+        echo "ERROR: dist/index.html not found!"
+        exit 1
+      fi
+
+      echo "index.html found."
+
+      if [ -f dist/web.config ]; then
+        echo "web.config found."
+      else
+        echo "WARNING: web.config not found."
+        echo "Skipping optional web.config validation."
+      fi
+
+      echo "Build output:"
+      ls -lah dist/
+
+      echo "React production build completed successfully."
+    displayName: 'Build React App'
+    workingDirectory: '$(Build.SourcesDirectory)'
+    env:
+      CI: 'true'
+
+  # Step 6: Publish production artifact
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Production Artifact'
+    condition: succeeded()
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)/dist'
+      artifact: 'teacher-training-site'
+      publishLocation: 'pipeline'

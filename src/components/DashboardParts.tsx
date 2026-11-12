@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../store';
 import { setAudience, setFilter, setPhase, clearFilters, store } from '../store';
 import { sidebarMarkup, topbarMarkup, dashboardMarkup, modalMarkup } from '../sourceMarkup';
+import legacyDashboardUrl from '../legacy-dashboard.js?url';
 import { locations } from '../data/locations';
 import { kgbvSchools } from '../data/kgbvSchools';
 import { canAccessMenu, getSession, ROLE_LABELS, signOut, type MenuKey } from '../auth';
@@ -30,7 +31,9 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
     .replace('class="side-link" href="#attendance"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="#/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="Attendance.html"', `class="side-link${activePage === 'Attendance' ? ' active' : ''}" href="#/attendance"${activePage === 'Attendance' ? ' aria-current="page"' : ''}`)
     .replace('class="side-link" href="ContentLibrary.html"', `class="side-link${activePage === 'Content Library' ? ' active' : ''}" href="#/content-library"${activePage === 'Content Library' ? ' aria-current="page"' : ''}`);
-  html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Directory' ? ' active' : ''}" href="#/trainers"${activePage === 'Trainer Directory' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Directory</span></a><a class="side-link${activePage === 'Uploaded Documents' ? ' active' : ''}" href="#/trainer-evidence"${activePage === 'Uploaded Documents' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm8 0v5h5M8 12h7m-7 3h4m1 3 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Training Evidence</span></a><a class="side-link${activePage === 'Upload Documents' ? ' active' : ''}" href="#/upload-documents"${activePage === 'Upload Documents' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Training Evidence</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="#/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
+  const evidenceHref = role === 'trainer' ? '#/upload-documents' : '#/trainer-evidence';
+  const evidencePage = role === 'trainer' ? 'Upload Documents' : 'Uploaded Documents';
+  html = html.replace('</nav>', `<a class="side-link${activePage === 'Trainer Directory' ? ' active' : ''}" href="#/trainers"${activePage === 'Trainer Directory' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.4-3.5 2.2-5.3 5.5-5.3s5.1 1.8 5.5 5.3M16 7h5m-5 4h5m-5 4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Trainer Directory</span></a><a class="side-link${activePage === evidencePage ? ' active' : ''}" href="${evidenceHref}"${activePage === evidencePage ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 3.5h8l4 4v12a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4.5 19.5v-14A2 2 0 0 1 6.5 3.5Zm8 0v4h4M8 11.5h8M8 14.5h5m.5 3 1.5 1.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Training Evidence</span></a><a class="side-link${activePage === 'Holiday Master' ? ' active' : ''}" href="#/holiday-master"${activePage === 'Holiday Master' ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4m9-4v4m-13 2h17M8 13h3m2 0h3m-8 4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Holiday Master</span></a></nav>`);
   html = html.replace('href="#effectiveness">Feedback Report</a>', 'href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a>');
   html = html.replace('href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a>', 'href="#/reports/assessment-feedback">Assessment &amp; Feedback Report</a><a href="#/reports/participant-feedback">Participant Wise Feedback Report</a>');
   const reportLinks: Record<string, string> = { 'Batch Performance': '#/reports/batch-performance', 'Training Summary': '#/reports/training-summary', 'Attendance Report': '#/reports/attendance-report', 'Assessment & Feedback Report': '#/reports/assessment-feedback', 'Participant Wise Feedback Report': '#/reports/participant-feedback' };
@@ -67,7 +70,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   }
   sidebarDocument.querySelectorAll<HTMLElement>('.side-nav > .side-link, .side-nav > .side-group').forEach(item => {
     const label = item.querySelector('span')?.textContent?.trim() ?? item.querySelector('summary')?.textContent?.trim() ?? '';
-    const href = (item.matches('a') ? item : item.querySelector<HTMLAnchorElement>('a'))?.getAttribute('href');
+    const href = item.querySelector<HTMLAnchorElement>('a')?.getAttribute('href');
     const menu = href === '#/upload-documents' ? 'upload-documents' : href === '#/trainer-evidence' ? 'trainer-evidence' : menuByLabel[label];
     if (menu && !canAccessMenu(role, menu)) item.remove();
   });
@@ -316,6 +319,12 @@ const teacherDashboardMarkup = dashboardMarkup.replace(/<div class="audience-swi
   /<select id="state">[\s\S]*?<\/select>/,
   `<select id="state"><option>All States</option>${locations.map(location => `<option>${location.name}</option>`).join('')}</select>`,
 ).replace(
+  '<span>Ongoing</span>',
+  '<span>In Progress</span>',
+).replace(
+  '<th scope="col">Ongoing</th>',
+  '<th scope="col">In Progress</th>',
+).replace(
   '<section class="dashboard-grid" aria-label="Training charts">',
   '<div class="dashboard-insight-row"><section class="dashboard-grid" aria-label="Training charts">',
 ).replace(
@@ -363,7 +372,7 @@ export function DashboardBridge() {
   useEffect(() => {
     window.KGBV_SCHOOLS = kgbvSchools;
     const script = document.createElement('script');
-    script.src = `${import.meta.env.BASE_URL}legacy-dashboard.js`;
+    script.src = legacyDashboardUrl;
     script.async = false;
     const syncPhase = () => window.dispatchEvent(new CustomEvent('dashboard-phase-change', { detail: store.getState().dashboard.selectedPhase }));
     script.addEventListener('load', syncPhase);

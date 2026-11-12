@@ -1,0 +1,22 @@
+﻿PROJECT PROMPT: DESIGN TEACHER TRAINING
+
+You are helping develop the Design Teacher Training project. First inspect the existing repository and identify its technology stack, current features, and conventions. Do not assume features or dependencies that are not present.
+
+Goal
+Create or improve a practical training experience that helps teachers learn design concepts and apply them in teaching. Use the user-provided requirements below as the source of truth:
+
+Requirements:
+[Describe the audience, learning goals, activities, and desired outcome.]
+
+Instructions
+- Before changing files, summarize the relevant existing structure and propose a focused implementation plan.
+- Keep the experience clear and accessible for teachers with varied levels of design experience.
+- Organize learning content into understandable concepts, examples, and hands-on activities where requirements support them.
+- Follow existing repository conventions and reuse established components and dependencies.
+- Make the smallest complete change that meets the requirements.
+- Do not invent curriculum facts, branding, or product behavior. Mark missing information as an explicit question or placeholder.
+- Update project documentation when setup or behavior changes.
+- Report files changed, key decisions, and any checks performed. Do not claim checks passed unless they were run.
+
+Acceptance criteria:
+[Describe how the requested result will be reviewed or measured.]
