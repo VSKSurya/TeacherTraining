@@ -33,8 +33,8 @@
     link.classList.add('active');link.setAttribute('aria-current','page');
   }));
 
-  document.querySelectorAll('.filter select').forEach(select=>select.addEventListener('change',()=>{
-    const count=[...document.querySelectorAll('.filter select')].filter(item=>item.selectedIndex>0).length;
+  document.querySelectorAll('.filter select, .filter input[type="date"]').forEach(field=>field.addEventListener('change',()=>{
+    const count=[...document.querySelectorAll('.filter select, .filter input[type="date"]')].filter(item=>item instanceof HTMLSelectElement?item.selectedIndex>0:Boolean(item.value)).length;
     const badge=document.querySelector('#filter-count');badge.textContent=count;badge.classList.toggle('visible',count>0);
     showToast(count ? `${count} filter${count===1?'':'s'} selected. This demo uses static data.` : 'Showing all dashboard data.');
   }));
@@ -52,7 +52,7 @@
     if(event.key==='Escape'){filterTrigger.setAttribute('aria-expanded','false');filterPopover.classList.remove('open');filterTrigger.focus()}
   });
   document.querySelector('#clear-filters').addEventListener('click',()=>{
-    document.querySelectorAll('.filter select').forEach(select=>{select.selectedIndex=0});
+    document.querySelectorAll('.filter select, .filter input[type="date"]').forEach(field=>{if(field instanceof HTMLSelectElement)field.selectedIndex=0;else field.value=''});
     const badge=document.querySelector('#filter-count');badge.textContent='0';badge.classList.remove('visible');showToast('Filters cleared.');
   });
   const batchStatusLabels={upcoming:'Upcoming',ongoing:'In Progress',completed:'Completed'};
