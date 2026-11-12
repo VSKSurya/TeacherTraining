@@ -221,3 +221,11 @@
 
 .app{overflow-x:clip}.sidebar{z-index:50}.sidebar .collapse{position:absolute;top:3px;right:2px;z-index:100}
 .batch-counter.selected{border-color:#176fba!important;box-shadow:0 0 0 2px #176fba2e,0 5px 14px #17355318;background:#edf7ff!important}
+
+/* ERNet Admin dashboard filter breadcrumb */
+.dashboard-controls{flex-wrap:wrap}.filter-breadcrumbs{display:flex;min-width:0;align-items:center;justify-content:flex-end;gap:7px;overflow-x:auto;color:#526f88;font-size:11px;scrollbar-width:thin}.filter-breadcrumbs[hidden]{display:none}.filter-crumb{display:inline-flex;flex:0 0 auto;align-items:center;gap:6px;padding:5px 8px;border:1px solid #d9e5ef;border-radius:7px;background:#fff;white-space:nowrap}.filter-crumb-label{color:#75889b;font-size:10px}.filter-crumb-separator{color:#9aabbc;font-size:15px;line-height:1}.filter-crumb-value{color:#204b72;font-weight:700}
+@media(max-width:620px){.filter-breadcrumbs{order:3;width:100%;justify-content:flex-start}.filter-crumb{padding:4px 7px}.filter-crumb-label{font-size:9px}}
+.filter-control{display:flex;min-width:0;align-items:center;gap:8px}.filter-breadcrumbs{max-width:min(58vw,680px)}
+@media(max-width:620px){.filter-control{flex-wrap:wrap;justify-content:flex-end;max-width:100%}.filter-breadcrumbs{max-width:calc(100vw - 24px)}}
+.dashboard-controls .filter-control{flex:1;justify-content:space-between}.dashboard-controls .filter-trigger{flex:0 0 auto;margin-left:auto}.dashboard-controls .filter-breadcrumbs{flex:1 1 auto;justify-content:flex-start;max-width:none}.filters .filter input[type="date"]{width:100%;height:34px;min-width:0;padding:0 8px;border:1px solid #e0e8f0;border-radius:6px;background:#fff;color:#4e6682;font:inherit;font-size:11px}.filters .filter input[type="date"]:hover{border-color:#a6c7e3}
+@media(max-width:620px){.dashboard-controls .filter-control{flex:1 1 100%;justify-content:space-between}.dashboard-controls .filter-breadcrumbs{width:auto;max-width:calc(100% - 100px);order:0}.dashboard-controls .filter-trigger{order:1;margin-left:auto}}

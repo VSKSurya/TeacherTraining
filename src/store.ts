@@ -12,7 +12,7 @@ function storedAudience(): DashboardState['audience'] {
 }
 const initialState: DashboardState = {
   audience: storedAudience(), selectedPhase: 3, sidebarCollapsed: false,
-  filters: { project: '', state: '', district: '', school: '', plan: '', batch: '', 'date-range': '' },
+  filters: { project: '', state: '', district: '', school: '', plan: '', batch: '', 'from-start-date': '', 'to-start-date': '' },
 };
 const dashboardSlice = createSlice({
   name: 'dashboard', initialState,
