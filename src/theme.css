@@ -93,3 +93,124 @@
 :root[data-theme="dark"] .trainer-evidence-dropzone{border-color:#40566c!important;background-color:#14263a!important}
 :root[data-theme="dark"] .report-app .participant-filter-popup .participant-dashboard-filters .filter label,:root[data-theme="dark"] .report-app .dashboard-filter-popup .participant-dashboard-filters .filter label{color:#c9d8e7}
 :root[data-theme="dark"] .report-app .participant-filter-popup .participant-dashboard-filters .filter select,:root[data-theme="dark"] .report-app .participant-filter-popup .participant-dashboard-filters .filter input,:root[data-theme="dark"] .report-app .dashboard-filter-popup .participant-dashboard-filters .filter select,:root[data-theme="dark"] .report-app .dashboard-filter-popup .participant-dashboard-filters .filter input{border-color:#40566c;background:#102033;color:#e5edf5}
+
+/* Keep Accessibility Tools legible in dark mode, including when high contrast is enabled. */
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"]{border-color:#31475c!important;background-color:#17283a!important;color:#e5edf5!important}
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"] h2{border-color:#40566c!important;color:#e5edf5!important}
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"] button{border-color:#526b82!important;background-color:#1d3247!important;color:#e5edf5!important}
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"] button[aria-pressed="true"]{border-color:#2586d1!important;background-color:#214766!important;color:#fff!important}
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"] button:hover{background-color:#29445e!important}
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"] button:disabled{color:#a6b7c9!important;opacity:.6}
+html[data-theme="dark"] .MuiPopover-paper[role="dialog"] button span,:root[data-theme="dark"] .MuiPopover-paper[role="dialog"] button svg{color:inherit!important}
+
+/* Dashboard phase cards */
+html[data-theme="dark"] .phase-overview{border-color:#31475c;background:#17283a;color:#e5edf5}
+html[data-theme="dark"] .phase-overview-title,html[data-theme="dark"] .phase-card h3,html[data-theme="dark"] .student-module-card h3{color:#e5edf5}
+html[data-theme="dark"] .phase-overview:not(.student-overview) .phase-card,html[data-theme="dark"] .phase-overview.student-overview .student-module-card{border-color:#40566c;background:#1a2e42;color:#dce8f3}
+html[data-theme="dark"] .phase-overview:not(.student-overview) .phase-card:hover,html[data-theme="dark"] .phase-overview.student-overview .student-module-card:hover{border-color:#6b9ec4;background:#20374e}
+html[data-theme="dark"] .phase-overview:not(.student-overview) .phase-card.selected,html[data-theme="dark"] .phase-overview.student-overview .student-module-card.selected{border-color:#2582d1;background:#214766;color:#fff}
+html[data-theme="dark"] .phase-overview .phase-node,html[data-theme="dark"] .phase-overview .student-module-node{border-color:#40566c;background:#293e52;color:#dce8f3}
+html[data-theme="dark"] .phase-overview .phase-card.completed .phase-node{border-color:#148556;background:#087e4d;color:#fff}
+html[data-theme="dark"] .phase-overview .phase-card.current .phase-node{border-color:#c87725;background:#b96e00;color:#fff}
+html[data-theme="dark"] .phase-overview .phase-card.upcoming .phase-node{border-color:#526b82;background:#293e52;color:#c9d8e7}
+html[data-theme="dark"] .phase-number,html[data-theme="dark"] .student-module-card .phase-number{color:#c9d8e7}
+html[data-theme="dark"] .phase-overview .phase-facts,html[data-theme="dark"] .phase-overview .phase-fact{color:#b7c8d8}
+html[data-theme="dark"] .filter-crumb{border-color:#40566c;background:#1d3247}
+html[data-theme="dark"] .filter-crumb-label{color:#a6b7c9}
+html[data-theme="dark"] .filter-crumb-value{color:#dce8f3}
+html[data-theme="dark"] .batch-modal-table th{border-color:#354b60;background:#21364a;color:#dce8f3}
+html[data-theme="dark"] .batch-modal-table td{border-color:#2c4257;background:#17283a;color:#c9d8e7}
+html[data-theme="dark"] .batch-modal-table tbody tr:hover td{background:#20374e}
+html[data-theme="dark"] .batch-table-school{color:#e5edf5}
+html[data-theme="dark"] .batch-table-location{color:#a6b7c9}
+html[data-theme="dark"] .batch-table-action{border-color:#40566c;background:#1d3247;color:#dce8f3}
+html[data-theme="dark"] .batch-counter,html[data-theme="dark"] .batch-counter:nth-child(2),html[data-theme="dark"] .batch-counter:nth-child(3),html[data-theme="dark"] .batch-counter:nth-child(4){border-color:#40566c;background:#1a2e42;color:#e5edf5}
+html[data-theme="dark"] .batch-counter:hover{border-color:#6b9ec4;background:#20374e;box-shadow:0 5px 14px #0005}
+html[data-theme="dark"] .batch-counter .counter-copy b{color:#e5edf5}
+html[data-theme="dark"] .batch-counter .counter-copy span,html[data-theme="dark"] .batch-counter .counter-chevron,html[data-theme="dark"] .batch-status-hint{color:#a6b7c9}
+html[data-theme="dark"] .batch-counter .counter-copy small{color:#74b8ef}
+html[data-theme="dark"] .batch-counter.upcoming .counter-icon{background:#594625;color:#ffe0a3}
+html[data-theme="dark"] .batch-counter.ongoing .counter-icon{background:#1b4567;color:#9ed5ff}
+html[data-theme="dark"] .batch-counter.completed .counter-icon{background:#164838;color:#a8e4c8}
+html[data-theme="dark"] .selected-filter-summary{border-color:#31475c;background:#17283a;color:#c9d8e7}
+html[data-theme="dark"] .selected-filter-summary strong{color:#e5edf5}
+html[data-theme="dark"] .selected-filter-summary select{border-color:#40566c;background:#102033;color:#e5edf5}
+html[data-theme="dark"] .selected-filter-chip{background:#1b4567;color:#a9d7ff}
+
+/* Reports and content library */
+html[data-theme="dark"] .report-app .filters{background:#17283a}
+html[data-theme="dark"] .report-app .summary-sort-controls.card-sort-controls{border-color:#31475c;background:#14263a;color:#dce8f3}
+html[data-theme="dark"] .report-app .summary-sort-direction,html[data-theme="dark"] .report-app .batch-performance-sort-toggle{border-color:#40566c;background:#102033}
+html[data-theme="dark"] .report-app .summary-sort-direction button,html[data-theme="dark"] .report-app .batch-performance-sort-toggle button{color:#a6b7c9}
+html[data-theme="dark"] .report-app .summary-sort-direction button[aria-pressed="true"],html[data-theme="dark"] .report-app .batch-performance-sort-toggle button[aria-pressed="true"]{background:#29445e;color:#a9d7ff;box-shadow:none}
+html[data-theme="dark"] .attendance-detail{border-color:#31475c;background:#17283a;color:#e5edf5}
+html[data-theme="dark"] .attendance-back-button{border-color:#40566c;background:#1d3247;color:#dce8f3}
+html[data-theme="dark"] .attendance-detail-table th{border-color:#354b60;background:#21364a;color:#dce8f3}
+html[data-theme="dark"] .attendance-detail-table td{border-color:#2c4257;background:#17283a;color:#c9d8e7}
+html[data-theme="dark"] .attendance-detail-table tbody tr:hover td{background:#20374e}
+html[data-theme="dark"] .content-app .form-preview-question{border-color:#354b60;background:#1a2e42;color:#dce8f3}
+html[data-theme="dark"] .content-app .form-preview-question h3,html[data-theme="dark"] .content-app .form-preview-option{color:#dce8f3}
+html[data-theme="dark"] .content-app .form-preview-question textarea{border-color:#40566c;background:#102033;color:#e5edf5}
+
+/* Projects */
+html[data-theme="dark"] .project-panel,html[data-theme="dark"] .project-summary{border-color:#31475c;background:#17283a;color:#e5edf5}
+html[data-theme="dark"] .project-panel-heading{border-color:#31475c}
+html[data-theme="dark"] .project-panel-heading h3,html[data-theme="dark"] .project-name-cell,html[data-theme="dark"] .phase-editor-heading h4{color:#e5edf5}
+html[data-theme="dark"] .project-panel-heading p,html[data-theme="dark"] .project-field,html[data-theme="dark"] .project-field>span,html[data-theme="dark"] .project-field legend,html[data-theme="dark"] .phase-editor-heading p{color:#b7c8d8}
+html[data-theme="dark"] .project-field input,html[data-theme="dark"] .project-field select,html[data-theme="dark"] .project-field textarea,html[data-theme="dark"] .project-list-filters input,html[data-theme="dark"] .project-list-filters select{border-color:#40566c;background:#102033;color:#e5edf5}
+html[data-theme="dark"] .project-table th{border-color:#354b60;background:#21364a;color:#dce8f3}
+html[data-theme="dark"] .project-table td{border-color:#2c4257;color:#c9d8e7}
+html[data-theme="dark"] .project-state-field,html[data-theme="dark"] .scope-options label,html[data-theme="dark"] .phase-editor-row{border-color:#354b60;background:#1a2e42;color:#dce8f3}
+html[data-theme="dark"] .phase-editor-heading{border-color:#31475c}
+html[data-theme="dark"] .project-secondary-button,html[data-theme="dark"] .project-cancel-button,html[data-theme="dark"] .project-edit-button{border-color:#40566c;background:#1d3247;color:#dce8f3}
+html[data-theme="dark"] .source-badge{border-color:#40566c;background:#1d3247;color:#c9d8e7}
+html[data-theme="dark"] .project-plan-options .project-plan-option.MuiFormControlLabel-root{border-color:#40566c;background:#1a2e42;color:#dce8f3}
+html[data-theme="dark"] .project-plan-inactive-toggle{border-color:#665a3d;background:#302b20;color:#f0d89e}
+html[data-theme="dark"] .project-progress{background:#293e52}
+
+/* Compliance */
+html[data-theme="dark"] .compliance-header h1,html[data-theme="dark"] .compliance-section h2,html[data-theme="dark"] .compliance-standards h2{color:#e5edf5}
+html[data-theme="dark"] .compliance-header>p:last-child,html[data-theme="dark"] .compliance-summary small,html[data-theme="dark"] .compliance-standards p,html[data-theme="dark"] .compliance-section-head p,html[data-theme="dark"] .compliance-item-copy small{color:#a6b7c9}
+html[data-theme="dark"] .compliance-summary,html[data-theme="dark"] .compliance-standards,html[data-theme="dark"] .compliance-section{border-color:#31475c;background:#17283a;color:#dce8f3}
+html[data-theme="dark"] .compliance-section-head{border-color:#31475c;background:#14263a}
+html[data-theme="dark"] .compliance-item{border-color:#2c4257;color:#dce8f3}
+html[data-theme="dark"] .compliance-item:hover{background:#20374e}
+html[data-theme="dark"] .standard-chips span{border-color:#40566c;background:#1d3247;color:#dce8f3}
+html[data-theme="dark"] .compliance-tools label{color:#c9d8e7}
+html[data-theme="dark"] .compliance-tools input,html[data-theme="dark"] .compliance-tools select{border-color:#40566c;background:#102033;color:#e5edf5}
+html[data-theme="dark"] .compliance-summary button,html[data-theme="dark"] .compliance-tools button{border-color:#40566c;background:#1d3247;color:#dce8f3}
+
+/* Holiday Master */
+html[data-theme="dark"] .hm-banner,html[data-theme="dark"] .hm-summary,html[data-theme="dark"] .hm-tabs,html[data-theme="dark"] .hm-policy,html[data-theme="dark"] .hm-card{border-color:#31475c;background:#17283a;color:#dce8f3;box-shadow:0 2px 12px #0003}
+html[data-theme="dark"] .hm-banner{background:radial-gradient(circle at 92% 15%,#203b53 0,transparent 31%),linear-gradient(110deg,#17283a,#14263a)}
+html[data-theme="dark"] .hm-banner h1,html[data-theme="dark"] .hm-card-head h2{color:#e5edf5}
+html[data-theme="dark"] .hm-banner p,html[data-theme="dark"] .hm-policy p,html[data-theme="dark"] .hm-card-head p,html[data-theme="dark"] .hm-demo-note{color:#a6b7c9}
+html[data-theme="dark"] .hm-tabs button{color:#a6b7c9}
+html[data-theme="dark"] .hm-tabs button.selected,html[data-theme="dark"] .hm-filter-tabs button.active{background:#29445e;color:#a9d7ff}
+html[data-theme="dark"] .hm-policy-options label,html[data-theme="dark"] .hm-add-user{border-color:#40566c;background:#1a2e42;color:#dce8f3}
+html[data-theme="dark"] .hm-form label,html[data-theme="dark"] .hm-add-user label,html[data-theme="dark"] .hm-policy>div:first-child strong{color:#c9d8e7}
+html[data-theme="dark"] .hm-form input,html[data-theme="dark"] .hm-form select,html[data-theme="dark"] .hm-form textarea,html[data-theme="dark"] .hm-add-user input,html[data-theme="dark"] .hm-add-user select,html[data-theme="dark"] .hm-access .hm-table select{border-color:#40566c;background:#102033;color:#e5edf5}
+html[data-theme="dark"] .hm-form select:disabled{background:#1b2a38;color:#8297aa}
+html[data-theme="dark"] .hm-secondary,html[data-theme="dark"] .hm-filter-tabs,html[data-theme="dark"] .hm-filter-tabs button{border-color:#40566c;background:#1d3247;color:#dce8f3}
+html[data-theme="dark"] .hm-filter-tabs button.active{background:#29445e;color:#a9d7ff}
+html[data-theme="dark"] .hm-table th{border-color:#354b60;background:#21364a;color:#dce8f3}
+html[data-theme="dark"] .hm-table td{border-color:#2c4257;color:#c9d8e7}
+html[data-theme="dark"] .hm-table td strong{color:#e5edf5}
+html[data-theme="dark"] .hm-table td small,html[data-theme="dark"] .hm-footnote{color:#a6b7c9}
+html[data-theme="dark"] .hm-row-actions button:hover,html[data-theme="dark"] .hm-user-toggle:hover{background:#20374e}
+html[data-theme="dark"] .hm-calendar-note,html[data-theme="dark"] .hm-demo-note code{background:#1d3247;color:#c9d8e7}
+html[data-theme="dark"] .hm-calendar-note p,html[data-theme="dark"] .hm-calendar-note strong{color:#c9d8e7}
+html[data-theme="dark"] .hm-gate{background:#0e1b29;color:#e5edf5}
+html[data-theme="dark"] .hm-gate section{border-color:#31475c;background:#17283a}
+html[data-theme="dark"] .hm-gate h1{color:#e5edf5}
+html[data-theme="dark"] .hm-gate p{color:#a6b7c9}
+
+/* Login and standalone informational pages retain the selected appearance. */
+html[data-theme="dark"] .login-page{background:#0e1b29;color:#e5edf5}
+html[data-theme="dark"] .login-panel{background:#17283a;color:#e5edf5}
+html[data-theme="dark"] .login-panel h2,html[data-theme="dark"] .login-intro{color:#e5edf5}
+html[data-theme="dark"] .login-input-wrap input{border-color:#40566c;background:#102033;color:#e5edf5}
+html[data-theme="dark"] .coming-soon-page{background:linear-gradient(145deg,#0e1b29,#17283a);color:#e5edf5}
+html[data-theme="dark"] .coming-soon-card{border-color:#31475c;background:#17283a}
+html[data-theme="dark"] .coming-soon-card h1{color:#e5edf5}
+html[data-theme="dark"] .coming-soon-copy{color:#a6b7c9}

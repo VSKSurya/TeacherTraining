@@ -70,10 +70,16 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
   }
   sidebarDocument.querySelectorAll<HTMLElement>('.side-nav > .side-link, .side-nav > .side-group').forEach(item => {
     const label = item.querySelector('span')?.textContent?.trim() ?? item.querySelector('summary')?.textContent?.trim() ?? '';
+    if (label) {
+      item.setAttribute('title', label);
+      if (item.matches('a.side-link')) item.setAttribute('aria-label', label);
+    }
     const href = item.querySelector<HTMLAnchorElement>('a')?.getAttribute('href');
     const menu = href === '#/upload-documents' ? 'upload-documents' : href === '#/trainer-evidence' ? 'trainer-evidence' : menuByLabel[label];
     if (menu && !canAccessMenu(role, menu)) item.remove();
   });
+  const collapseButton = sidebarDocument.querySelector<HTMLButtonElement>('.sidebar .collapse');
+  collapseButton?.setAttribute('title', collapseButton.getAttribute('aria-label') ?? 'Collapse navigation');
   html = sidebarDocument.body.innerHTML;
   useEffect(() => {
     const syncResponsiveCollapse = () => {
@@ -135,6 +141,7 @@ export function Sidebar({ activePage = 'Dashboard' }: { activePage?: AppPage }) 
         app.classList.toggle('is-expanded', !collapsed && tablet);
         collapseButton.setAttribute('aria-expanded', String(!collapsed));
         collapseButton.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+        collapseButton.setAttribute('title', collapsed ? 'Expand navigation' : 'Collapse navigation');
         groups().forEach(placeSubmenu);
         return;
       }
@@ -190,9 +197,17 @@ export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; descr
   const initials = roleLabel.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
   const heading = logoSrc ? `<h1><img src="${logoSrc}" alt="${title}" style="display:block;max-width:190px;max-height:48px;object-fit:contain" /></h1>` : `<h1>${title}</h1>`;
   const audienceToggle = ernetLogin ? '<div class="audience-switch topbar-audience-switch" role="group" aria-label="Dashboard audience"><button class="audience-button topbar-audience-button" type="button" data-audience="Teacher" aria-pressed="false">Teacher</button><button class="audience-button topbar-audience-button" type="button" data-audience="Student" aria-pressed="false">Student</button></div>' : '';
-  const html = topbarMarkup.replace('<h1>Dashboard</h1>', heading).replace('<div class="top-actions">', `<div class="top-actions">${audienceToggle}`)
+  let html = topbarMarkup.replace('<h1>Dashboard</h1>', heading).replace('<div class="top-actions">', `<div class="top-actions">${audienceToggle}`)
     .replace('aria-label="Project Sponsor account"', `aria-label="${roleLabel} account"`)
     .replace('<span class="avatar">PS</span><span>Project Sponsor</span>', `<span class="avatar">${initials}</span><span>${roleLabel}</span>`);
+  const topbarDocument = new DOMParser().parseFromString(html, 'text/html');
+  topbarDocument.querySelectorAll<HTMLButtonElement>('.topbar button[aria-label]').forEach(button => {
+    button.title = button.getAttribute('aria-label') ?? '';
+  });
+  topbarDocument.querySelectorAll<HTMLButtonElement>('.topbar-audience-button').forEach(button => {
+    button.title = `${button.textContent?.trim() ?? ''} dashboard`;
+  });
+  html = topbarDocument.body.innerHTML;
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [accessibilityAnchor, setAccessibilityAnchor] = useState<HTMLElement | null>(null);
   const [accessibility, setAccessibility] = useState<{ contrast: 'normal' | 'high'; textSpacing: boolean; lineHeight: boolean; hideImages: boolean; bigCursor: boolean }>(() => {
