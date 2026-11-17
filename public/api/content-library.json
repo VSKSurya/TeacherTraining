@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "id": "teachers-training-deck-module",
+      "displayName": "Teachers Training Deck Module",
+      "fileName": "Ernet Teachers Training Deck_Module 1.pptx",
+      "assetPath": "/content-library-assets/teachers-training-deck-module.pptx",
+      "category": "Presentation",
+      "format": "PPTX",
+      "sizeBytes": 19938204,
+      "language": "English",
+      "tags": ["Training", "Teachers", "Module 1"]
+    },
+    {
+      "id": "k-yan-user-manual",
+      "displayName": "K-Yan User Manual",
+      "fileName": "K-Yan User Manual.pdf",
+      "assetPath": "/content-library-assets/k-yan-user-manual.pdf",
+      "category": "Documents",
+      "format": "PDF",
+      "sizeBytes": 10483005,
+      "language": "English",
+      "tags": ["K-Yan", "User Manual", "Reference"]
+    }
+  ]
+}

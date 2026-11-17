@@ -5,57 +5,17 @@ import { Sidebar, Topbar, Footer } from './components/DashboardParts';
 type Category = 'Presentation' | 'Video' | 'Documents' | 'Forms';
 type Resource = { id: string; title: string; file: string; sourceFile?: string; category: Category; format: string; size: string; language: string; tags: string[]; url: string; text?: string; questions?: FormRow[]; planCode?: string; day?: number };
 type FormRow = Record<string, unknown>;
-type ContentSample = { filename: string; base64: string };
-declare global { interface Window { CONTENT_SAMPLES?: ContentSample[] } }
+type ContentLibraryApiItem = { id: string; displayName: string; fileName: string; assetPath: string; category: Category; format: string; sizeBytes: number; language: string; tags: string[] };
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
-const resources: Resource[] = [
-  { id: 'video', title: 'Digital classroom training', file: 'digital-classroom-training.mp4', sourceFile: 'sample-training-video.mp4', category: 'Video', format: 'MP4', size: '20 KB', language: 'English', tags: ['Training', 'Digital classroom', 'Video'], url: publicAsset('/content-library-assets/sample-training-video.mp4') },
-  { id: 'manual', title: 'Teacher training manual', file: 'teacher-training-manual.pdf', sourceFile: 'sample-training-manual.pdf', category: 'Documents', format: 'PDF', size: '2 KB', language: 'English', tags: ['Manual', 'Reference', 'Training'], url: publicAsset('/content-library-assets/sample-training-manual.pdf') },
-  { id: 'presentation', title: 'Teacher training presentation', file: 'teacher-training-presentation.pptx', sourceFile: 'sample-training.pptx', category: 'Presentation', format: 'PPTX', size: '28 KB', language: 'English', tags: ['Presentation', 'Training', 'Classroom'], url: publicAsset('/content-library-assets/sample-training.pptx') },
-  { id: 'guide', title: 'Teacher training guide', file: 'teacher-training-guide.docx', sourceFile: 'sample-training-guide.docx', category: 'Documents', format: 'DOCX', size: '36 KB', language: 'English', tags: ['Document', 'Guide', 'Training'], url: publicAsset('/content-library-assets/sample-training-guide.docx') },
-];
 const categories = ['All', 'Presentation', 'Video', 'Documents', 'Forms'] as const;
 const languages = ['All Languages', 'English', 'Hindi'];
 const formStorageKey = 'teacher-training-assessment-form-master';
 function readLibraryForms(): FormRow[] { try { const value: unknown = JSON.parse(localStorage.getItem(formStorageKey) ?? '[]'); return Array.isArray(value) ? value.filter(row => row && typeof row === 'object') as FormRow[] : []; } catch { return []; } }
-const resourcesForCategory = (category: string, extra: Resource[] = []) => [...resources, ...extra].filter(resource => resource.category === category);
+const resourcesForCategory = (items: Resource[], category: string, extra: Resource[] = []) => [...items, ...extra].filter(resource => resource.category === category);
 const categoryOf = (resource: Resource) => resource.format === 'FORM' ? 'form' : resource.format === 'PDF' ? 'pdf' : ['MP4', 'MOV', 'WEBM'].includes(resource.format) ? 'video' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(resource.format) ? 'presentation' : ['PNG', 'JPG', 'WEBP'].includes(resource.format) ? 'image' : '';
 const labelOf = (resource: Resource) => resource.format === 'FORM' ? 'Form' : resource.format === 'PDF' ? 'PDF' : ['PPT', 'PPTX', 'PPS', 'PPSX'].includes(resource.format) ? 'Presentation' : ['MP4', 'MOV', 'WEBM'].includes(resource.format) ? 'Video' : ['PNG', 'JPG', 'WEBP'].includes(resource.format) ? 'Image' : 'Document';
 
-let sampleScriptPromise: Promise<ContentSample[]> | undefined;
-function loadContentSamples(): Promise<ContentSample[]> {
-  if (window.CONTENT_SAMPLES) return Promise.resolve(window.CONTENT_SAMPLES);
-  if (!sampleScriptPromise) sampleScriptPromise = new Promise(resolve => {
-    const script = document.createElement('script');
-    script.src = publicAsset('/content-samples.js');
-    script.onload = () => resolve(window.CONTENT_SAMPLES ?? []);
-    script.onerror = () => resolve([]);
-    document.head.appendChild(script);
-  });
-  return sampleScriptPromise;
-}
-function xmlText(xml: string, tag: string) {
-  const doc = new DOMParser().parseFromString(xml, 'application/xml');
-  return [...doc.getElementsByTagName('*')].filter(node => node.localName === tag).map(node => node.textContent).filter(Boolean).join(' ');
-}
-async function officePreview(resource: Resource) {
-  try {
-    const samples = await loadContentSamples();
-    const sample = samples.find(item => item.filename === (resource.sourceFile ?? resource.file));
-    if (!sample) return 'Download this file to open it in a compatible app.';
-    const bytes = Uint8Array.from(atob(sample.base64), ch => ch.charCodeAt(0));
-    const { default: JSZip } = await import('jszip');
-    const zip = await JSZip.loadAsync(bytes);
-    const isDocx = resource.format === 'DOCX';
-    const names = Object.keys(zip.files).filter(name => isDocx ? name === 'word/document.xml' : /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort();
-    const parts: string[] = [];
-    for (const name of names.slice(0, 20)) {
-      const text = xmlText(await zip.files[name].async('string'), 't');
-      if (text) parts.push((isDocx ? '' : `${name.split('/').pop()?.replace('.xml', '').replace('slide', 'Slide ')}\n`) + text);
-    }
-    return parts.join('\n\n') || 'No readable text was found in this file. Download it to open the full document.';
-  } catch { return 'Preview is unavailable for this file. Download it to open the full document in a compatible app.'; }
-}
+async function officePreview() { return 'Download this file to open it in a compatible app.'; }
 function ResourceCard({ resource, onPreview }: { resource: Resource; onPreview: (resource: Resource) => void }) {
   return <article className="card">
     <div className="card-body"><div className="resource-meta-row"><div className={`file-icon-box ${categoryOf(resource)}`} aria-label={`${resource.format} file`} role="img"><FileTypeIcon format={resource.format} /></div><div className="card-meta"><span>{labelOf(resource)}</span><span>{resource.size}</span><span>{resource.language}</span></div></div><h3>{resource.title}</h3><p className="filename">{resource.file}</p>
@@ -73,6 +33,8 @@ function FileTypeIcon({ format }: { format: string }) {
 }
 
 export default function ContentLibrary() {
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(true);
   const [category, setCategory] = useState<string>('All');
   const [language, setLanguage] = useState('All Languages');
   const [query, setQuery] = useState('');
@@ -93,6 +55,18 @@ export default function ContentLibrary() {
       }));
     } catch { return []; }
   });
+  useEffect(() => {
+    let active = true;
+    fetch(publicAsset('/api/content-library.json'))
+      .then(response => { if (!response.ok) throw new Error(`Content Library API returned ${response.status}`); return response.json() as Promise<{ items?: ContentLibraryApiItem[] }>; })
+      .then(payload => {
+        if (!active) return;
+        setResources((payload.items ?? []).map(item => ({ id: item.id, title: item.displayName, file: item.fileName, category: item.category, format: item.format, size: `${Math.max(1, Math.round(item.sizeBytes / 1024))} KB`, language: item.language, tags: item.tags, url: publicAsset(item.assetPath) })));
+      })
+      .catch(() => { if (active) setToast('Learning materials could not be loaded.'); })
+      .finally(() => { if (active) setResourcesLoading(false); });
+    return () => { active = false; };
+  }, []);
   const formResources = useMemo(() => formRecords.map((form, index) => {
     const questions = Array.isArray(form.questions) ? form.questions as FormRow[] : [];
     const rawTitle = typeof form.title === 'string' ? form.title : 'Untitled form';
@@ -109,18 +83,18 @@ export default function ContentLibrary() {
     return { id: String(form.id ?? `form-${index}`), title, file: `${kind} · ${stage}`, category: 'Forms' as const, format: 'FORM', size: `${questions.length} questions`, language: 'English', tags: [kind, stage, planCode], url: publicAsset('/assessments'), text: summary, questions, planCode, day: Number(form.day) || 1 };
   }), [formRecords]);
   const filtered = useMemo(() => {
-    const source = category === 'Forms' ? formResources : category === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(category, approvedResources);
+    const source = category === 'Forms' ? formResources : category === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(resources, category, approvedResources);
     return source.filter(resource => (category === 'Forms' || language === 'All Languages' || resource.language === language) && (!query.trim() || `${resource.title} ${resource.file} ${resource.language} ${resource.tags.join(' ')} ${resource.text ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())));
-  }, [approvedResources, category, formResources, language, query]);
+  }, [approvedResources, category, formResources, language, query, resources]);
   const counts = useMemo(() => Object.fromEntries(categories.map(item => {
-    const source = item === 'Forms' ? formResources : item === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(item, approvedResources);
+    const source = item === 'Forms' ? formResources : item === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(resources, item, approvedResources);
     return [item, source.filter(resource => item === 'Forms' || language === 'All Languages' || resource.language === language).length];
-  })), [approvedResources, formResources, language]);
+  })), [approvedResources, formResources, language, resources]);
   const previewResource = useCallback(async (resource: Resource) => {
     setPreview(resource);
     setPreviewAnswers({});
     if (resource.format === 'FORM') setPreviewText(resource.text ?? '');
-    else if (resource.format === 'DOCX' || resource.format === 'PPTX') setPreviewText(await officePreview(resource));
+    else if (resource.format === 'DOCX' || resource.format === 'PPTX') setPreviewText(await officePreview());
     else setPreviewText('');
   }, []);
   useEffect(() => {
@@ -162,7 +136,7 @@ export default function ContentLibrary() {
       </div>
       <div className="tabs" role="tablist" aria-label="Content categories">{categories.map(item => <button key={item} className="tab" type="button" role="tab" aria-selected={category === item} onClick={() => { if (item === 'Forms') setFormRecords(readLibraryForms()); setCategory(item); }}>{item}<span className="tab-count">{counts[item]}</span></button>)}</div>
       <div className="results"><span role="status" aria-live="polite">{filtered.length} {category === 'Forms' ? (filtered.length === 1 ? 'form' : 'forms') : (filtered.length === 1 ? 'file' : 'files')}</span><span>{category === 'Forms' ? 'Preview a form or open form management' : 'Preview or download any file'}</span></div>
-      <div className="cards">{filtered.length ? filtered.map(resource => <ResourceCard key={resource.id} resource={resource} onPreview={previewResource} />) : <div className="empty"><h3>{category === 'Forms' ? 'No forms found' : 'No files found'}</h3><p>{category === 'Forms' ? 'Forms created in Assessments & Feedback will appear here.' : 'Try another category or search term.'}</p></div>}</div></section>
+      <div className="cards">{filtered.length ? filtered.map(resource => <ResourceCard key={resource.id} resource={resource} onPreview={previewResource} />) : <div className="empty"><h3>{resourcesLoading ? 'Loading materials…' : category === 'Forms' ? 'No forms found' : 'No files found'}</h3><p>{category === 'Forms' ? 'Forms created in Assessments & Feedback will appear here.' : resourcesLoading ? 'Fetching the sample Content Library API response.' : 'Try another category or search term.'}</p></div>}</div></section>
       <Footer />
     </main>
     <Dialog open={showDialog} onClose={() => setPreview(null)} maxWidth={false} PaperProps={{ className: 'library-preview-paper' }}>
