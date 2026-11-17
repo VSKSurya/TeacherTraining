@@ -192,7 +192,7 @@ export function Topbar({ title = 'Dashboard', logoSrc }: { title?: string; descr
   const [theme, setTheme] = useState<'light' | 'dark'>(() => window.localStorage.getItem('teacher-training-theme') === 'dark' ? 'dark' : 'light');
   const [fontScale, setFontScale] = useState(readFontScale);
   const session = getSession();
-  const roleLabel = session ? session.userId.toLowerCase() === 'demo1' && session.role === 'sponsor-admin' ? 'Ernet Admin' : ROLE_LABELS[session.role] : 'Guest';
+  const roleLabel = session ? session.userId.toLowerCase() === 'demo1' && session.role === 'sponsor-admin' ? 'ERNET Admin' : ROLE_LABELS[session.role] : 'Guest';
   const ernetLogin = session?.role === 'sponsor-admin';
   const initials = roleLabel.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
   const heading = logoSrc ? `<h1><img src="${logoSrc}" alt="${title}" style="display:block;max-width:190px;max-height:48px;object-fit:contain" /></h1>` : `<h1>${title}</h1>`;

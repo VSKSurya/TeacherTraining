@@ -73,8 +73,8 @@ function AppContent() {
     const role = session ? ROLE_LABELS[session.role] : '';
     const loginView = path === '/login' || (!session && !['/privacy-policy', '/consent-form', '/register', '/recover-trainee'].includes(path));
     const page = pages[path] ?? 'Dashboard';
-    const title = loginView ? 'Sign In | Teacher Training' : session ? `${role} · ${page} · ${session.userId} | Schoolnet` : `${page} | Schoolnet`;
-    const roleDescription = session ? `Signed in as ${session.userId}, ${role}. Access the Schoolnet teacher training portal.` : 'Schoolnet teacher training portal for projects, training plans, batches, learning resources, and registration.';
+    const title = loginView ? 'Sign In | Training Portal' : session ? `${role} · ${page} · ${session.userId} | Training Portal` : `${page} | Training Portal`;
+    const roleDescription = session ? `Signed in as ${session.userId}, ${role}. Access the Training Portal.` : 'Training Portal for projects, training plans, batches, learning resources, and registration.';
     document.title = title;
     const updateMeta = (selector: string, attribute: string, value: string, create: () => HTMLMetaElement) => {
       let element = document.head.querySelector<HTMLMetaElement>(selector);
@@ -82,7 +82,7 @@ function AppContent() {
       element.setAttribute(attribute, value);
     };
     updateMeta('meta[name="description"]', 'content', roleDescription, () => { const meta = document.createElement('meta'); meta.name = 'description'; return meta; });
-    updateMeta('meta[name="application-name"]', 'content', session ? `Schoolnet ${role}` : 'Schoolnet Teacher Training', () => { const meta = document.createElement('meta'); meta.name = 'application-name'; return meta; });
+    updateMeta('meta[name="application-name"]', 'content', session ? `${role} | Training Portal` : 'Training Portal', () => { const meta = document.createElement('meta'); meta.name = 'application-name'; return meta; });
     updateMeta('meta[property="og:title"]', 'content', title, () => { const meta = document.createElement('meta'); meta.setAttribute('property', 'og:title'); return meta; });
     updateMeta('meta[property="og:description"]', 'content', roleDescription, () => { const meta = document.createElement('meta'); meta.setAttribute('property', 'og:description'); return meta; });
   }, [path, session?.userId, session?.role]);
