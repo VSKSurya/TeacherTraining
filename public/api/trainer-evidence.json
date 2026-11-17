@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "id": "sample-evidence-demo6-001",
+      "trainer": "Ananya Rao",
+      "trainerUserId": "Demo6",
+      "batch": "TTB-DEMO-001 · Digital Teaching Foundations",
+      "date": "2026-11-17",
+      "startDate": "2026-11-17",
+      "trainingPlan": "Digital Teaching Foundations",
+      "state": "Telangana",
+      "district": "Hyderabad",
+      "block": "Balanagar",
+      "phase": "Phase 2",
+      "notes": "Sample training attendance evidence.",
+      "submittedBy": "Demo6",
+      "submittedAt": "2026-11-17T10:30:00.000Z",
+      "status": "Pending",
+      "files": [
+        { "name": "Attendance_Nov2026.svg", "type": "image/svg+xml", "size": 38400, "assetPath": "/api/sample-attendance.svg" },
+        { "name": "Training_Photo_01.svg", "type": "image/svg+xml", "size": 38400, "assetPath": "/api/sample-training-photo.svg" }
+      ]
+    }
+  ]
+}
