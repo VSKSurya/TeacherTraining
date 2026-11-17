@@ -121,7 +121,7 @@ export default function TrainerEvidence() {
     { key: 'toDate', label: 'To Start Date', type: 'date' },
   ];
   const changeFolderFilter = (key: string, value: string) => setFolderFilters(previous => ({ ...previous, [key]: value, ...(key === 'project' ? { batch: '' } : {}) }));
-  const clearFolderFilters = () => setFolderFilters({ project: '', state: '', district: '', school: '', batch: '', fromDate: '', toDate: '' });
+  const clearFolderFilters = () => { setFolderFilters({ project: '', state: '', district: '', school: '', batch: '', fromDate: '', toDate: '' }); setFolderFilterAnchor(null); setFolderLevel('projects'); setSelectedProject(''); setSelectedBatchId(''); setFileSearch(''); setFileType('All file types'); };
 
   const batchPhaseNumber = (batch: Batch | undefined, evidencePhase = '') => {
 
