@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog, IconButton, Snackbar } from '@mui/material';
+import { useSelector } from 'react-redux';
 import { Sidebar, Topbar, Footer } from './components/DashboardParts';
+import type { RootState } from './store';
 
 type Category = 'Presentation' | 'Video' | 'Documents' | 'Forms';
 type Resource = { id: string; title: string; file: string; sourceFile?: string; category: Category; format: string; size: string; language: string; tags: string[]; url: string; text?: string; questions?: FormRow[]; planCode?: string; day?: number };
@@ -33,6 +35,7 @@ function FileTypeIcon({ format }: { format: string }) {
 }
 
 export default function ContentLibrary() {
+  const audience = useSelector((state: RootState) => state.dashboard.audience);
   const [resources, setResources] = useState<Resource[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [category, setCategory] = useState<string>('All');
@@ -83,13 +86,15 @@ export default function ContentLibrary() {
     return { id: String(form.id ?? `form-${index}`), title, file: `${kind} · ${stage}`, category: 'Forms' as const, format: 'FORM', size: `${questions.length} questions`, language: 'English', tags: [kind, stage, planCode], url: publicAsset('/assessments'), text: summary, questions, planCode, day: Number(form.day) || 1 };
   }), [formRecords]);
   const filtered = useMemo(() => {
+    if (audience === 'Student') return [];
     const source = category === 'Forms' ? formResources : category === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(resources, category, approvedResources);
     return source.filter(resource => (category === 'Forms' || language === 'All Languages' || resource.language === language) && (!query.trim() || `${resource.title} ${resource.file} ${resource.language} ${resource.tags.join(' ')} ${resource.text ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())));
-  }, [approvedResources, category, formResources, language, query, resources]);
+  }, [approvedResources, audience, category, formResources, language, query, resources]);
   const counts = useMemo(() => Object.fromEntries(categories.map(item => {
+    if (audience === 'Student') return [item, 0];
     const source = item === 'Forms' ? formResources : item === 'All' ? [...resources, ...approvedResources, ...formResources] : resourcesForCategory(resources, item, approvedResources);
     return [item, source.filter(resource => item === 'Forms' || language === 'All Languages' || resource.language === language).length];
-  })), [approvedResources, formResources, language, resources]);
+  })), [approvedResources, audience, formResources, language, resources]);
   const previewResource = useCallback(async (resource: Resource) => {
     setPreview(resource);
     setPreviewAnswers({});
@@ -136,7 +141,7 @@ export default function ContentLibrary() {
       </div>
       <div className="tabs" role="tablist" aria-label="Content categories">{categories.map(item => <button key={item} className="tab" type="button" role="tab" aria-selected={category === item} onClick={() => { if (item === 'Forms') setFormRecords(readLibraryForms()); setCategory(item); }}>{item}<span className="tab-count">{counts[item]}</span></button>)}</div>
       <div className="results"><span role="status" aria-live="polite">{filtered.length} {category === 'Forms' ? (filtered.length === 1 ? 'form' : 'forms') : (filtered.length === 1 ? 'file' : 'files')}</span><span>{category === 'Forms' ? 'Preview a form or open form management' : 'Preview or download any file'}</span></div>
-      <div className="cards">{filtered.length ? filtered.map(resource => <ResourceCard key={resource.id} resource={resource} onPreview={previewResource} />) : <div className="empty"><h3>{resourcesLoading ? 'Loading materials…' : category === 'Forms' ? 'No forms found' : 'No files found'}</h3><p>{category === 'Forms' ? 'Forms created in Assessments & Feedback will appear here.' : resourcesLoading ? 'Fetching the sample Content Library API response.' : 'Try another category or search term.'}</p></div>}</div></section>
+      <div className="cards">{filtered.length ? filtered.map(resource => <ResourceCard key={resource.id} resource={resource} onPreview={previewResource} />) : audience === 'Student' ? <div className="empty student-empty"><svg className="empty-illustration" viewBox="0 0 220 150" role="img" aria-label="No learning materials found"><rect x="43" y="22" width="116" height="94" rx="12" fill="#eaf4fd"/><path d="M70 53h63M70 68h49M70 83h38" stroke="#8bb9dc" strokeWidth="7" strokeLinecap="round"/><circle cx="157" cy="99" r="30" fill="#fff" stroke="#176fba" strokeWidth="6"/><path d="m178 121 19 19" stroke="#176fba" strokeWidth="8" strokeLinecap="round"/><path d="M96 126h-37" stroke="#b5cfe3" strokeWidth="7" strokeLinecap="round"/></svg><h3>No data found</h3><p>There are no learning materials available for Students yet.</p></div> : <div className="empty"><h3>{resourcesLoading ? 'Loading materials…' : category === 'Forms' ? 'No forms found' : 'No files found'}</h3><p>{category === 'Forms' ? 'Forms created in Assessments & Feedback will appear here.' : resourcesLoading ? 'Fetching the sample Content Library API response.' : 'Try another category or search term.'}</p></div>}</div></section>
       <Footer />
     </main>
     <Dialog open={showDialog} onClose={() => setPreview(null)} maxWidth={false} PaperProps={{ className: 'library-preview-paper' }}>
