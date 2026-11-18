@@ -16,9 +16,6 @@ export function PhaseSelectionSummary({ selectedPhase, selectedFilters = {}, onP
   return <div className={`selected-filter-summary ${className}`.trim()}><strong>Phase</strong><select aria-label="Dashboard phase" value={selectedPhase ?? ''} onChange={event => { const phase = event.target.value ? Number(event.target.value) : null; dispatch(setPhase(phase)); onPhaseChange?.(phase); }}><option value="">All phases</option>{options.map((name, index) => <option value={index + 1} key={name}>{index + 1}: {name}</option>)}</select>{activeFilters.length > 0 && <><strong>Selected Filters:</strong>{activeFilters.map(([key, value]) => <span className="selected-filter-chip" key={key}>{key === 'phase' ? 'Phase filter' : key}: {value}</span>)}</>}</div>;
 }
 function FilterFieldIcon({ name }: { name: string }) {
-  if (name === 'project') return <><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></>;
-  if (name === 'school') return <><path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-5h6v5"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></>;
-  if (name === 'plan' || name === 'batch') return <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 4h8"/></>;
   if (name === 'state') return <><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2" /></>;
   if (name === 'district' || name === 'block') return <path d="M4 20V8l4-4 4 4v12m0-8h8v8M2 20h20M7 10h2m-2 4h2m-2 4h2m9-1h1" />;
   if (name === 'trainer') return <><circle cx="9" cy="8" r="3" /><path d="M3 20v-1a6 6 0 0 1 12 0v1H3Zm13-9a3 3 0 1 0 0-6m1 9a5 5 0 0 1 4 5" /></>;

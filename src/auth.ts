@@ -30,7 +30,7 @@ export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
 export const DEMO_PASSWORD = 'demo1@123';
 export const TRAINER_DEFAULT_PASSWORD = 'Pass@123';
 export const ROLE_LABELS: Record<UserRole, string> = {
-  'sponsor-admin': 'ERnet Admin',
+  'sponsor-admin': 'ERNET Admin',
   'schoolnet-super-admin': 'Schoolnet Super Admin',
   'schoolnet-project-admin': 'Schoolnet Project Admin',
   'state-admin': 'State Admin',
