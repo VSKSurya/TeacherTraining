@@ -180,7 +180,6 @@ export default function TrainerEvidence() {
 
   return <div className="app"><Sidebar activePage={isTrainer ? 'Upload Documents' : 'Uploaded Documents'} /><main className="main" id="main-content"><Topbar title={isTrainer ? 'Training Evidence' : 'Training Evidence'} /><Box sx={{ p: { xs: 1, md: 2 }, pt: { xs: isTrainer ? 1 : 0.5, md: isTrainer ? 2 : 0.5 }, maxWidth: 1500, mx: 'auto', width: '100%' }}>
     <Stack spacing={2}>
-      {isTrainer && <Box><Typography variant="h5" fontWeight={700}>Training Evidence</Typography><Typography variant="body2" color="text.secondary">Upload training documents, presentations, short videos, photos, and scanned attendance sheets for verification.</Typography></Box>}
       {isTrainer && <Paper component="form" onSubmit={submit} elevation={0} sx={{ p: { xs: 1.25, md: 1.75 }, border: '1px solid #dce7f1', borderRadius: 2, boxShadow: '0 2px 8px rgba(23,53,83,.04)' }}>
         <Stack spacing={1.25}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' }, gap: 1.25 }}>
