@@ -6,6 +6,7 @@ import { Sidebar, Topbar, Footer, DashboardContent, DashboardModals, DashboardBr
 import ContentLibrary from './ContentLibrary';
 import { Reports } from './reports/Reports';
 import Login from './Login';
+import PasswordRecovery from './PasswordRecovery';
 import ComingSoon from './ComingSoon';
 import HolidayMaster from './HolidayMaster';
 import Projects from './Projects';
@@ -71,7 +72,7 @@ function AppContent() {
       '/reports/attendance-report': 'Attendance Report', '/reports/assessment-feedback': 'Assessment and Feedback Report', '/reports/participant-feedback': 'Participant Wise Feedback Report',
     };
     const role = session ? ROLE_LABELS[session.role] : '';
-    const loginView = path === '/login' || (!session && !['/privacy-policy', '/consent-form', '/register', '/recover-trainee'].includes(path));
+    const loginView = path === '/login' || path === '/forgot-password' || (!session && !['/privacy-policy', '/consent-form', '/register', '/recover-trainee'].includes(path));
     const page = pages[path] ?? 'Dashboard';
     const title = loginView ? 'Sign In | Training Portal' : session ? `${role} · ${page} · ${session.userId} | Training Portal` : `${page} | Training Portal`;
     const roleDescription = session ? `Signed in as ${session.userId}, ${role}. Access the Training Portal.` : 'Training Portal for projects, training plans, batches, learning resources, and registration.';
@@ -87,6 +88,7 @@ function AppContent() {
     updateMeta('meta[property="og:description"]', 'content', roleDescription, () => { const meta = document.createElement('meta'); meta.setAttribute('property', 'og:description'); return meta; });
   }, [path, session?.userId, session?.role]);
   if (path === '/login') return <Login />;
+  if (path === '/forgot-password') return <PasswordRecovery />;
   if (path === '/privacy-policy') return <ComingSoon title="Privacy Policy" />;
   if (path === '/consent-form') return <ComingSoon title="Consent Form" />;
   if (path === '/register') return <OpenRegistration />;

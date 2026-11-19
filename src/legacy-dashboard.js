@@ -41,23 +41,27 @@
 
   const filterTrigger=document.querySelector('#filter-trigger');
   const filterPopover=document.querySelector('#filter-popover');
+  function closeFilters(){filterTrigger.setAttribute('aria-expanded','false');filterPopover.classList.remove('open')}
   filterTrigger.addEventListener('click',()=>{
     const open=filterTrigger.getAttribute('aria-expanded')==='true';
     filterTrigger.setAttribute('aria-expanded',String(!open));filterPopover.classList.toggle('open',!open);
   });
+  document.querySelector('#close-filters').addEventListener('click',closeFilters);
   document.addEventListener('click',event=>{
-    if(!event.target.closest('.filter-control')){filterTrigger.setAttribute('aria-expanded','false');filterPopover.classList.remove('open')}
+    if(!event.target.closest('.filter-control'))closeFilters();
   });
   document.addEventListener('keydown',event=>{
-    if(event.key==='Escape'){filterTrigger.setAttribute('aria-expanded','false');filterPopover.classList.remove('open');filterTrigger.focus()}
+    if(event.key==='Escape'){closeFilters();filterTrigger.focus()}
   });
   document.querySelector('#clear-filters').addEventListener('click',()=>{
     document.querySelectorAll('.filter select, .filter input[type="date"]').forEach(field=>{if(field instanceof HTMLSelectElement)field.selectedIndex=0;else field.value=''});
     const badge=document.querySelector('#filter-count');badge.textContent='0';badge.classList.remove('visible');showToast('Filters cleared.');
   });
-  const batchStatusLabels={upcoming:'Upcoming',ongoing:'In Progress',completed:'Completed'};
+  const batchStatusLabels={completed:'Completed',ongoing:'In Progress',upcoming:'Upcoming'};
+  const batchCounterGroup=document.querySelector('.batch-counters');
+  if(batchCounterGroup) ['completed','ongoing','upcoming'].forEach(status=>{const card=batchCounterGroup.querySelector(`[data-batch-status="${status}"]`);if(card)batchCounterGroup.appendChild(card);});
   const kgbvSchools=Array.isArray(window.KGBV_SCHOOLS)?window.KGBV_SCHOOLS:[];
-  const batchPhases=['Orientation','Device & Content Use','Digital Skills','Refresher I','Refresher II'];
+  const batchPhases=['Orientation','Device & Content Use','Digital Skills','Refresher Training - I','Refresher Training - II'];
   const batchTrainers=['Asha Reddy','Ravi Kumar','Meera Nair','Suresh Rao','Kavitha Devi','Arun Das','Neha Sharma','Vikram Singh','Farah Khan','Joseph Mathew','Pooja Iyer','Mohan Das'];
   const batchData=Array.from({length:kgbvSchools.length},(_,index)=>{
     const status=index<180?'upcoming':index<400?'ongoing':'completed';

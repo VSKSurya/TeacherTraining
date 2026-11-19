@@ -3,7 +3,7 @@ import { kgbvSchools } from './kgbvSchools';
 
 export { locations } from './locations';
 
-export const phaseNames = ['Orientation', 'Device & Content Use', 'Digital Skills', 'Refresher I', 'Refresher II'] as const;
+export const phaseNames = ['Orientation', 'Device & Content Use', 'Digital Skills', 'Refresher Training - I', 'Refresher Training - II'] as const;
 const phaseDates: [number, number, number][] = [[2026, 9, 20], [2026, 9, 24], [2026, 9, 28], [2026, 10, 4], [2026, 10, 10]];
 export const trainers = ['Asha Reddy', 'Ravi Kumar', 'Meera Nair', 'Suresh Rao', 'Kavitha Devi', 'Arun Das', 'Neha Sharma', 'Vikram Singh', 'Farah Khan', 'Joseph Mathew', 'Pooja Iyer', 'Mohan Das'] as const;
 export type ReportStatus = 'Scheduled' | 'Ongoing' | 'Completed';
