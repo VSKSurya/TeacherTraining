@@ -87,6 +87,7 @@ const DEFAULT_USERS: UserRecord[] = [
   { userId: 'Demo6', role: 'trainer', active: true },
   { userId: 'Demo7', role: 'trainee', active: true },
   { userId: 'Demo8', role: 'reporting-audit-user', active: true },
+  { userId: 'Kalidas', role: 'trainee', active: true, password: 'demo1@123' },
 ];
 const roleValues = new Set<UserRole>(ROLES);
 const legacyRoleMap: Record<string, UserRole> = {

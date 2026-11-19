@@ -10,6 +10,7 @@ const pastBatchId = `${samplePrefix}BATCH-PAST`;
 const upcomingBatchId = `${samplePrefix}BATCH-UPCOMING`;
 const demoTraineeId = `${samplePrefix}TRAINEE-007`;
 const pendingTraineeId = `${samplePrefix}TRAINEE-008`;
+const kalidasTraineeId = `${samplePrefix}TRAINEE-KALIDAS`;
 const preAssessmentFormId = `${samplePrefix}FORM-PRE-001`;
 const feedbackFormId = `${samplePrefix}FORM-FEEDBACK-001`;
 
@@ -180,6 +181,7 @@ export function seedDemoSampleData() {
   ];
   const trainee = { id: demoTraineeId, traineeId: demoTraineeId, userId: 'Demo7', name: 'Trainee', email: 'demo7.trainee@example.org', phone: '+91 90000 10007', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-01-10T09:00:00.000Z', createdBy: 'Demo2' };
   const pendingTrainee = { id: pendingTraineeId, traineeId: pendingTraineeId, name: 'Teacher Two', email: 'teacher.two@example.org', phone: '+91 90000 10008', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-10-20T09:00:00.000Z', createdBy: 'Demo6' };
+  const kalidasTrainee = { id: kalidasTraineeId, traineeId: kalidasTraineeId, userId: 'Kalidas', name: 'Kalidas', email: 'kalidas.trainee@example.org', phone: '+91 90000 10009', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: false, consentStatus: 'Pending', consentVersion: '2026-01', consentAcceptedAt: '', source: 'Excel upload', createdAt: '2026-11-19T00:00:00.000Z', createdBy: 'Demo6' };
   const registrations = [
     { id: `${samplePrefix}REG-COMPLETE`, batchId: pastBatchId, batchCode: 'BATCH-DEMO-PAST', projectId, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: trainee.name, email: trainee.email, phone: trainee.phone, category: 'Teacher', consentProvided: true, status: 'Approved', registrationStatus: 'Approved', approvalStatus: 'Approved', approved: true, completed: true, source: 'Demo data', submittedAt: '2026-08-01T09:00:00.000Z', submittedBy: 'Demo7', reviewedBy: 'Demo6', reviewedAt: '2026-08-02T09:00:00.000Z' },
     { id: `${samplePrefix}REG-APPROVED`, batchId: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', projectId, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: trainee.name, email: trainee.email, phone: trainee.phone, category: 'Teacher', consentProvided: true, status: 'Approved', registrationStatus: 'Approved', approvalStatus: 'Approved', approved: true, source: 'Demo data', submittedAt: '2026-10-12T09:00:00.000Z', submittedBy: 'Demo7', reviewedBy: 'Demo6', reviewedAt: '2026-10-13T09:00:00.000Z' },
@@ -200,7 +202,7 @@ export function seedDemoSampleData() {
   }
   addSamples('teacher-training-project-plan-associations', [association]);
   addSamples('teacher-training-batch-plan-uses', batches);
-  addSamples('teacher-training-trainees', [trainee, pendingTrainee]);
+  addSamples('teacher-training-trainees', [trainee, pendingTrainee, kalidasTrainee]);
   addSamples('teacher-training-registrations', registrations);
   addSamples('teacher-training-attendance-records', ['2026-09-14', '2026-09-15', '2026-09-16'].map((trainingDate, index) => ({ id: `${samplePrefix}ATTENDANCE-${index + 1}`, projectId, batchId: pastBatchId, batchCode: 'BATCH-DEMO-PAST', trainingDate, traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, status: index === 2 ? 'Absent' : 'Present', markedBy: 'Demo6', markedAt: `${trainingDate}T10:00:00.000Z` })));
   addSamples('teacher-training-assessment-records', [{ id: `${samplePrefix}ASSESSMENT-001`, projectId, batchId: pastBatchId, batchCode: 'BATCH-DEMO-PAST', traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: 'Digital teaching post-assessment', status: 'Passed', completed: true, score: 86, submittedAt: '2026-09-16T12:00:00.000Z' }, { id: `${samplePrefix}ASSESSMENT-002`, projectId, batchId: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', traineeId: demoTraineeId, userId: 'Demo7', traineeName: trainee.name, name: 'Digital teaching pre-assessment', status: 'Pending', completed: false }]);
