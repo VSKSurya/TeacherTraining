@@ -6,6 +6,7 @@ import { createExcelTemplate, readExcelFirstSheet } from '../excelUpload';
 import { registrationWindowError } from '../registrationRules';
 import { formatDate } from '../dateFormat';
 import { batchCodeForRecord, batchIdentifiers, batchMatchesRecord, batchMatchesReference } from '../batchCodes';
+import { CONSENT_VERSION } from '../consent';
 
 type Row = Record<string, any>;
 const KEYS = { batches: 'teacher-training-batch-plan-uses', projects: 'teacher-training-projects', registrations: 'teacher-training-registrations', audit: 'teacher-training-audit', trainees: 'teacher-training-trainees', plans: 'teacher-training-plans', eligible: 'teacher-training-eligible-participants', eligibleTeachers: 'teacher-training-eligible-teachers', eligibleStudents: 'teacher-training-eligible-students', schoolEligibility: 'teacher-training-school-eligibility' };
@@ -15,7 +16,7 @@ const active = (row: Row) => !['rejected', 'cancelled', 'withdrawn'].includes(tx
 const normEmail = (value: unknown) => txt(value).normalize('NFKC').toLowerCase();
 const normPhone = (value: unknown) => txt(value).replace(/\D/g, '');
 const normName = (value: unknown) => txt(value).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
-const uploadHeaders = ['Batch_Code', 'Project_Code', 'School_UDISE', 'Trainee_ID', 'Trainee_Name', 'Email', 'Mobile', 'Beneficiary_Type', 'Consent_Provided', 'Eligibility_Status'];
+const uploadHeaders = ['Batch_Code', 'Project_Code', 'School_UDISE', 'Trainee_ID', 'Trainee_Name', 'Email', 'Mobile', 'Beneficiary_Type', 'Eligibility_Status'];
 type UploadResult = { rowNumber: number; value: Row; errors: string[]; traineeId?: string; newTrainee?: Row; imported?: boolean };
 const base = import.meta.env.BASE_URL;
 
@@ -106,9 +107,6 @@ export default function RegistrationRequests() {
         if (!category) errors.push('Beneficiary_Type is required.');
         else if (Array.isArray(plan?.beneficiaries) && plan.beneficiaries.length && !plan.beneficiaries.some((item: string) => normName(item) === normName(category))) errors.push(`Beneficiary_Type must be one of the selected plan categories: ${(plan?.beneficiaries ?? []).join(', ')}.`);
         if (batch.schoolUdiseVenue && school !== txt(batch.schoolUdiseVenue)) errors.push(`School_UDISE must match selected batch school ${txt(batch.schoolUdiseVenue)}.`);
-        const consentRequired = batch.consentRequired === true || batch.requiresConsent === true || project?.consentRequired === true || plan?.consentRequired === true || plan?.requiresConsent === true;
-        const consent = txt(value.Consent_Provided).toLowerCase();
-        if (consentRequired && !['yes', 'true', '1'].includes(consent)) errors.push('Consent_Provided must be Yes for this batch.');
         const eligibilityRequired = batch.eligibilityRequired === true || batch.requiresEligibility === true || project?.eligibilityRequired === true || plan?.eligibilityRequired === true || plan?.requiresEligibility === true;
         const eligibility = txt(value.Eligibility_Status).toLowerCase();
         if (eligibilityRequired && !['eligible', 'approved', 'active'].includes(eligibility)) errors.push('Eligibility_Status must be Eligible or Approved for this batch.');
@@ -141,8 +139,8 @@ export default function RegistrationRequests() {
           if (projectedOccupancy >= capacityValue) errors.push('Batch capacity would be exceeded.');
           else projectedOccupancy++;
         }
-        const newTrainee = !traineeId ? { id: `TR-${crypto.randomUUID()}`, traineeId: '', name, email, phone, category, schoolUdise: school || txt(batch.schoolUdiseVenue), schoolName: batch.schoolName, projectId: batch.projectId, district: batch.district, state: batch.state, consentProvided: ['yes', 'true', '1'].includes(consent), createdAt: new Date().toISOString(), createdBy: session?.userId } : undefined;
-        if (newTrainee) newTrainee.traineeId = newTrainee.id;
+        const newTrainee = !traineeId ? { id: `TR-${crypto.randomUUID()}`, traineeId: '', userId: '', name, email, phone, category, schoolUdise: school || txt(batch.schoolUdiseVenue), schoolName: batch.schoolName, projectId: batch.projectId, district: batch.district, state: batch.state, consentProvided: false, consentStatus: 'Pending', consentVersion: CONSENT_VERSION, consentAcceptedAt: '', source: 'Excel upload', createdAt: new Date().toISOString(), createdBy: session?.userId } : undefined;
+        if (newTrainee) { newTrainee.traineeId = newTrainee.id; newTrainee.userId = newTrainee.id; }
         return { rowNumber, value, errors, traineeId: traineeId ?? newTrainee?.id, newTrainee };
       });
       setUploadResults(validated);
@@ -161,18 +159,19 @@ export default function RegistrationRequests() {
     const latestBatch = read<Row>(KEYS.batches).find(item => txt(item.id) === txt(batch.id)) ?? batch;
     const cap = Number(latestBatch.registrationCapacity ?? latestBatch.participantCapacity ?? latestBatch.capacity);
     if (registrationWindowError(latestBatch) || !latestBatch.openRegistration || (Number.isFinite(cap) && cap > 0 && occupancy + ready.length > cap)) { setUploadMessage('The batch registration window, status, or remaining capacity changed. Upload validation is stale; reload the file and validate again.'); return; }
-    const now = new Date().toISOString(); const newTrainees: Row[] = []; const nextRequests = [...latestRequests]; const nextAudit = read<Row>(KEYS.audit);
+    const now = new Date().toISOString(); const nextTrainees = [...trainees]; const nextRequests = [...latestRequests]; const nextAudit = read<Row>(KEYS.audit);
     const finalResults = uploadResults.map(row => {
       if (!ready.includes(row)) return row;
-      const trainee = row.newTrainee ?? trainees.find(item => txt(item.traineeId ?? item.id) === txt(row.traineeId)) ?? requests.find(item => txt(item.traineeId ?? item.participantId ?? item.id) === txt(row.traineeId));
-      if (row.newTrainee) newTrainees.push(row.newTrainee);
-      const registration = { id: `REG-${crypto.randomUUID()}`, batchId: batch.id, batchCode: batch.batchCode, projectId: batch.projectId, traineeId: row.traineeId, traineeName: txt(row.value.Trainee_Name), name: txt(row.value.Trainee_Name), email: txt(row.value.Email).toLowerCase() || txt(trainee?.email), phone: txt(row.value.Mobile) || txt(trainee?.phone), category: txt(row.value.Beneficiary_Type), consentProvided: ['yes', 'true', '1'].includes(txt(row.value.Consent_Provided).toLowerCase()), status: 'Pending', registrationStatus: 'Pending', approvalStatus: 'Pending', source: 'Excel upload', submittedAt: now, submittedBy: session.userId };
+      const traineeIndex = nextTrainees.findIndex(item => txt(item.traineeId ?? item.id).toLowerCase() === txt(row.traineeId).toLowerCase());
+      const priorTrainee = traineeIndex >= 0 ? nextTrainees[traineeIndex] : row.newTrainee ?? trainees.find(item => txt(item.traineeId ?? item.id) === txt(row.traineeId)) ?? requests.find(item => txt(item.traineeId ?? item.participantId ?? item.id) === txt(row.traineeId));
+      const validConsent = priorTrainee?.consentStatus === 'Accepted' && priorTrainee?.consentVersion === CONSENT_VERSION && Boolean(priorTrainee?.consentAcceptedAt);
+      const trainee = { ...(priorTrainee ?? {}), id: txt(row.traineeId), traineeId: txt(row.traineeId), userId: txt(priorTrainee?.userId) || txt(row.traineeId), name: txt(row.value.Trainee_Name), email: txt(row.value.Email).toLowerCase() || txt(priorTrainee?.email), phone: txt(row.value.Mobile) || txt(priorTrainee?.phone), category: txt(row.value.Beneficiary_Type), consentProvided: Boolean(validConsent), consentStatus: validConsent ? 'Accepted' : 'Pending', consentVersion: validConsent ? priorTrainee?.consentVersion : CONSENT_VERSION, consentAcceptedAt: validConsent ? priorTrainee?.consentAcceptedAt : '', source: 'Excel upload', createdAt: priorTrainee?.createdAt || now, createdBy: priorTrainee?.createdBy || session.userId };
+      if (traineeIndex >= 0) nextTrainees[traineeIndex] = trainee; else nextTrainees.push(trainee);
+      const registration = { id: `REG-${crypto.randomUUID()}`, batchId: batch.id, batchCode: batch.batchCode, projectId: batch.projectId, traineeId: row.traineeId, traineeName: txt(row.value.Trainee_Name), name: txt(row.value.Trainee_Name), email: txt(row.value.Email).toLowerCase() || txt(trainee.email), phone: txt(row.value.Mobile) || txt(trainee.phone), category: txt(row.value.Beneficiary_Type), consentProvided: Boolean(validConsent), consentStatus: validConsent ? 'Accepted' : 'Pending', consentVersion: validConsent ? priorTrainee?.consentVersion : CONSENT_VERSION, consentAcceptedAt: validConsent ? priorTrainee?.consentAcceptedAt : '', status: 'Pending', registrationStatus: 'Pending', approvalStatus: 'Pending', source: 'Excel upload', submittedAt: now, submittedBy: session.userId };
       nextRequests.push(registration);
       nextAudit.push({ id: `AUD-${crypto.randomUUID()}`, entity: 'registration', entityId: registration.id, action: 'Excel registration request created', originalValue: '', revisedValue: 'Pending', user: session.userId, timestamp: now, reason: `Batch ${batch.batchCode}; Excel row ${row.rowNumber}` });
       return { ...row, imported: true };
     });
-    const uniqueNew = [...new Map(newTrainees.map(row => [txt(row.id), row])).values()];
-    const nextTrainees = [...trainees, ...uniqueNew];
     localStorage.setItem(KEYS.registrations, JSON.stringify(nextRequests)); localStorage.setItem(KEYS.trainees, JSON.stringify(nextTrainees)); localStorage.setItem(KEYS.audit, JSON.stringify(nextAudit));
     setRequests(nextRequests); setTrainees(nextTrainees); setUploadResults(finalResults);
     setUploadMessage(`Upload complete: ${ready.length} trainee registration(s) added as Pending. ${finalResults.filter(row => row.errors.length).length} row(s) still need correction.`);

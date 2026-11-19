@@ -21,6 +21,7 @@ import TraineeDashboard from './components/TraineeDashboard';
 import OpenRegistration from './components/OpenRegistration';
 import RegistrationRequests from './components/RegistrationRequests';
 import RecoverTraineeId from './components/RecoverTraineeId';
+import { ConsentDocument, TraineeConsentGate } from './components/ConsentForm';
 import TrainerRepository from './components/TrainerRepository';
 import TrainerEvidence from './components/TrainerEvidence';
 import AssessmentFeedback from './components/AssessmentFeedback';
@@ -42,7 +43,7 @@ function DashboardFrame() {
   if (session?.role === 'state-admin') return <ThemeProvider theme={theme}><CssBaseline /><StateAdminDashboard /></ThemeProvider>;
   if (session?.role === 'school-admin') return <ThemeProvider theme={theme}><CssBaseline /><SchoolAdminDashboard /></ThemeProvider>;
   if (session?.role === 'trainer') return <ThemeProvider theme={theme}><CssBaseline /><TrainerDashboard /></ThemeProvider>;
-  if (session?.role === 'trainee') return <ThemeProvider theme={theme}><CssBaseline /><TraineeDashboard /></ThemeProvider>;
+  if (session?.role === 'trainee') return <ThemeProvider theme={theme}><CssBaseline /><TraineeConsentGate /></ThemeProvider>;
   return <ThemeProvider theme={theme}><CssBaseline /><div className="app" data-audience={effectiveAudience} data-selected-phase={selectedPhase ?? ''} data-sidebar-collapsed={sidebarCollapsed} data-active-filters={Object.values(filters).filter(Boolean).length}><Sidebar /><main className="main" id="main-content"><Topbar /><DashboardContent /><Footer /></main></div><DashboardModals /><DashboardBridge /></ThemeProvider>;
 }
 function AppContent() {
@@ -89,11 +90,20 @@ function AppContent() {
   }, [path, session?.userId, session?.role]);
   if (path === '/login') return <Login />;
   if (path === '/forgot-password') return <PasswordRecovery />;
-  if (path === '/privacy-policy') return <ComingSoon title="Privacy Policy" />;
-  if (path === '/consent-form') return <ComingSoon title="Consent Form" />;
+  if (path === '/privacy-policy') return <ConsentDocument privacy />;
+  if (path === '/consent-form') return <ConsentDocument />;
   if (path === '/register') return <OpenRegistration />;
   if (path === '/recover-trainee') return <RecoverTraineeId />;
   if (!session) return <Login />;
+  if (session.role === 'trainee') {
+    const traineePage = canAccessRoute(session.role, path)
+      ? path === '/projects' ? <Projects />
+        : path === '/content-library' ? <ContentLibrary />
+          : path === '/assessments' ? <AssessmentFeedback />
+            : <TraineeDashboard />
+      : <TraineeDashboard />;
+    return <ThemeProvider theme={theme}><CssBaseline /><TraineeConsentGate>{traineePage}</TraineeConsentGate></ThemeProvider>;
+  }
   if (!canAccessRoute(session.role, path)) return <DashboardFrame />;
   if (path === '/compliance') return <ComplianceChecklist />;
   if (path === '/projects') return <Projects />;
@@ -107,7 +117,7 @@ function AppContent() {
   if (path === '/holiday-master') return <HolidayMaster />;
   if (path === '/content-library') return <ContentLibrary />;
   if (path === '/assessments') return <AssessmentFeedback />;
-  if (path === '/certificates') return session.role === 'trainee' ? <TraineeDashboard /> : <CertificateTemplates />;
+  if (path === '/certificates') return <CertificateTemplates />;
   if (path.startsWith('/reports/')) return <Reports report={path.slice('/reports/'.length)} />;
   return <DashboardFrame />;
 }

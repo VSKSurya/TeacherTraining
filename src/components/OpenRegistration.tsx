@@ -6,6 +6,8 @@ import { batchMatchesRecord, batchMatchesReference } from '../batchCodes';
 import { businessDateToday, registrationWindow, registrationWindowError } from '../registrationRules';
 import { locations } from '../data/locations';
 import { kgbvSchools } from '../data/kgbvSchools';
+import { ConsentAcceptance } from './ConsentForm';
+import { CONSENT_VERSION, saveLocalConsent } from '../consent';
 
 type Row = Record<string, any>;
 type Batch = Row & { id: string; batchCode?: string; name?: string; openRegistration?: boolean; trainingDates?: string[]; trainingStartDate?: string; trainingEndAuto?: string; trainingPlanName?: string };
@@ -38,11 +40,13 @@ export default function OpenRegistration() {
   const [state, setState] = useState(''); const [district, setDistrict] = useState(''); const [block, setBlock] = useState('');
   const [school, setSchool] = useState<(typeof kgbvSchools)[number] | null>(null);
   const [schoolQuery, setSchoolQuery] = useState(''); const [classes, setClasses] = useState<string[]>([]); const [subjects, setSubjects] = useState<string[]>([]);
-  const [otpPhone, setOtpPhone] = useState(''); const [otp, setOtp] = useState(DEMO_OTP); const [otpRequested, setOtpRequested] = useState(false); const [phoneVerified, setPhoneVerified] = useState(false); const [accepted, setAccepted] = useState(false);
+  const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [email, setEmail] = useState(''); const [gender, setGender] = useState(''); const [designation, setDesignation] = useState(''); const [experience, setExperience] = useState('');
+  const [otpPhone, setOtpPhone] = useState(''); const [otp, setOtp] = useState(DEMO_OTP); const [otpRequested, setOtpRequested] = useState(false); const [phoneVerified, setPhoneVerified] = useState(false); const [accepted, setAccepted] = useState(false); const [consentChecked, setConsentChecked] = useState(false);
   const [notice, setNotice] = useState(''); const [error, setError] = useState('');
   const stateDistricts = locations.find(item => item.name === state)?.districts ?? [];
   const blocks = [...new Set(kgbvSchools.filter(item => item.state === state && item.district === district).map(item => item.block))].sort();
   const schoolOptions = useMemo(() => kgbvSchools.filter(item => item.state === state && (!district || item.district === district) && (!block || item.block === block) && (!schoolQuery || `${item.udise} ${item.school}`.toLowerCase().includes(schoolQuery.toLowerCase()))), [state, district, block, schoolQuery]);
+  const registrationReady = Boolean(phoneVerified && accepted && consentChecked && state && district && block && school && name.trim() && phone.trim() && (!email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) && gender && designation && classes.length && subjects.length && experience);
 
   function requestOtp() {
     const phone = clean((document.querySelector('[name="phone"]') as HTMLInputElement | null)?.value);
@@ -70,6 +74,7 @@ export default function OpenRegistration() {
     if (!state || !district || !block || !school || !name || !phone || !gender || !designation || !classes.length || !subjects.length || !experience) { setError('Complete all required school and teaching profile fields.'); return; }
     if (!phoneVerified || normalizedPhone(phone) !== normalizedPhone(otpPhone)) { setError('Verify your current mobile number with the demo OTP before submitting.'); return; }
     if (!accepted) { setError('Accept the registration confirmation to continue.'); return; }
+    if (!consentChecked) { setError('Accept the Consent Form before registering.'); return; }
     const current = latestRegistrations;
     const duplicate = current.some(row => batchMatchesRecord(batch, row) && active(row) && ((email && clean(row.email).toLowerCase() === email) || normalizedPhone(row.phone) === normalizedPhone(phone)));
     if (duplicate) { setError('A registration request for this trainee already exists in this batch.'); return; }
@@ -88,11 +93,16 @@ export default function OpenRegistration() {
     const traineeId = clean(byEmail?.id ?? byPhone?.id ?? priorEmail?.traineeId ?? priorEmail?.participantId ?? priorPhone?.traineeId ?? priorPhone?.participantId) || `TR-${crypto.randomUUID()}`;
     const now = new Date().toISOString();
     const profile = { gender, designation, classesTaught: classes, subjectsTaught: subjects, teachingExperience: experience, state, district, block, schoolName: school.school, schoolUdise: school.udise };
-    if (!existing) localStorage.setItem(TRAINEES, JSON.stringify([...people, { id: traineeId, traineeId, name, email, phone, category: 'Teacher', ...profile, status: 'Pending', projectId: batch.projectId, createdAt: now, updatedAt: now }]));
-    current.push({ id: `REG-${crypto.randomUUID()}`, batchId: batch.id, batchCode: batch.batchCode, traineeId, traineeName: clean(existing?.name) || name, name: clean(existing?.name) || name, email: email || clean(existing?.email), phone, category: 'Teacher', ...profile, status: 'Pending', registrationStatus: 'Pending', acceptedAt: now, submittedAt: now });
+    const consentRecord = { userId: traineeId, status: 'Accepted' as const, version: CONSENT_VERSION, acceptedAt: now, source: 'Self registration' };
+    const traineeIndex = people.findIndex(person => clean(person.traineeId ?? person.id).toLowerCase() === traineeId.toLowerCase());
+    const traineeRecord = { ...(traineeIndex >= 0 ? people[traineeIndex] : {}), id: traineeId, traineeId, userId: clean(existing?.userId) || traineeId, name: clean(existing?.name) || name, email: email || clean(existing?.email), phone, category: 'Teacher', ...profile, status: 'Pending', projectId: batch.projectId, consentProvided: true, consentStatus: 'Accepted', consentVersion: CONSENT_VERSION, consentAcceptedAt: now, createdAt: people[traineeIndex]?.createdAt || now, updatedAt: now };
+    const updatedPeople = traineeIndex >= 0 ? people.map((person, index) => index === traineeIndex ? traineeRecord : person) : [...people, traineeRecord];
+    localStorage.setItem(TRAINEES, JSON.stringify(updatedPeople));
+    current.push({ id: `REG-${crypto.randomUUID()}`, batchId: batch.id, batchCode: batch.batchCode, traineeId, traineeName: clean(existing?.name) || name, name: clean(existing?.name) || name, email: email || clean(existing?.email), phone, category: 'Teacher', ...profile, consentProvided: true, consentStatus: 'Accepted', consentVersion: CONSENT_VERSION, consentAcceptedAt: now, status: 'Pending', registrationStatus: 'Pending', submittedAt: now, submittedBy: 'Self registration' });
     localStorage.setItem(REGISTRATIONS, JSON.stringify(current));
+    saveLocalConsent(consentRecord);
     setNotice('Registration request submitted. The trainer or administrator must review it before your place is confirmed.');
-    event.currentTarget.reset(); setState(''); setDistrict(''); setBlock(''); setSchool(null); setClasses([]); setSubjects([]); setOtpRequested(false); setPhoneVerified(false); setAccepted(false);
+    event.currentTarget.reset(); setState(''); setDistrict(''); setBlock(''); setSchool(null); setClasses([]); setSubjects([]); setName(''); setPhone(''); setEmail(''); setGender(''); setDesignation(''); setExperience(''); setOtpRequested(false); setPhoneVerified(false); setAccepted(false); setConsentChecked(false);
   }
 
   return <Box sx={{ minHeight: '100vh', bgcolor: '#f4f7fb', display: 'flex', flexDirection: 'column' }}><Box sx={{ width: '100%', px: { xs: 2, md: 4 }, bgcolor: '#f4f7fb' }}><Topbar title="Adding Dimensions — Enhancing Teaching for Tomorrow" logoSrc="/assets/AddingDimensions.png" /></Box><Box sx={{ flex: 1, py: { xs: 3, md: 6 } }}><Container maxWidth="md"><Stack spacing={2.5}>
@@ -109,18 +119,19 @@ export default function OpenRegistration() {
         <TextField select required fullWidth label="Block" value={block} disabled={!district} onChange={event => { setBlock(event.target.value); setSchool(null); }}><MenuItem value="">Select block</MenuItem>{blocks.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField>
         <Autocomplete options={schoolOptions} value={school} inputValue={schoolQuery} disabled={!state} onInputChange={(_, value) => setSchoolQuery(value)} onChange={(_, value) => setSchool(value)} getOptionLabel={item => `${item.school} — ${item.udise}`} isOptionEqualToValue={(a, b) => a.udise === b.udise} renderInput={params => <TextField {...params} required label="Search school with UDISE / KGBV / School Name" placeholder="Type a school name or UDISE code" />} />
         {school && <TextField fullWidth label="UDISE + Code" value={school.udise} InputProps={{ readOnly: true }} />}
-        <TextField required fullWidth name="name" label="Teacher name" />
-        <TextField required fullWidth name="phone" label="Mobile number" type="tel" inputProps={{ maxLength: 16 }} onChange={() => { setPhoneVerified(false); setOtpRequested(false); }} />
+        <TextField required fullWidth name="name" label="Teacher name" value={name} onChange={event => setName(event.target.value)} />
+        <TextField required fullWidth name="phone" label="Mobile number" type="tel" value={phone} inputProps={{ maxLength: 16 }} onChange={event => { setPhone(event.target.value); setPhoneVerified(false); setOtpRequested(false); }} />
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="flex-start" sx={{ gridColumn: '1 / -1', width: '100%' }}><Button variant="outlined" onClick={requestOtp} sx={{ textTransform: 'none', minHeight: 56 }}>Request OTP</Button>{otpRequested && <TextField fullWidth label="Demo OTP" value={otp} onChange={event => setOtp(event.target.value)} helperText="Demo only: use 123456" inputProps={{ inputMode: 'numeric', maxLength: 6 }} />}{otpRequested && <Button variant="contained" onClick={verifyOtp} sx={{ textTransform: 'none', minHeight: 56 }}>Verify OTP</Button>}</Stack>
-        <TextField fullWidth name="email" type="email" label="Email (where applicable)" />
+        <TextField fullWidth name="email" type="email" label="Email (where applicable)" value={email} onChange={event => setEmail(event.target.value)} />
         <Typography variant="h6" fontWeight={750} sx={{ pt: 1, gridColumn: '1 / -1' }}>Teaching Profile</Typography>
-        <TextField select required fullWidth name="gender" label="Gender" defaultValue=""><MenuItem value="">Select gender</MenuItem>{['Female', 'Male', 'Prefer not to say', 'Other'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
-        <TextField select required fullWidth name="designation" label="Designation Role" defaultValue=""><MenuItem value="">Select designation</MenuItem>{['Teacher', 'Head Teacher', 'Other', 'Warden'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+        <TextField select required fullWidth name="gender" label="Gender" value={gender} onChange={event => setGender(event.target.value)}><MenuItem value="">Select gender</MenuItem>{['Female', 'Male', 'Prefer not to say', 'Other'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+        <TextField select required fullWidth name="designation" label="Designation Role" value={designation} onChange={event => setDesignation(event.target.value)}><MenuItem value="">Select designation</MenuItem>{['Teacher', 'Head Teacher', 'Other', 'Warden'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
         <TextField select required SelectProps={{ multiple: true }} fullWidth label="Class Taught" value={classes} onChange={event => setClasses(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}>{CLASSES.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
         <TextField select required SelectProps={{ multiple: true }} fullWidth label="Subject(s) Taught" value={subjects} onChange={event => setSubjects(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}>{SUBJECTS.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
-        <TextField select required fullWidth name="experience" label="Total Teaching Experience" defaultValue=""><MenuItem value="">Select experience</MenuItem>{['Less Than 1 Year', '1-5 Years', '6-10 Years', '11-15 Years', 'More than 15 Years'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
-        {phoneVerified && <FormControlLabel sx={{ gridColumn: '1 / -1' }} control={<Checkbox checked={accepted} onChange={event => setAccepted(event.target.checked)} />} label="I accept and confirm that the details provided are correct." />}
-        <Button variant="contained" type="submit" size="large" disabled={!phoneVerified || !accepted} sx={{ gridColumn: '1 / -1', textTransform: 'none' }}>Accept &amp; Submit Registration</Button>
+        <TextField select required fullWidth name="experience" label="Total Teaching Experience" value={experience} onChange={event => setExperience(event.target.value)}><MenuItem value="">Select experience</MenuItem>{['Less Than 1 Year', '1-5 Years', '6-10 Years', '11-15 Years', 'More than 15 Years'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+        {phoneVerified && <FormControlLabel sx={{ gridColumn: '1 / -1' }} control={<Checkbox checked={accepted} onChange={event => setAccepted(event.target.checked)} />} label="I confirm that the details provided are correct." />}
+        <Box sx={{ gridColumn: '1 / -1' }}><ConsentAcceptance checked={consentChecked} onChange={setConsentChecked} /></Box>
+        <Button variant="contained" type="submit" size="large" disabled={!registrationReady} sx={{ gridColumn: '1 / -1', textTransform: 'none' }}>Register</Button>
       </Box>}
       {batch && closedReason && <Alert severity="info" sx={{ mt: 2 }}>{closedReason}</Alert>}
       {!batch && batchRef && <Alert severity="warning" sx={{ mt: 2 }}>{matchingBatches.length > 1 ? 'That previous code matches more than one batch. Ask the trainer or administrator for the current Batch Code.' : 'No batch matches that code. Check the code with the trainer or administrator.'}</Alert>}
