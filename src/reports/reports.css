@@ -17,7 +17,8 @@
 .report-app .batch-performance-sort-toggle{display:inline-flex;align-items:center;padding:2px;border:1px solid #dbe6ef;border-radius:8px;background:#f5f8fb}
 .report-app .panel-heading-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
 .report-app .panel-heading:has(.batch-performance-sort-toggle){align-items:center}
-.trainer-evidence-filter-summary{margin-top:9px}
+.trainer-evidence-filter-summary{min-height:50px;margin:0 0 12px;padding:9px 14px;gap:10px;font-size:13px}.trainer-evidence-filter-summary strong{font-size:13px}.trainer-evidence-filter-summary select{min-width:236px;min-height:38px;padding:6px 30px 6px 12px;font-size:13px}
+.trainer-evidence-active-filters{margin:-5px 0 12px;padding:8px 14px;gap:8px}.trainer-evidence-filter-crumb{display:inline-flex;align-items:center;gap:8px}.trainer-evidence-filter-separator{color:#8ca0b4;font-size:16px}
 .report-app .batch-performance-sort-toggle button{min-height:27px;padding:0 9px;border:0;border-radius:6px;background:transparent;color:#657c92;font:650 10px/1 var(--app-font-family);cursor:pointer}
 .report-app .batch-performance-sort-toggle button[aria-pressed="true"]{background:#fff;color:#1769ad;box-shadow:0 1px 3px #183b5b24}
 .report-app .batch-performance-sort-toggle button:focus-visible{outline:2px solid #1683d4;outline-offset:2px}
