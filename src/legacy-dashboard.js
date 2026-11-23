@@ -301,7 +301,7 @@
     const breadcrumb=document.querySelector('#location-breadcrumb');
     const crumbs=[{label:'All states',index:0},...locationPath.map((node,index)=>({label:node.name,index:index+1}))];
     breadcrumb.innerHTML=crumbs.map((crumb,index)=>`<li><button type="button" class="location-crumb" data-crumb-depth="${crumb.index}" ${index===crumbs.length-1?'aria-current="page"':''}>${crumb.label}</button></li>`).join('');
-    const meter=(percent,tone='')=>`<span class="cell-meter"><span class="meter ${tone}"><span style="width:${percent.toFixed(1)}%"></span></span><b>${percent.toFixed(1)}%</b></span>`;
+    const meter=(percent,tone='')=>`<span class="cell-meter"><span class="meter ${tone}${percent>=100?' complete':''}"><span style="width:${percent.toFixed(1)}%"></span></span><b>${percent.toFixed(1)}%</b></span>`;
     const sortedNodes=nodes.map((node,index)=>{
       const stats=locationTotals(node),batchCompletionPercent=stats.batches?stats.completedBatches/stats.batches*100:0,completedPercent=stats.plannedUsers?stats.completedUsers/stats.plannedUsers*100:0;
       const sortValue=locationSortKey==='batchCompletionPercent'?batchCompletionPercent:locationSortKey==='completedPercent'?completedPercent:stats[locationSortKey];
