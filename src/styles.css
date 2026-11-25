@@ -232,6 +232,26 @@
 .app{overflow-x:clip}.sidebar{z-index:50}.sidebar .collapse{position:absolute;top:3px;right:2px;z-index:100}
 .batch-counter.selected{border-color:#176fba!important;box-shadow:0 0 0 2px #176fba2e,0 5px 14px #17355318;background:#edf7ff!important}
 
+/* Keep Schoolnet dashboard KPI copy inside its cards at every grid width. */
+.schoolnet-kpis{align-items:stretch}
+.schoolnet-kpis .schoolnet-kpi{position:relative;height:auto;min-height:116px;overflow:visible}
+.schoolnet-kpis .schoolnet-kpi .kpi-top{min-height:0;flex:1 0 auto}
+.schoolnet-kpis .schoolnet-kpi .kpi-label{max-width:none;overflow-wrap:anywhere}
+.schoolnet-kpis .schoolnet-kpi .kpi-value{flex:0 0 auto}
+.schoolnet-kpis .schoolnet-kpi .kpi-sub{display:none}
+.schoolnet-kpis .schoolnet-kpi-info{position:relative;z-index:2;flex:0 0 18px;width:18px;height:18px;margin:0 0 0 auto}
+.schoolnet-kpis .schoolnet-kpi-info::after{position:absolute;top:calc(100% + 8px);right:-8px;z-index:20;display:none;width:min(300px,calc(100vw - 32px));padding:10px 12px;border:1px solid #dce7f1;border-radius:9px;background:#fff;box-shadow:0 8px 24px #1735532b;color:#52677d;content:attr(data-tooltip);font:400 12px/1.5 var(--app-font-family);text-align:left;white-space:normal;overflow-wrap:anywhere}
+.schoolnet-kpis .schoolnet-kpi-info:is(:hover,:focus-visible)::after{display:block}
+.schoolnet-kpis .schoolnet-kpi:has(.schoolnet-kpi-info:hover),.schoolnet-kpis .schoolnet-kpi:has(.schoolnet-kpi-info:focus-visible){z-index:5}
+
+/* Compact, consistent MUI fields for the Demo2–Demo8 experience. */
+body.compact-form-controls .MuiOutlinedInput-root:not(.MuiInputBase-multiline){height:48px;min-height:48px;border-radius:9px}
+body.compact-form-controls .MuiOutlinedInput-input{padding:12px 14px}
+body.compact-form-controls .MuiSelect-select.MuiOutlinedInput-input{padding:12px 14px}
+body.compact-form-controls .MuiInputBase-multiline{min-height:48px;padding:0;border-radius:9px}
+body.compact-form-controls .MuiInputBase-multiline textarea{padding:12px 14px}
+body.compact-form-controls .MuiInputLabel-outlined:not(.MuiInputLabel-shrink){transform:translate(14px,14px) scale(1)}
+
 /* ERNet Admin dashboard filter breadcrumb and date inputs */
 .dashboard-controls{flex-wrap:wrap}.dashboard-controls .filter-control{display:flex;min-width:0;flex:1;align-items:center;justify-content:space-between;gap:8px}.dashboard-controls .filter-trigger{flex:0 0 auto;margin-left:auto}.dashboard-controls .filter-breadcrumbs{display:flex;min-width:0;flex:1 1 auto;align-items:center;justify-content:flex-start;gap:7px;overflow-x:auto;color:#526f88;font-size:11px;scrollbar-width:thin}.dashboard-controls .filter-breadcrumbs[hidden]{display:none}.filter-crumb{display:inline-flex;flex:0 0 auto;align-items:center;gap:6px;padding:5px 8px;border:1px solid #d9e5ef;border-radius:7px;background:#fff;white-space:nowrap}.filter-crumb-label{color:#75889b;font-size:10px}.filter-crumb-separator{color:#9aabbc;font-size:15px;line-height:1}.filter-crumb-value{color:#204b72;font-weight:700}.filters .filter input[type="date"]{width:100%;height:34px;min-width:0;padding:0 8px;border:1px solid #e0e8f0;border-radius:6px;background:#fff;color:#4e6682;font:inherit;font-size:11px}.filters .filter input[type="date"]:hover{border-color:#a6c7e3}
 @media(max-width:620px){.dashboard-controls .filter-control{flex:1 1 100%;flex-wrap:wrap;justify-content:space-between;max-width:100%}.dashboard-controls .filter-breadcrumbs{width:auto;max-width:calc(100% - 100px);order:0}.dashboard-controls .filter-trigger{order:1;margin-left:auto}.filter-crumb{padding:4px 7px}.filter-crumb-label{font-size:9px}}

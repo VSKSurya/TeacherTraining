@@ -24,6 +24,7 @@ import RecoverTraineeId from './components/RecoverTraineeId';
 import { ConsentDocument, TraineeConsentGate } from './components/ConsentForm';
 import TrainerRepository from './components/TrainerRepository';
 import TrainerEvidence from './components/TrainerEvidence';
+import ChangePassword from './components/ChangePassword';
 import AssessmentFeedback from './components/AssessmentFeedback';
 import CertificateTemplates from './components/CertificateTemplates';
 import ComplianceChecklist from './ComplianceChecklist';
@@ -59,12 +60,13 @@ function AppContent() {
   const path = (hashRoute || (pathname.startsWith(basePath) ? `/${pathname.slice(basePath.length)}` : pathname)).replace(/\/$/, '');
   const session = getSession();
   useEffect(() => {
+    document.body.classList.toggle('compact-form-controls', Boolean(session && /^Demo[2-8]$/i.test(session.userId)));
     const main = document.querySelector('main');
     if (main && !main.id) main.id = 'main-content';
     const pages: Record<string, string> = {
       '/login': 'Sign In', '/privacy-policy': 'Privacy Policy', '/consent-form': 'Consent Form', '/register': 'Open Registration', '/recover-trainee': 'Recover Trainee ID',
       '/projects': 'Projects', '/training-plans': 'Training Plans', '/batches': 'Batches',
-      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Directory', '/trainer-evidence': 'Trainer Evidence', '/upload-documents': 'Training Evidence',
+      '/registration-requests': 'Registration Requests', '/trainers': 'Trainer Directory', '/trainer-evidence': 'Trainer Evidence', '/upload-documents': 'Training Evidence', '/change-password': 'Change Password',
       '/attendance': 'Daily Attendance', '/holiday-master': 'Holiday Master',
       '/content-library': 'Learning Library', '/assessments': 'Assessments and Feedback',
       '/certificates': 'Certificate Templates',
@@ -95,6 +97,7 @@ function AppContent() {
   if (path === '/register') return <OpenRegistration />;
   if (path === '/recover-trainee') return <RecoverTraineeId />;
   if (!session) return <Login />;
+  if (path === '/change-password') return <ThemeProvider theme={theme}><CssBaseline /><ChangePassword /></ThemeProvider>;
   if (session.role === 'trainee') {
     const traineePage = canAccessRoute(session.role, path)
       ? path === '/projects' ? <Projects />

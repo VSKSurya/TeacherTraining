@@ -24,7 +24,7 @@ export type MenuKey =
   | 'trainer-evidence'
   | 'upload-documents';
 
-export type UserRecord = { userId: string; role: UserRole; active: boolean; password?: string };
+export type UserRecord = { userId: string; role: UserRole; active: boolean; password?: string; passwordHistory?: string[] };
 export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
 
 export const DEMO_PASSWORD = 'demo1@123';
@@ -108,7 +108,7 @@ export function getUsers(): UserRecord[] {
 
   const users: UserRecord[] = Array.isArray(saved)
     ? saved.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && typeof (item as Record<string, unknown>).userId === 'string'))
-      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false, ...(typeof item.password === 'string' ? { password: item.password } : {}) }))
+      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false, ...(typeof item.password === 'string' ? { password: item.password } : {}), ...(Array.isArray(item.passwordHistory) ? { passwordHistory: item.passwordHistory.filter((password): password is string => typeof password === 'string').slice(0, 2) } : {}) }))
     : [];
 
   for (const demoUser of DEFAULT_USERS) {
@@ -121,6 +121,15 @@ export function getUsers(): UserRecord[] {
 }
 
 export function saveUsers(users: UserRecord[]) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+
+export function passwordWasRecentlyUsed(user: UserRecord, candidate: string) {
+  return [user.password ?? DEMO_PASSWORD, ...(user.passwordHistory ?? [])].slice(0, 3).includes(candidate);
+}
+
+export function updateUserPassword(user: UserRecord, password: string): UserRecord {
+  const passwordHistory = [user.password ?? DEMO_PASSWORD, ...(user.passwordHistory ?? [])].filter(Boolean).slice(0, 2);
+  return { ...user, password, passwordHistory };
+}
 
 export function getSession(): SessionUser | null {
   try {

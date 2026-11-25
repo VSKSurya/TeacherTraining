@@ -1,7 +1,7 @@
 import { useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
 import './login.css';
 import './login-scroll.css';
-import { getUsers, saveUsers } from './auth';
+import { getUsers, passwordWasRecentlyUsed, saveUsers, updateUserPassword } from './auth';
 
 type Step = 'identity' | 'otp' | 'password' | 'success';
 const base = import.meta.env.BASE_URL;
@@ -86,7 +86,9 @@ export default function PasswordRecovery() {
     if (!api && import.meta.env.DEV) {
       const userId = requestId.slice('demo-'.length);
       const users = getUsers();
-      saveUsers(users.map(user => user.userId.toLowerCase() === userId.toLowerCase() ? { ...user, password } : user));
+      const account = users.find(user => user.userId.toLowerCase() === userId.toLowerCase());
+      if (account && passwordWasRecentlyUsed(account, password)) { setError('Choose a password you have not used among your last three passwords.'); return; }
+      saveUsers(users.map(user => user.userId.toLowerCase() === userId.toLowerCase() ? updateUserPassword(user, password) : user));
       setStep('success'); return;
     }
     setBusy(true);

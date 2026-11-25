@@ -28,7 +28,7 @@ function pctText(value: number | null) { return value === null ? '—' : `${valu
 function metricValue(value: number | null | undefined) { return value === null || value === undefined ? '—' : value.toLocaleString(); }
 
 function MetricCard({ label, value, detail, color = '#176fba' }: { label: string; value: string; detail: string; color?: string }) {
-  return <Box component="article" className="kpi schoolnet-kpi" sx={{ '& .kpi-value': { color } }}><div className="kpi-top"><span className="kpi-label">{label}</span><span className="kpi-icon" style={{ color }} aria-hidden="true">●</span></div><div className="kpi-value">{value}</div><div className="kpi-sub" title={detail}>{detail}</div></Box>;
+  return <Box component="article" className="kpi schoolnet-kpi" sx={{ '& .kpi-value': { color } }}><div className="kpi-top"><span className="kpi-label">{label}</span><button className="info-button schoolnet-kpi-info" type="button" aria-label={`Details for ${label}: ${detail}`} data-tooltip={detail}>i</button></div><div className="kpi-value">{value}</div><div className="kpi-sub">{detail}</div></Box>;
 }
 function Bar({ label, value, total, color = '#1675c7' }: { label: string; value: number; total: number; color?: string }) {
   const progress = total ? Math.max(0, Math.min(100, value / total * 100)) : 0;
