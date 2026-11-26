@@ -37,8 +37,8 @@ const ASSESSMENTS_KEY = 'teacher-training-assessment-records';
 const OTHER_DEPENDENT_KEYS = ['teacher-training-certificates', 'teacher-training-batch-dependent-records'];
 const VENUES_KEY = 'teacher-training-approved-venues';
 const adminRoles = new Set(['schoolnet-super-admin', 'schoolnet-project-admin', 'state-admin', 'school-admin']);
-const headers: (keyof DraftRow)[] = ['Batch_UniqueID', 'Project_Code', 'Project_Phase', 'Training_Cycle', 'Delivery_Mode', 'School_UDISE_Venue', 'State', 'District', 'Location', 'Training_Plan_Code', 'Training_Start_Date', 'Training_Duration', 'Training_End_Auto', 'Training_Start_Time', 'Training_End_Time', 'Trainer_Code', 'Trainer_Name', 'Open_Registration'];
-const requiredHeaders: (keyof DraftRow)[] = ['Batch_UniqueID', 'Project_Code', 'School_UDISE_Venue', 'State', 'District', 'Training_Plan_Code', 'Training_Start_Date', 'Training_Duration', 'Training_Start_Time', 'Training_End_Time', 'Trainer_Code', 'Open_Registration'];
+const headers: (keyof DraftRow)[] = ['Batch_UniqueID', 'Training_Cycle', 'Delivery_Mode', 'School_UDISE_Venue', 'State', 'District', 'Location', 'Training_Plan_Code', 'Training_Start_Date', 'Training_Duration', 'Training_End_Auto', 'Training_Start_Time', 'Training_End_Time', 'Trainer_Code', 'Trainer_Name', 'Open_Registration'];
+const requiredHeaders: (keyof DraftRow)[] = ['Batch_UniqueID', 'School_UDISE_Venue', 'State', 'District', 'Training_Plan_Code', 'Training_Start_Date', 'Training_Duration', 'Training_Start_Time', 'Training_End_Time', 'Trainer_Code', 'Open_Registration'];
 const blankRow = (): DraftRow => Object.fromEntries(headers.map(header => [header, ''])) as DraftRow;
 const fallbackHolidays: Holiday[] = [
   { date: '2027-01-26', scope: 'National', active: true }, { date: '2027-08-15', scope: 'National', active: true },
@@ -154,6 +154,11 @@ export default function Batches() {
   const trainerDirectory = useMemo(() => trainerProfiles(), []);
   const trainers = useMemo(() => getUsers().filter(user => user.active && user.role === 'trainer' && trainerDirectory.some(profile => profile.active && profile.userId?.toLowerCase() === user.userId.toLowerCase())), [trainerDirectory]);
   const [fileName, setFileName] = useState('');
+  const [uploadProjectId, setUploadProjectId] = useState('');
+  const [uploadPhaseId, setUploadPhaseId] = useState('');
+  const [manualBatchOpen, setManualBatchOpen] = useState(false);
+  const [manualDraft, setManualDraft] = useState({ projectId: '', phaseId: '', planCode: '', venue: '', startDate: '', duration: '1', startTime: '09:00', endTime: '15:00', trainerCode: '', openRegistration: false });
+  const [manualError, setManualError] = useState('');
   const [validation, setValidation] = useState<ValidationRow[]>([]);
   const [fileHeaders, setFileHeaders] = useState<string[]>([]);
   const [message, setMessage] = useState('');
@@ -177,7 +182,8 @@ export default function Batches() {
     const trainerDirectory = trainerProfiles();
     const availabilityRecords = trainerAvailability();
     for (let index = 0; index < rawRows.length; index++) {
-      const source = rawRows[index]; const values = { ...blankRow(), ...source } as DraftRow;
+      const source = rawRows[index]; const selectedProject = projects.find(item => item.id === uploadProjectId); const selectedPhase = selectedProject?.phases?.find(item => item.id === uploadPhaseId);
+      const values = { ...blankRow(), ...source, Project_Code: selectedProject?.code ?? '', Project_Phase: selectedPhase?.name ?? '' } as DraftRow;
       const rowNumber = Number(source.__sourceRowNumber) || index + 2; const errors: string[] = []; const warnings: string[] = [];
       const missing = requiredHeaders.filter(header => !uploadedHeaders.includes(header));
       if (missing.length) errors.push(`Missing mandatory column(s): ${missing.join(', ')}.`);
@@ -286,6 +292,7 @@ export default function Batches() {
 
   async function uploadFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; if (!file) return;
+    if (!uploadProjectId || !uploadPhaseId) { setMessage('Select a project and phase before choosing an Excel file.'); event.target.value = ''; return; }
     setFileName(file.name); setMessage(''); setValidation([]);
     try {
       const workbook = await parseWorkbook(file); setFileHeaders(workbook.headers);
@@ -294,6 +301,24 @@ export default function Batches() {
       if (!workbook.rows.length) setMessage('The workbook has no batch rows. Add at least one row below the header.');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not read this Excel workbook.'); }
     event.target.value = '';
+  }
+  function saveManualBatch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setManualError('');
+    const project = projects.find(item => item.id === manualDraft.projectId);
+    const phase = project?.phases?.find(item => item.id === manualDraft.phaseId);
+    const plan = plans.find(item => item.code === manualDraft.planCode);
+    const association = project && plan ? associations.find(item => item.projectId === project.id && item.trainingPlanId === plan.id && item.status === 'Active') : undefined;
+    const school = kgbvSchools.find(item => item.udise === manualDraft.venue);
+    const trainerProfile = trainerDirectory.find(item => item.userId?.toLowerCase() === manualDraft.trainerCode.toLowerCase());
+    const duration = Number(manualDraft.duration); const dates = scheduleDays(manualDraft.startDate, duration, holidays, school?.state ?? ''); const end = dates.at(-1) ?? '';
+    if (!project || !phase || !plan || !association || !school || !trainerProfile?.active || !trainers.some(item => item.userId === trainerProfile.userId) || !manualDraft.startDate || !end || !Number.isInteger(duration) || duration < 1 || manualDraft.startTime >= manualDraft.endTime) { setManualError('Complete all required fields and choose a plan linked to this project and an active trainer.'); return; }
+    if (dates[0] !== manualDraft.startDate) { setManualError(`Choose a training weekday. The next available date is ${dates[0]}.`); return; }
+    if (manualDraft.startDate < project.startDate || end > project.endDate) { setManualError('Training dates must fall within the project dates.'); return; }
+    const conflict = trainerAvailabilityConflict(trainerProfile.userId || trainerProfile.trainerCode, dates, manualDraft.startTime, manualDraft.endTime);
+    if (conflict.conflicts.length) { setManualError(`Trainer availability conflict: ${conflict.conflicts.join('; ')}.`); return; }
+    const reserved = batches.flatMap(batch => batchIdentifiers(batch)); const batchCode = createBatchCode(undefined, reserved); const uniqueId = `MANUAL-${crypto.randomUUID()}`;
+    const batch: Batch = { id: crypto.randomUUID(), batchCode, uniqueId, legacyBatchCodes: [uniqueId], projectId: project.id, projectPlanAssociationId: association.id, name: school.school, phaseId: phase.id, trainingCycle: '', deliveryMode: plan.type, schoolUdiseVenue: school.udise, state: school.state, district: school.district, location: school.school, trainingPlanCode: plan.code, trainingStartDate: manualDraft.startDate, trainingDuration: duration, trainingEndAuto: end, trainingDates: dates, trainingStartTime: manualDraft.startTime, trainingEndTime: manualDraft.endTime, trainerCode: trainerProfile.userId ?? trainerProfile.trainerCode, trainerProfileCode: trainerProfile.trainerCode, trainerName: trainerProfile.name, openRegistration: manualDraft.openRegistration, registrationWindowBeforeDays: 0, registrationWindowAfterDays: 0, createdAt: new Date().toISOString(), createdBy: session?.userId ?? '', status: 'Scheduled' };
+    const next = [batch, ...batches]; localStorage.setItem(BATCHES_KEY, JSON.stringify(next)); setBatches(next); setManualBatchOpen(false); setManualDraft({ projectId: '', phaseId: '', planCode: '', venue: '', startDate: '', duration: '1', startTime: '09:00', endTime: '15:00', trainerCode: '', openRegistration: false });
   }
   async function downloadTemplate() {
     const blob = await makeTemplate(); downloadBlob(blob, 'training-batch-upload-template.xlsx');
@@ -367,11 +392,12 @@ export default function Batches() {
       {!sponsorAdmin && <>
       <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, border: '1px solid #e3ebf3', borderRadius: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={1.5}>
-          <Box><Typography variant="h6" sx={{ fontWeight: 750 }}>Create batches through Excel upload</Typography><Typography variant="body2" color="text.secondary">One row creates one batch with a system-assigned unique code in TTB-YYYY-XXXXXXXXXXXXXXXXXXXX format (for example, TTB-2026-0123456789ABCDEF0123). Batch_UniqueID is retained for import matching. End dates count Monday–Friday training days and skip active national and state holidays.</Typography></Box>
-          <Button variant="outlined" onClick={downloadTemplate} sx={{ textTransform: 'none', flexShrink: 0 }}>Download Excel template</Button>
+          <Typography variant="h6" sx={{ fontWeight: 750 }}>Create batches through Excel upload</Typography>
+          <Stack direction="row" spacing={1}><Button variant="outlined" onClick={() => { setManualError(''); setManualBatchOpen(true); }} disabled={!canImport} sx={{ textTransform: 'none' }}>Add Batch Manually</Button><Button variant="outlined" onClick={downloadTemplate} sx={{ textTransform: 'none', flexShrink: 0 }}>Download Excel template</Button></Stack>
         </Stack>
         {canOverrideInactive && <FormControlLabel sx={{ mt: 1 }} control={<Checkbox checked={includeInactive} onChange={event => { setIncludeInactive(event.target.checked); setValidation([]); }} />} label="Explicitly authorize inactive plans for this import" />}
-        <Box sx={{ mt: 2, p: 1.5, border: '1px dashed #b9cce0', borderRadius: 2, bgcolor: '#f8fbff' }}><Button component="label" variant="contained" disabled={!canImport} sx={{ textTransform: 'none' }}>Choose .xlsx file<input hidden type="file" accept=".xlsx" onChange={uploadFile} /></Button><Typography component="span" variant="body2" sx={{ ml: 1.5, color: '#71839a' }}>{fileName || 'Use the standard template; validation runs before import.'}</Typography></Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, mt: 2 }}><TextField select required label="Project for upload" value={uploadProjectId} onChange={event => { setUploadProjectId(event.target.value); setUploadPhaseId(''); setValidation([]); setFileName(''); }}><MenuItem value="">Select project</MenuItem>{authorizedProjects.map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}</TextField><TextField select required label="Project phase" value={uploadPhaseId} disabled={!uploadProjectId} onChange={event => { setUploadPhaseId(event.target.value); setValidation([]); setFileName(''); }}><MenuItem value="">Select phase</MenuItem>{(authorizedProjects.find(item => item.id === uploadProjectId)?.phases ?? []).map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}</TextField></Box>
+        <Box sx={{ mt: 1.5, p: 1.5, border: '1px dashed #b9cce0', borderRadius: 2, bgcolor: '#f8fbff' }}><Button component="label" variant="contained" disabled={!canImport || !uploadProjectId || !uploadPhaseId} sx={{ textTransform: 'none' }}>Choose .xlsx file<input hidden type="file" accept=".xlsx" onChange={uploadFile} /></Button><Typography component="span" variant="body2" sx={{ ml: 1.5, color: '#71839a' }}>{fileName || 'Select a project and phase before uploading the template.'}</Typography></Box>
         {message && <Alert severity={message.startsWith('Imported') ? 'success' : 'error'} sx={{ mt: 2 }} onClose={() => setMessage('')}>{message}</Alert>}
       </Paper>
 
@@ -406,6 +432,19 @@ export default function Batches() {
 
     <Dialog open={confirmImport} onClose={() => setConfirmImport(false)} maxWidth="sm" fullWidth><DialogTitle>Confirm batch import</DialogTitle><DialogContent><Typography>Import {rowsForImport.length} batch row(s) from {fileName}? Invalid rows will be excluded. Warning rows will be imported with their warnings recorded.</Typography>{invalidProjectIds.size > 0 && <Typography sx={{ mt: 1 }} variant="body2" color="text.secondary">All-or-nothing policy holds every row for {invalidProjectIds.size} project(s) with validation errors.</Typography>}</DialogContent><DialogActions><Button onClick={() => setConfirmImport(false)}>Back</Button><Button variant="contained" onClick={importValidRows}>Import valid rows</Button></DialogActions></Dialog>
     <Dialog open={Boolean(editBatch)} onClose={() => setEditBatch(null)} maxWidth="sm" fullWidth><Box component="form" onSubmit={saveEditedBatch}><DialogTitle>Edit batch schedule</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}>{editBatch && <><TextField type="date" label="Training start date" InputLabelProps={{ shrink: true }} value={editBatch.trainingStartDate ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingStartDate: event.target.value })} /><TextField type="number" label="Training duration (days)" inputProps={{ min: 1, max: 365 }} value={editBatch.trainingDuration ?? 1} onChange={event => setEditBatch({ ...editBatch, trainingDuration: Number(event.target.value) })} /><TextField type="number" label="Registration capacity (blank = no limit)" inputProps={{ min: 1, step: 1 }} value={editBatch.registrationCapacity ?? ''} onChange={event => setEditBatch({ ...editBatch, registrationCapacity: event.target.value === '' ? undefined : Number(event.target.value) })} /><TextField select label="Open registration" value={editBatch.openRegistration ? 'yes' : 'no'} onChange={event => setEditBatch({ ...editBatch, openRegistration: event.target.value === 'yes' })}><MenuItem value="yes">Open</MenuItem><MenuItem value="no">Closed</MenuItem></TextField><TextField select label="Trainer" value={editBatch.trainerCode ?? ''} onChange={event => setEditBatch({ ...editBatch, trainerCode: event.target.value })}>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.trainerCode} · {trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.name}</MenuItem>)}</TextField><TextField type="time" label="Start time" InputLabelProps={{ shrink: true }} value={editBatch.trainingStartTime ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingStartTime: event.target.value })} /><TextField type="time" label="End time" InputLabelProps={{ shrink: true }} value={editBatch.trainingEndTime ?? ''} onChange={event => setEditBatch({ ...editBatch, trainingEndTime: event.target.value })} />{editError && <Alert severity="error">{editError}</Alert>}</>}</Stack></DialogContent><DialogActions><Button type="button" onClick={() => setEditBatch(null)}>Cancel</Button><Button type="submit" variant="contained">Save schedule</Button></DialogActions></Box></Dialog>
+    <Dialog open={manualBatchOpen} onClose={() => setManualBatchOpen(false)} maxWidth="md" fullWidth><Box component="form" onSubmit={saveManualBatch}><DialogTitle>Add batch manually</DialogTitle><DialogContent><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, pt: 1 }}>
+      <TextField select required label="Project" value={manualDraft.projectId} onChange={event => setManualDraft({ ...manualDraft, projectId: event.target.value, phaseId: '', planCode: '' })}><MenuItem value="">Select project</MenuItem>{authorizedProjects.map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}</TextField>
+      <TextField select required label="Project phase" value={manualDraft.phaseId} disabled={!manualDraft.projectId} onChange={event => setManualDraft({ ...manualDraft, phaseId: event.target.value })}><MenuItem value="">Select phase</MenuItem>{(projects.find(item => item.id === manualDraft.projectId)?.phases ?? []).map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}</TextField>
+      <TextField select required label="Training plan" value={manualDraft.planCode} onChange={event => setManualDraft({ ...manualDraft, planCode: event.target.value })}><MenuItem value="">Select linked active plan</MenuItem>{plans.filter(plan => plan.status === 'Active' && associations.some(item => item.projectId === manualDraft.projectId && item.trainingPlanId === plan.id && item.status === 'Active')).map(item => <MenuItem key={item.id} value={item.code}>{item.name}</MenuItem>)}</TextField>
+      <TextField select required label="School / venue" value={manualDraft.venue} onChange={event => setManualDraft({ ...manualDraft, venue: event.target.value })}><MenuItem value="">Select venue</MenuItem>{kgbvSchools.map(item => <MenuItem key={item.udise} value={item.udise}>{item.school} · {item.district}, {item.state}</MenuItem>)}</TextField>
+      <TextField required type="date" label="Training start date" InputLabelProps={{ shrink: true }} value={manualDraft.startDate} onChange={event => setManualDraft({ ...manualDraft, startDate: event.target.value })} />
+      <TextField required type="number" label="Training duration (weekdays)" inputProps={{ min: 1, max: 365 }} value={manualDraft.duration} onChange={event => setManualDraft({ ...manualDraft, duration: event.target.value })} />
+      <TextField select required label="Trainer" value={manualDraft.trainerCode} onChange={event => setManualDraft({ ...manualDraft, trainerCode: event.target.value })}><MenuItem value="">Select trainer</MenuItem>{trainers.map(item => <MenuItem key={item.userId} value={item.userId}>{trainerDirectory.find(profile => profile.userId?.toLowerCase() === item.userId.toLowerCase())?.name} · {item.userId}</MenuItem>)}</TextField>
+      <TextField type="time" required label="Start time" InputLabelProps={{ shrink: true }} value={manualDraft.startTime} onChange={event => setManualDraft({ ...manualDraft, startTime: event.target.value })} />
+      <TextField type="time" required label="End time" InputLabelProps={{ shrink: true }} value={manualDraft.endTime} onChange={event => setManualDraft({ ...manualDraft, endTime: event.target.value })} />
+      <FormControlLabel control={<Checkbox checked={manualDraft.openRegistration} onChange={event => setManualDraft({ ...manualDraft, openRegistration: event.target.checked })} />} label="Open registration" />
+      {manualError && <Alert severity="error" sx={{ gridColumn: '1 / -1' }}>{manualError}</Alert>}
+    </Box></DialogContent><DialogActions><Button onClick={() => setManualBatchOpen(false)}>Cancel</Button><Button type="submit" variant="contained">Create batch</Button></DialogActions></Box></Dialog>
   </div>;
 }
 function timesOverlap(startA: string, endA: string, startB: string, endB: string) { return Boolean(startA && endA && startB && endB && startA < endB && startB < endA); }

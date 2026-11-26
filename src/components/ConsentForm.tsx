@@ -12,13 +12,29 @@ function readRows(key: string): Row[] { try { const value: unknown = JSON.parse(
 const identity = (row: Row) => String(row.userId ?? row.traineeId ?? row.participantId ?? row.id ?? '').trim().toLowerCase();
 
 export function ConsentAcceptance({ checked, onChange }: { checked: boolean; onChange: (accepted: boolean) => void }) {
+  const [open, setOpen] = useState(false);
+  const [viewed, setViewed] = useState(false);
   return <Stack spacing={.5}>
     <Typography variant="caption" color="text.secondary" sx={{ pl: 4 }}>
-      <Link href={`${base}consent-form`} target="_blank" rel="noreferrer">View complete Consent Form</Link>
+      <Link component="button" type="button" onClick={() => { setOpen(true); setViewed(true); }}>View complete Consent Form</Link>
       {' · '}
       <Link href={`${base}privacy-policy`} target="_blank" rel="noreferrer">Privacy Policy</Link>
     </Typography>
-    <FormControlLabel control={<Checkbox checked={checked} onChange={event => onChange(event.target.checked)} />} label="I have read and agree to the Consent Form." />
+    <FormControlLabel control={<Checkbox checked={checked} disabled={!viewed} onChange={event => onChange(event.target.checked)} />} label="I have read and agree to the Consent Form." />
+    <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md" aria-labelledby="open-registration-consent-title">
+      <DialogTitle id="open-registration-consent-title">Consent Form · Version {CONSENT_VERSION}</DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          <Typography>{CONSENT_DECLARATION}</Typography>
+          <Typography>Acceptance is recorded with your account, the consent version, and the time of acceptance. Your information is used to manage registration and deliver, administer, and report on training, including attendance, assessments, feedback, and certificates.</Typography>
+          <Typography>Questions? Contact your Training Portal administrator if you have questions about your information or need help with a record.</Typography>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={() => setOpen(false)}>Close</Button>
+        <Button variant="contained" onClick={() => { setViewed(true); onChange(true); setOpen(false); }}>Agree and Continue</Button>
+      </DialogActions>
+    </Dialog>
   </Stack>;
 }
 

@@ -8,6 +8,7 @@ const planId = `${samplePrefix}PLAN-001`;
 const associationId = `${samplePrefix}ASSOCIATION-001`;
 const pastBatchId = `${samplePrefix}BATCH-PAST`;
 const upcomingBatchId = `${samplePrefix}BATCH-UPCOMING`;
+const openRegistrationBatchId = `${samplePrefix}BATCH-OPEN-REGISTRATION`;
 const demoTraineeId = `${samplePrefix}TRAINEE-007`;
 const pendingTraineeId = `${samplePrefix}TRAINEE-008`;
 const kalidasTraineeId = `${samplePrefix}TRAINEE-KALIDAS`;
@@ -178,6 +179,7 @@ export function seedDemoSampleData() {
   const batches = [
     { ...commonBatch, id: pastBatchId, batchCode: 'BATCH-DEMO-PAST', uniqueId: 'BATCH-DEMO-PAST', trainingStartDate: '2026-09-14', trainingDates: ['2026-09-14', '2026-09-15', '2026-09-16'], trainingEndAuto: '2026-09-16', openRegistration: false, status: 'Completed' },
     { ...commonBatch, id: upcomingBatchId, batchCode: 'BATCH-DEMO-NOV', uniqueId: 'BATCH-DEMO-NOV', trainingCycle: '2026 Cycle 2', trainingStartDate: '2026-11-10', trainingDates: ['2026-11-10', '2026-11-11', '2026-11-12'], trainingEndAuto: '2026-11-12', openRegistration: true, status: 'Scheduled', attendanceCount: 0, assessmentCount: 0 },
+    { ...commonBatch, id: openRegistrationBatchId, batchCode: 'BATCH-DEMO-OPEN', uniqueId: 'BATCH-DEMO-OPEN', trainingCycle: '2026 Cycle 3', trainingStartDate: '2026-12-10', trainingDates: ['2026-12-10', '2026-12-11', '2026-12-12'], trainingEndAuto: '2026-12-12', openRegistration: true, registrationWindowBeforeDays: 14, registrationWindowAfterDays: 0, status: 'Scheduled', attendanceCount: 0, assessmentCount: 0 },
   ];
   const trainee = { id: demoTraineeId, traineeId: demoTraineeId, userId: 'Demo7', name: 'Trainee', email: 'demo7.trainee@example.org', phone: '+91 90000 10007', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-01-10T09:00:00.000Z', createdBy: 'Demo2' };
   const pendingTrainee = { id: pendingTraineeId, traineeId: pendingTraineeId, name: 'Teacher Two', email: 'teacher.two@example.org', phone: '+91 90000 10008', category: 'Teacher', schoolUdise: school.udise, schoolName: school.school, projectId, state: school.state, district: school.district, consentProvided: true, createdAt: '2026-10-20T09:00:00.000Z', createdBy: 'Demo6' };
