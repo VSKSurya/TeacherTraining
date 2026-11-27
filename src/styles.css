@@ -234,13 +234,15 @@
 
 /* Keep Schoolnet dashboard KPI copy inside its cards at every grid width. */
 .schoolnet-kpis{align-items:stretch}
-.schoolnet-kpis .schoolnet-kpi{position:relative;height:auto;min-height:116px;overflow:visible}
+.schoolnet-kpis .schoolnet-kpi{position:relative;height:auto;min-height:97px;overflow:visible}
 .schoolnet-kpis .schoolnet-kpi .kpi-top{min-height:0;flex:1 0 auto}
 .schoolnet-kpis .schoolnet-kpi .kpi-label{max-width:none;overflow-wrap:anywhere}
 .schoolnet-kpis .schoolnet-kpi .kpi-value{flex:0 0 auto}
 .schoolnet-kpis .schoolnet-kpi .kpi-sub{display:none}
 .schoolnet-kpis .schoolnet-kpi-info{position:relative;z-index:2;flex:0 0 18px;width:18px;height:18px;margin:0 0 0 auto}
 .schoolnet-kpis .schoolnet-kpi-info::after{position:absolute;top:calc(100% + 8px);right:-8px;z-index:20;display:none;width:min(300px,calc(100vw - 32px));padding:10px 12px;border:1px solid #dce7f1;border-radius:9px;background:#fff;box-shadow:0 8px 24px #1735532b;color:#52677d;content:attr(data-tooltip);font:400 12px/1.5 var(--app-font-family);text-align:left;white-space:normal;overflow-wrap:anywhere}
+.schoolnet-kpis .schoolnet-kpi:first-child .schoolnet-kpi-info::after{right:auto;left:0}
+@media(max-width:620px){.schoolnet-kpis .schoolnet-kpi:first-child .schoolnet-kpi-info::after{width:min(220px,calc(100vw - 150px))}}
 .schoolnet-kpis .schoolnet-kpi-info:is(:hover,:focus-visible)::after{display:block}
 .schoolnet-kpis .schoolnet-kpi:has(.schoolnet-kpi-info:hover),.schoolnet-kpis .schoolnet-kpi:has(.schoolnet-kpi-info:focus-visible){z-index:5}
 

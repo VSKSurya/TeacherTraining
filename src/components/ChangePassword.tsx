@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { Alert, Box, Button, Container, IconButton, InputAdornment, Paper, Stack, TextField, Typography } from '@mui/material';
 import { Footer, Sidebar, Topbar } from './DashboardParts';
-import { DEMO_PASSWORD, getSession, getUsers, passwordWasRecentlyUsed, saveUsers, signOut, updateUserPassword } from '../auth';
+import { DEMO_PASSWORD, getSession, getUsers, passwordWasRecentlyUsed, saveUsers, updateUserPassword } from '../auth';
 
 type Step = 'details' | 'otp' | 'success';
 type ChangeOtpResponse = { requestId?: string; emailAddress?: string; maskedEmail?: string; expiresAt?: string; message?: string };
@@ -160,7 +160,7 @@ export default function ChangePassword() {
           <Paper variant="outlined" sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.25, borderRadius: 2, bgcolor: secondsLeft > 0 ? '#f5faff' : '#fff8f5', borderColor: secondsLeft > 0 ? '#d6e7f5' : '#f0d5c8' }}><Typography variant="body2" sx={{ color: '#52677d' }}>Code validity</Typography><Typography aria-live="polite" sx={{ ml: 'auto', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: secondsLeft > 0 ? '#176fba' : '#bb4b2a' }}>{secondsLeft > 0 ? `${minutes}:${seconds} remaining` : 'Expired'}</Typography></Paper>
           <Stack direction="row" spacing={1} flexWrap="wrap"><Button type="submit" variant="contained" disabled={busy || secondsLeft === 0 || otp.some(digit => !digit)} sx={{ minHeight: 42, px: 2.5, borderRadius: 2, textTransform: 'none', fontWeight: 750 }}>{busy ? 'Verifying…' : 'Verify code'}</Button><Button type="button" variant="outlined" disabled={busy} onClick={() => { void requestOtp(); }} sx={{ minHeight: 42, borderRadius: 2, textTransform: 'none' }}>Resend code</Button><Button type="button" onClick={() => { setStep('details'); setOtp(['', '', '', '']); setError(''); setNotice(''); }} sx={{ textTransform: 'none' }}>Back</Button></Stack>
         </Stack></Box>}
-        {step === 'success' && <Stack spacing={1.5}><Alert severity="success">Password set successfully. Sign in again with your new password.</Alert><Button variant="contained" onClick={() => { signOut(); window.location.assign(`${import.meta.env.BASE_URL}#/login`); }} sx={{ alignSelf: 'flex-start', minHeight: 42, px: 2.5, borderRadius: 2, textTransform: 'none', fontWeight: 750 }}>Sign in with new password</Button></Stack>}
+        {step === 'success' && <Alert severity="success">Password set Successfully</Alert>}
       </Stack>
     </Paper>
   </Container><Footer /></main></div>;

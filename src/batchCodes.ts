@@ -1,5 +1,11 @@
 export const BATCH_STORAGE_KEY = 'teacher-training-batch-plan-uses';
-const BATCH_CODE_PATTERN = /^TTB-\d{4}-[A-F0-9]{20}$/;
+const PROJECT_STORAGE_KEY = 'teacher-training-projects';
+const BATCH_CODE_PATTERN = /^[A-Z0-9]{2}\d{7}$/;
+const STATE_CODES: Record<string, string> = {
+  'Andhra Pradesh': '28', 'Arunachal Pradesh': '12', Assam: '18', Chhattisgarh: '22', Gujarat: '24',
+  Haryana: '06', Jharkhand: '20', Karnataka: '29', Manipur: '14', Rajasthan: '08', Sikkim: '11',
+  Telangana: '36', 'Uttar Pradesh': '09',
+};
 
 export type BatchIdentity = {
   id?: unknown;
@@ -41,21 +47,27 @@ export function batchCodeForRecord(record: Record<string, unknown>, batches: Bat
   return matches.length === 1 ? value(matches[0].batchCode) : value(record.batchCode || record.batchId || record.batchUniqueId);
 }
 
-function yearFor(batch: BatchIdentity & { createdAt?: unknown; trainingStartDate?: unknown }): string {
-  const created = value(batch.createdAt).slice(0, 4);
-  const scheduled = value(batch.trainingStartDate).slice(0, 4);
-  const year = /^\d{4}$/.test(created) ? created : /^\d{4}$/.test(scheduled) ? scheduled : String(new Date().getFullYear());
-  return year;
+function projectPrefix(projectCode: unknown): string {
+  return value(projectCode).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 2).padEnd(2, '0');
 }
 
-export function createBatchCode(year = String(new Date().getFullYear()), reserved: Iterable<string> = []): string {
+export function batchStateCode(state: unknown, schoolUdiseVenue?: unknown): string {
+  const udisePrefix = value(schoolUdiseVenue).match(/^(\d{2})/);
+  return udisePrefix?.[1] ?? STATE_CODES[value(state)] ?? '00';
+}
+
+export function createBatchCode(projectCode: unknown, stateCode: unknown, reserved: Iterable<string> = []): string {
+  const prefix = `${projectPrefix(projectCode)}${/^\d{2}$/.test(value(stateCode)) ? value(stateCode) : '00'}`;
   const used = new Set([...reserved].map(item => value(item).toUpperCase()).filter(Boolean));
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const random = crypto.randomUUID().replaceAll('-', '').slice(0, 20).toUpperCase();
-    const code = `TTB-${year}-${random}`;
+  const pattern = new RegExp(`^${prefix}(\\d{5})$`);
+  let sequence = 0;
+  for (const code of used) { const match = code.match(pattern); if (match) sequence = Math.max(sequence, Number(match[1])); }
+  while (sequence < 99999) {
+    sequence++;
+    const code = `${prefix}${String(sequence).padStart(5, '0')}`;
     if (!used.has(code)) return code;
   }
-  throw new Error('Could not generate a unique Batch Code. Try again.');
+  throw new Error(`Could not generate a unique Batch ID for ${prefix}.`);
 }
 
 function readArray(key: string): Record<string, unknown>[] {
@@ -73,9 +85,11 @@ function readArray(key: string): Record<string, unknown>[] {
  */
 export function standardizeStoredBatchCodes(): void {
   if (typeof window === 'undefined') return;
-  const batches = readArray(BATCH_STORAGE_KEY) as (Record<string, unknown> & BatchIdentity & { createdAt?: unknown; trainingStartDate?: unknown })[];
+  const batches = readArray(BATCH_STORAGE_KEY) as (Record<string, unknown> & BatchIdentity)[];
+  const projects = readArray(PROJECT_STORAGE_KEY);
   if (!batches.length) return;
 
+  const projectCodes = new Map(projects.map(project => [value(project.id), project.code]));
   const reserved = new Set(batches.flatMap(batch => batchIdentifiers(batch).map(item => item.toUpperCase())));
   const claimed = new Set<string>();
   let changed = false;
@@ -83,7 +97,8 @@ export function standardizeStoredBatchCodes(): void {
     const currentCode = value(batch.batchCode);
     let code = currentCode.toUpperCase();
     if (!BATCH_CODE_PATTERN.test(code.toUpperCase()) || claimed.has(code.toUpperCase())) {
-      code = createBatchCode(yearFor(batch), [...reserved, ...claimed]);
+      const projectCode = projectCodes.get(value(batch.projectId));
+      code = createBatchCode(projectCode, batchStateCode(batch.state, batch.schoolUdiseVenue), [...reserved, ...claimed]);
       changed = true;
     }
     claimed.add(code.toUpperCase());
