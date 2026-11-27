@@ -24,7 +24,7 @@ export type MenuKey =
   | 'trainer-evidence'
   | 'upload-documents';
 
-export type UserRecord = { userId: string; role: UserRole; active: boolean; password?: string; passwordHistory?: string[] };
+export type UserRecord = { userId: string; role: UserRole; active: boolean; email?: string; password?: string; passwordHistory?: string[] };
 export type SessionUser = Pick<UserRecord, 'userId' | 'role'>;
 
 export const DEMO_PASSWORD = 'demo1@123';
@@ -79,14 +79,14 @@ export function canAccessRoute(role: UserRole, path: string) {
 const USERS_KEY = 'teacher-training-users';
 const SESSION_KEY = 'teacher-training-session';
 const DEFAULT_USERS: UserRecord[] = [
-  { userId: 'Demo1', role: 'sponsor-admin', active: true },
-  { userId: 'Demo2', role: 'schoolnet-super-admin', active: true },
-  { userId: 'Demo3', role: 'schoolnet-project-admin', active: true },
-  { userId: 'Demo4', role: 'state-admin', active: true },
-  { userId: 'Demo5', role: 'school-admin', active: true },
-  { userId: 'Demo6', role: 'trainer', active: true },
-  { userId: 'Demo7', role: 'trainee', active: true },
-  { userId: 'Demo8', role: 'reporting-audit-user', active: true },
+  { userId: 'Demo1', role: 'sponsor-admin', active: true, email: 'Demo1@gmail.com' },
+  { userId: 'Demo2', role: 'schoolnet-super-admin', active: true, email: 'Demo2@gmail.com' },
+  { userId: 'Demo3', role: 'schoolnet-project-admin', active: true, email: 'Demo3@gmail.com' },
+  { userId: 'Demo4', role: 'state-admin', active: true, email: 'Demo4@gmail.com' },
+  { userId: 'Demo5', role: 'school-admin', active: true, email: 'Demo5@gmail.com' },
+  { userId: 'Demo6', role: 'trainer', active: true, email: 'Demo6@gmail.com' },
+  { userId: 'Demo7', role: 'trainee', active: true, email: 'Demo7@gmail.com' },
+  { userId: 'Demo8', role: 'reporting-audit-user', active: true, email: 'Demo8@gmail.com' },
   { userId: 'Kalidas', role: 'trainee', active: true, password: 'demo1@123' },
 ];
 const roleValues = new Set<UserRole>(ROLES);
@@ -108,12 +108,13 @@ export function getUsers(): UserRecord[] {
 
   const users: UserRecord[] = Array.isArray(saved)
     ? saved.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && typeof (item as Record<string, unknown>).userId === 'string'))
-      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false, ...(typeof item.password === 'string' ? { password: item.password } : {}), ...(Array.isArray(item.passwordHistory) ? { passwordHistory: item.passwordHistory.filter((password): password is string => typeof password === 'string').slice(0, 2) } : {}) }))
+      .map(item => ({ userId: item.userId as string, role: normalizedRole(item.role, item.userId as string), active: item.active !== false, ...(typeof item.email === 'string' ? { email: item.email } : typeof item.emailAddress === 'string' ? { email: item.emailAddress } : {}), ...(typeof item.password === 'string' ? { password: item.password } : {}), ...(Array.isArray(item.passwordHistory) ? { passwordHistory: item.passwordHistory.filter((password): password is string => typeof password === 'string').slice(0, 2) } : {}) }))
     : [];
 
   for (const demoUser of DEFAULT_USERS) {
     const existing = users.find(user => user.userId.toLowerCase() === demoUser.userId.toLowerCase());
     if (!existing) users.push(demoUser);
+    else if (!existing.email && demoUser.email) existing.email = demoUser.email;
   }
 
   localStorage.setItem(USERS_KEY, JSON.stringify(users));

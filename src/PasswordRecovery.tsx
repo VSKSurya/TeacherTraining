@@ -2,8 +2,9 @@ import { useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEve
 import './login.css';
 import './login-scroll.css';
 import { getUsers, passwordWasRecentlyUsed, saveUsers, updateUserPassword } from './auth';
+import { trainerProfiles } from './trainerStore';
 
-type Step = 'identity' | 'otp' | 'password' | 'success';
+type Step = 'identity' | 'otp' | 'password' | 'success' | 'username-email' | 'username-otp' | 'username-list';
 const base = import.meta.env.BASE_URL;
 const api = (import.meta.env as ImportMetaEnv & { VITE_PASSWORD_RECOVERY_API?: string }).VITE_PASSWORD_RECOVERY_API?.replace(/\/$/, '');
 
@@ -20,7 +21,61 @@ export default function PasswordRecovery() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [usernameEmail, setUsernameEmail] = useState('');
+  const [usernameCandidates, setUsernameCandidates] = useState<string[]>([]);
   const otpInputs = useRef<Array<HTMLInputElement | null>>([]);
+
+  function findUsernamesForEmail(email: string) {
+    const users = getUsers().filter(user => user.active);
+    const emailKey = email.trim().toLowerCase();
+    const matches = new Set<string>();
+    const add = (row: Record<string, unknown>) => {
+      const rowEmail = String(row.email ?? row.emailAddress ?? '').trim().toLowerCase();
+      if (rowEmail !== emailKey) return;
+      for (const candidate of [row.userId, row.traineeId, row.participantId]) {
+        if (typeof candidate !== 'string' || !candidate.trim()) continue;
+        const account = users.find(user => user.userId.toLowerCase() === candidate.trim().toLowerCase());
+        if (account) matches.add(account.userId);
+      }
+    };
+    users.forEach(user => { if (user.email?.trim().toLowerCase() === emailKey) matches.add(user.userId); });
+    try {
+      for (const key of ['teacher-training-trainees', 'teacher-training-registrations']) {
+        const rows: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+        if (Array.isArray(rows)) rows.forEach(row => { if (row && typeof row === 'object') add(row as Record<string, unknown>); });
+      }
+    } catch { /* Ignore malformed local profile data. */ }
+    trainerProfiles().forEach(profile => {
+      if (profile.email.trim().toLowerCase() !== emailKey || !profile.userId) return;
+      const account = users.find(user => user.userId.toLowerCase() === profile.userId?.toLowerCase());
+      if (account) matches.add(account.userId);
+    });
+    return [...matches].sort((a, b) => a.localeCompare(b));
+  }
+
+  function startUsernameRecovery() {
+    setError(''); setNotice(''); setOtp(['', '', '', '']); setUsernameCandidates([]); setStep('username-email');
+  }
+
+  function requestUsernameOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setError(''); setNotice('');
+    const email = usernameEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Enter a valid email address.'); return; }
+    const candidates = findUsernamesForEmail(email);
+    if (!candidates.length) { setError('No active usernames are associated with this email address.'); return; }
+    setUsernameCandidates(candidates); setOtp(['', '', '', '']); setStep('username-otp');
+    setNotice(`Demo OTP 1111 is ready for ${email}.`);
+  }
+
+  function verifyUsernameOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setError(''); setNotice('');
+    if (otp.join('') !== '1111') { setError('That OTP is incorrect. Enter 1111.'); return; }
+    setStep('username-list');
+  }
+
+  function selectUsername(userId: string) {
+    setIdentity(userId); setStep('identity'); setOtp(['', '', '', '']); setError(''); setNotice('Username found. You can now reset your password.');
+  }
 
   function updateOtpDigit(index: number, value: string) {
     const digits = value.replace(/\D/g, '');
@@ -95,21 +150,25 @@ export default function PasswordRecovery() {
     try { const result = await post('reset-password', { resetToken, newPassword: password }); if (result.success !== true) throw new Error(result.message || 'Your password could not be reset. Try again.'); setStep('success'); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Your password could not be reset.'); } finally { setBusy(false); }
   }
-  const steps: Step[] = ['identity', 'otp', 'password', 'success'];
+  const steps: Step[] = step.startsWith('username-') ? ['username-email', 'username-otp', 'username-list'] : ['identity', 'otp', 'password', 'success'];
   const stepIndex = steps.indexOf(step);
   const passwordValid = password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9\s]/.test(password) && !/\s/.test(password);
-  const title = step === 'identity' ? 'Forgot password?' : step === 'otp' ? 'Verify your identity' : step === 'password' ? 'Create a new password' : 'Password reset complete';
+  const title = step === 'identity' ? 'Forgot password?' : step === 'otp' || step === 'username-otp' ? 'Verify your identity' : step === 'password' ? 'Create a new password' : step === 'success' ? 'Password reset complete' : step === 'username-email' ? 'Forgot username?' : step === 'username-list' ? 'Select your username' : 'Forgot username?';
 
   return <main className="login-page">
     <section className="login-story" aria-label="About the learning platform"><div className="story-orbit orbit-one"/><div className="story-orbit orbit-two"/><img className="learning-art" src={`${base}assets/empowering-education-learning-cards.png`} alt="Empowering teachers, transforming classrooms"/><div className="story-copy"><h1>Empowering Teachers, Transforming Classrooms</h1><p>One connected platform to plan training, build teaching skills, track progress, and recognize achievements through certification.</p></div><img className="adding-dimensions" src={`${base}assets/AddingDimensions.png`} alt="Adding Dimensions"/></section>
-    <section className="login-panel"><div className="login-content recovery-content"><img className="ernet-logo" src={`${base}assets/ernet-client-logo.jpeg`} alt="ERNet India — Education & Research Network"/><h2>{title}</h2>{step !== 'identity' && <p className="login-intro">{step === 'otp' ? 'Enter the four-digit code sent to your registered contact.' : step === 'password' ? 'Choose a strong password for your account.' : 'Your new password is ready to use.'}</p>}
-      <div className="recovery-progress" aria-label={`Step ${stepIndex + 1} of 4`}>{steps.map((item, i) => <span key={item} className={i <= stepIndex ? 'active' : ''}/>)}</div>
+    <section className="login-panel"><div className="login-content recovery-content"><img className="ernet-logo" src={`${base}assets/ernet-client-logo.jpeg`} alt="ERNet India — Education & Research Network"/><h2>{title}</h2>{step !== 'identity' && <p className="login-intro">{step === 'otp' || step === 'username-otp' ? 'Enter the four-digit code sent to your email address.' : step === 'password' ? 'Choose a strong password for your account.' : step === 'success' ? 'Your new password is ready to use.' : step === 'username-email' ? 'Enter the email address linked to your account.' : step === 'username-list' ? 'Select a username to continue to password recovery.' : ''}</p>}
+      <div className="recovery-progress" aria-label={`Step ${stepIndex + 1} of ${steps.length}`}>{steps.map((item, i) => <span key={item} className={i <= stepIndex ? 'active' : ''}/>)}</div>
       {error && <p className="login-message recovery-error" role="alert">{error}</p>}{notice && <p className="login-message" role="status">{notice}</p>}
       {step === 'identity' && <form onSubmit={sendOtp}><label htmlFor="recovery-identity">Email Address or User ID <span>*</span></label><div className="login-input-wrap"><input id="recovery-identity" autoComplete="username" value={identity} onChange={e => setIdentity(e.target.value)} required/></div><button className="login-submit" disabled={busy}>{busy ? 'Sending OTP…' : 'Send OTP'}</button></form>}
+      {step === 'identity' && <div className="recovery-links"><button type="button" onClick={startUsernameRecovery}>Forgot Username?</button></div>}
+      {step === 'username-email' && <form onSubmit={requestUsernameOtp}><label htmlFor="username-email">Email Address <span>*</span></label><div className="login-input-wrap"><input id="username-email" type="email" autoComplete="email" value={usernameEmail} onChange={event => setUsernameEmail(event.target.value)} required /></div><button className="login-submit">Verify OTP</button></form>}
       {step === 'otp' && <form onSubmit={verifyOtp}><label id="recovery-otp-label">Four-digit OTP <span>*</span></label><div className="otp-inputs" role="group" aria-labelledby="recovery-otp-label" onPaste={handleOtpPaste}>{Array.from({ length: 4 }, (_, index) => <input key={index} ref={element => { otpInputs.current[index] = element; }} type="text" inputMode="numeric" autoComplete={index === 0 ? 'one-time-code' : 'off'} maxLength={1} aria-label={`OTP digit ${index + 1} of 4`} value={otp[index]} onChange={event => updateOtpDigit(index, event.target.value)} onKeyDown={event => handleOtpKeyDown(index, event)} required />)}</div><button className="login-submit" disabled={busy}>{busy ? 'Verifying…' : 'Verify OTP'}</button><div className="recovery-links"><button type="button" disabled={busy} onClick={() => { void sendOtp(); }}>Resend OTP</button></div></form>}
+      {step === 'username-otp' && <form onSubmit={verifyUsernameOtp}><label id="username-otp-label">Four-digit OTP <span>*</span></label><div className="otp-inputs" role="group" aria-labelledby="username-otp-label" onPaste={handleOtpPaste}>{Array.from({ length: 4 }, (_, index) => <input key={index} ref={element => { otpInputs.current[index] = element; }} type="text" inputMode="numeric" autoComplete={index === 0 ? 'one-time-code' : 'off'} maxLength={1} aria-label={`OTP digit ${index + 1} of 4`} value={otp[index]} onChange={event => updateOtpDigit(index, event.target.value)} onKeyDown={event => handleOtpKeyDown(index, event)} required />)}</div><button className="login-submit">Verify OTP</button></form>}
+      {step === 'username-list' && <div className="username-options" role="list" aria-label="Usernames associated with this email">{usernameCandidates.map(userId => <button key={userId} type="button" className="username-option" onClick={() => selectUsername(userId)}>{userId}</button>)}</div>}
       {step === 'password' && <form onSubmit={resetPassword}><div className="password-policy-label"><label htmlFor="new-password">New Password <span>*</span></label><span className="password-policy-help"><button className="password-policy-icon" type="button" aria-label="Show password requirements" aria-describedby="password-policy-tooltip">i</button><span className="password-policy-tooltip" id="password-policy-tooltip" role="tooltip"><strong>Password requirements</strong><ul><li>Minimum 8 characters in length.</li><li>Must contain at least one uppercase letter (A–Z).</li><li>Must contain at least one lowercase letter (a–z).</li><li>Must contain at least one number (0–9).</li><li>Must contain at least one special character (e.g., !, @, #, $, %).</li><li>Do not use spaces in the password.</li></ul></span></span></div><div className="login-input-wrap"><input id="new-password" type={visible ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} onBlur={() => setPasswordBlurred(true)} aria-invalid={passwordBlurred && !passwordValid} required/><button className="password-toggle" type="button" aria-label={visible ? 'Hide password' : 'Show password'} onClick={() => setVisible(!visible)}>{visible ? 'Hide' : 'Show'}</button></div>{passwordBlurred && !passwordValid && <p className="password-policy-error" role="status">Your password does not meet all the required criteria. Please review the password requirements and try again.</p>}<label htmlFor="confirm-password">Confirm New Password <span>*</span></label><div className="login-input-wrap"><input id="confirm-password" type={visible ? 'text' : 'password'} autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} disabled={!passwordValid} required/></div><button className="login-submit" disabled={busy || !passwordValid}>{busy ? 'Resetting…' : 'Reset Password'}</button></form>}
       {step === 'success' && <div className="recovery-success"><div className="recovery-check" aria-hidden="true">✓</div><p>Your password has been reset successfully.</p><a className="login-submit recovery-login-button" href={`${base}#/login`}>Back to Login</a></div>}
-      {step !== 'success' && <p className="register-prompt"><a href={`${base}#/login`}>Back to Login</a></p>}
+      {step !== 'success' && (step.startsWith('username-') ? <p className="register-prompt"><button type="button" className="recovery-back-link" onClick={() => { setStep('identity'); setError(''); setNotice(''); }}>Back to Forgot Password</button></p> : <p className="register-prompt"><a href={`${base}#/login`}>Back to Login</a></p>)}
     </div><footer className="login-footer"><nav aria-label="Policies"><a href={`${base}#/privacy-policy`}>Privacy policy</a></nav><span>© 2026 Schoolnet India Limited</span></footer></section>
   </main>;
 }
